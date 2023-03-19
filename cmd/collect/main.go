@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/jamestunnell/marketanalysis/commands/collectbars"
+	"github.com/rs/zerolog/log"
 )
 
 type Command interface {
@@ -17,39 +19,67 @@ var (
 
 	bars = app.Command("bars", "Collect historical 1-minute bar data.")
 
-	barsStart   = bars.Flag("start", "Start date-time formated according to RFC3339. Default is 1 hour ago.").String()
-	barsDur     = bars.Flag("dur", "Collection period duration in hours and/or minutes (e.g.: 10h, 1h10m, 50m). Default is 30m.").String()
-	barsOutdir  = bars.Flag("outdir", "Output directory for bar data file. Default is current working dir.").String()
-	barsOutfile = bars.Flag("outfile", "Output filename for bar data file. Default is bars.jsonl.").String()
+	barsStart   = bars.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
+	barsEnd     = bars.Flag("end", "End date-time formatted according to RFC3339.").Required().String()
+	barsOutpath = bars.Flag("outpath", "Path to output file").Required().String()
 	barsSymbol  = bars.Arg("symbol", "The stock symbol.").String()
 )
 
 func main() {
 	var cmd Command
 
-	var err error
-
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case bars.FullCommand():
+		tStart, err := time.Parse(time.RFC3339, *barsStart)
+		if err != nil {
+			err = fmt.Errorf("failed to parse start datetime '%s' using RFC3339: %w", *barsStart, err)
+
+			log.Fatal().Err(err).Msg("failed to parse start time")
+		}
+
+		tEnd, err := time.Parse(time.RFC3339, *barsEnd)
+		if err != nil {
+			err = fmt.Errorf("failed to parse end datetime '%s' using RFC3339: %w", *barsEnd, err)
+
+			log.Fatal().Err(err).Msg("failed to parse end time")
+		}
+
 		params := &collectbars.Params{
-			Start:   *barsStart,
-			Dur:     *barsDur,
-			Outdir:  *barsOutdir,
-			Outfile: *barsOutfile,
+			Start:   tStart,
+			End:     tEnd,
+			Outpath: *barsOutpath,
 			Symbol:  *barsSymbol,
 		}
 		cmd, err = collectbars.New(params)
-	}
 
-	if err != nil {
-		panic(fmt.Errorf("failed to make command: %w", err))
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to make collectbars command")
+		}
 	}
 
 	if cmd == nil {
-		panic("unknown command")
+		log.Fatal().Msg("unknown command")
 	}
 
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		log.Fatal().Err(err).Msg("command failed")
 	}
+}
+
+func parseStartEndTimes(start, end string) (tStart, tEnd time.Time, err error) {
+	tStart, err = time.Parse(time.RFC3339, start)
+	if err != nil {
+		err = fmt.Errorf("failed to parse start datetime '%s' using RFC3339: %w", start, err)
+
+		return
+	}
+
+	tEnd, err = time.Parse(time.RFC3339, end)
+	if err != nil {
+		err = fmt.Errorf("failed to parse end datetime '%s' using RFC3339: %w", end, err)
+
+		return
+	}
+
+	return
 }
