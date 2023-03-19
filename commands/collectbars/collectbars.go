@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -77,7 +78,7 @@ func (cmd *Command) Run() error {
 
 	fmt.Printf("collecting bars for %s\n", cmd.Symbol)
 
-	bars, err := marketdata.GetBars(cmd.Symbol, marketdata.GetBarsRequest{
+	alpacaBars, err := marketdata.GetBars(cmd.Symbol, marketdata.GetBarsRequest{
 		TimeFrame: marketdata.OneMin,
 		Start:     cmd.Start,
 		End:       cmd.End,
@@ -87,13 +88,15 @@ func (cmd *Command) Run() error {
 		return fmt.Errorf("failed to get bars: %w\n", err)
 	}
 
-	fmt.Printf("collected %d bars\n", len(bars))
+	fmt.Printf("collected %d bars\n", len(alpacaBars))
 
 	fmt.Println("writing bar data to file")
 
 	totalBytes := 0
 
-	for _, bar := range bars {
+	for _, alpacaBar := range alpacaBars {
+		bar := models.NewFromAlpacaBar(alpacaBar)
+
 		d, err := json.Marshal(bar)
 		if err != nil {
 			return fmt.Errorf("failed to marshal JSON for bar\n: - bar value: %v\n - error: %w", bar, err)
