@@ -19,10 +19,10 @@ var (
 
 	bars = app.Command("bars", "Collect historical 1-minute bar data.")
 
-	barsStart   = bars.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
-	barsEnd     = bars.Flag("end", "End date-time formatted according to RFC3339.").Required().String()
-	barsOutpath = bars.Flag("outpath", "Path to output file").Required().String()
-	barsSymbol  = bars.Arg("symbol", "The stock symbol.").String()
+	barsStart  = bars.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
+	barsEnd    = bars.Flag("end", "End date-time formatted according to RFC3339.").Required().String()
+	barsOut    = bars.Flag("out", "Path to output file").Required().String()
+	barsSymbol = bars.Arg("symbol", "The stock symbol.").String()
 )
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 		params := &collectbars.Params{
 			Start:   tStart,
 			End:     tEnd,
-			Outpath: *barsOutpath,
+			Outpath: *barsOut,
 			Symbol:  *barsSymbol,
 		}
 		cmd, err = collectbars.New(params)
