@@ -10,6 +10,7 @@ require (
 	github.com/go-echarts/go-echarts/v2 v2.2.5
 	github.com/montanaflynn/stats v0.7.0
 	github.com/rs/zerolog v1.29.0
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
@@ -38,7 +39,6 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76 // indirect
 	github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/yuin/goldmark v1.4.0 // indirect
