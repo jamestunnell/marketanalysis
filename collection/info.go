@@ -1,4 +1,4 @@
-package datamanager
+package collection
 
 import (
 	"encoding/json"
@@ -10,19 +10,19 @@ const (
 	Resolution1Min = "1m"
 )
 
-type CollectionInfo struct {
+type Info struct {
 	Symbol     string `json:"symbol"`
 	Resolution string `json:"resolution"`
 }
 
-func NewCollectionInfo(sym, res string) *CollectionInfo {
-	return &CollectionInfo{
+func NewInfo(sym, res string) *Info {
+	return &Info{
 		Symbol:     sym,
 		Resolution: res,
 	}
 }
 
-func (info *CollectionInfo) Store(fpath string) error {
+func (info *Info) Store(fpath string) error {
 	d, err := json.Marshal(info)
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -35,7 +35,7 @@ func (info *CollectionInfo) Store(fpath string) error {
 	return nil
 }
 
-func (info *CollectionInfo) Load(fpath string) error {
+func (info *Info) Load(fpath string) error {
 	d, err := os.ReadFile(fpath)
 	if err != nil {
 		return fmt.Errorf("failed to read file '%s': %w", fpath, err)
