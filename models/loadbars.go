@@ -7,10 +7,10 @@ import (
 	"os"
 )
 
-func LoadBars(fname string) ([]*Bar, error) {
-	f, err := os.Open(fname)
+func LoadBars(fpath string) ([]*Bar, error) {
+	f, err := os.Open(fpath)
 	if err != nil {
-		err = fmt.Errorf("failed to open file %s: %w", fname, err)
+		err = fmt.Errorf("failed to open file %s: %w", fpath, err)
 
 		return []*Bar{}, err
 	}

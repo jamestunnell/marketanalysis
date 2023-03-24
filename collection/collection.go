@@ -1,11 +1,11 @@
 package collection
 
 type Collection struct {
-	Info *Info
+	Store Store
 }
 
 func Load(store Store) *Collection {
 	return &Collection{
-		Info: store.GetInfo(),
+		Store: store,
 	}
 }
