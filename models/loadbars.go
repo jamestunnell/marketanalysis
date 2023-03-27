@@ -24,7 +24,14 @@ func LoadBars(fpath string) ([]*Bar, error) {
 	for scanner.Scan() {
 		var bar Bar
 
-		if err := json.Unmarshal([]byte(scanner.Text()), &bar); err != nil {
+		lineStr := scanner.Text()
+
+		// ignore empty lines
+		if lineStr == "" {
+			continue
+		}
+
+		if err := json.Unmarshal([]byte(lineStr), &bar); err != nil {
 			err = fmt.Errorf("failed to unmarshal line %d :%w", line, err)
 
 			return []*Bar{}, err
