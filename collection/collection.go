@@ -7,13 +7,14 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date/timespan"
+	"golang.org/x/exp/slices"
 )
 
 type Collection interface {
 	Info() *Info
 	Timespan() timespan.TimeSpan
 	GetBars(ts timespan.TimeSpan) []*models.Bar
-	AddBars([]*models.Bar)
+	AddBars([]*models.Bar) int
 
 	Store(s Store) error
 }
@@ -28,6 +29,24 @@ const (
 	BarsItemName = "bars.jsonl"
 	InfoItemName = "info.json"
 )
+
+func Exists(store Store) (bool, error) {
+	names, err := store.ItemNames()
+	if err != nil {
+		err = fmt.Errorf("failed to get store item names: %w", err)
+
+		return false, err
+	}
+
+	reqdItems := []string{InfoItemName, BarsItemName}
+	for _, reqdName := range reqdItems {
+		if !slices.Contains(names, reqdName) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
 
 func Load(store Store) (Collection, error) {
 	d, err := store.LoadItem(InfoItemName)
@@ -87,8 +106,26 @@ func (c *collection) GetBars(ts timespan.TimeSpan) []*models.Bar {
 	return bars
 }
 
-func (c *collection) AddBars(bars []*models.Bar) {
-	c.bars = append(c.bars, bars...)
+func (c *collection) AddBars(bars []*models.Bar) int {
+	added := 0
+
+	for _, bar := range bars {
+		found := false
+		for _, existingBar := range c.bars {
+			if existingBar.Timestamp.Equal(bar.Timestamp) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			c.bars = append(c.bars, bar)
+
+			added++
+		}
+	}
+
+	return added
 }
 
 func (c *collection) Store(s Store) error {

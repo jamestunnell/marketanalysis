@@ -19,10 +19,10 @@ var (
 
 	bars = app.Command("bars", "Collect historical 1-minute bar data.")
 
-	barsStart    = bars.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
-	barsEnd      = bars.Flag("end", "End date-time formatted according to RFC3339.").Required().String()
-	barsJSONLOut = bars.Flag("jsonlout", "Path to JSONL output file").Required().String()
-	barsSymbol   = bars.Arg("symbol", "The stock symbol.").String()
+	barsStart = bars.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
+	barsEnd   = bars.Flag("end", "End date-time formatted according to RFC3339.").Required().String()
+	barsDir   = bars.Flag("dir", "Collection dir path.").Required().String()
+	barsSym   = bars.Flag("sym", "The stock symbol.").Required().String()
 )
 
 func main() {
@@ -45,10 +45,10 @@ func main() {
 		}
 
 		params := &collectbars.Params{
-			Start:   tStart,
-			End:     tEnd,
-			Outpath: *barsJSONLOut,
-			Symbol:  *barsSymbol,
+			Start:         tStart,
+			End:           tEnd,
+			CollectionDir: *barsDir,
+			Symbol:        *barsSym,
 		}
 		cmd, err = collectbars.New(params)
 

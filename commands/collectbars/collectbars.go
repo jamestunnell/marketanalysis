@@ -4,33 +4,34 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
+	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rs/zerolog/log"
 )
 
 type Params struct {
-	Start   time.Time `json:"start"`
-	End     time.Time `json:"end"`
-	Outpath string    `json:"outpath"`
-	Symbol  string    `json:"symbol"`
+	Start         time.Time `json:"start"`
+	End           time.Time `json:"end"`
+	CollectionDir string    `json:"collectionDir"`
+	Symbol        string    `json:"symbol"`
 }
 
 type Command struct {
 	*Params
+	Store collection.Store
 }
 
 var (
 	errEndBeforeStart = errors.New("end time is before start")
 	errNoSymbol       = errors.New("no symbol given")
-	errOutdirNotExist = errors.New("outdir does not exist")
 )
 
 func New(params *Params) (*Command, error) {
+	const fmtNewStoreFailed = "failed to make store for collection dir '%s': %w"
+
 	if params.Symbol == "" {
 		return nil, errNoSymbol
 	}
@@ -39,21 +40,22 @@ func New(params *Params) (*Command, error) {
 		return nil, errEndBeforeStart
 	}
 
-	_, err := os.Stat(filepath.Dir(params.Outpath))
+	store, err := collection.NewDirStore(params.CollectionDir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, errOutdirNotExist
-		} else {
-			return nil, fmt.Errorf("failed to stat outpath: %w", err)
-		}
+		err = fmt.Errorf(fmtNewStoreFailed, params.CollectionDir, err)
+
+		return nil, err
 	}
 
-	cmd := &Command{Params: params}
+	cmd := &Command{
+		Params: params,
+		Store:  store,
+	}
 
 	return cmd, nil
 }
 
-func (params *Params) Format() string {
+func (params *Params) FormatParams() string {
 	d, err := json.Marshal(params)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to marshal collectbars.Params")
@@ -65,18 +67,10 @@ func (params *Params) Format() string {
 }
 
 func (cmd *Command) Run() error {
-	fmt.Printf("params: %s\n", cmd.Format())
+	fmt.Printf("params: %s\n", cmd.FormatParams())
 
 	fmt.Printf("start time: %s\n", cmd.Start.Format(time.RFC3339))
 	fmt.Printf("end time: %s\n", cmd.End.Format(time.RFC3339))
-
-	fmt.Printf("creating JSON Lines data file %s\n", cmd.Outpath)
-	outFile, err := os.Create(cmd.Outpath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file %s: %w", cmd.Outpath, err)
-	}
-
-	fmt.Printf("collecting bars for %s\n", cmd.Symbol)
 
 	alpacaBars, err := marketdata.GetBars(cmd.Symbol, marketdata.GetBarsRequest{
 		TimeFrame: marketdata.OneMin,
@@ -85,43 +79,54 @@ func (cmd *Command) Run() error {
 		AsOf:      "-",
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get bars: %w\n", err)
+		return fmt.Errorf("failed to get bars: %w", err)
 	}
 
 	fmt.Printf("collected %d bars\n", len(alpacaBars))
 
-	fmt.Println("writing bar data to file")
-
-	totalBytes := 0
-
-	for _, alpacaBar := range alpacaBars {
-		bar := models.NewFromAlpacaBar(alpacaBar)
-
-		d, err := json.Marshal(bar)
-		if err != nil {
-			return fmt.Errorf("failed to marshal JSON for bar\n: - bar value: %v\n - error: %w", bar, err)
-		}
-
-		n, err := outFile.Write(d)
-		if err != nil {
-			return fmt.Errorf("failed to write bar data to file: %w", err)
-		}
-
-		totalBytes += n
-
-		n, err = outFile.WriteString("\n")
-		if err != nil {
-			return fmt.Errorf("failed to write newline delimiter to file: %w", err)
-		}
-
-		totalBytes += n
+	bars := make([]*models.Bar, len(alpacaBars))
+	for i, alpacaBar := range alpacaBars {
+		bars[i] = models.NewFromAlpacaBar(alpacaBar)
 	}
 
-	if err = outFile.Close(); err != nil {
-		return fmt.Errorf("failed to close file: %w", err)
+	exists, err := collection.Exists(cmd.Store)
+	if err != nil {
+		return fmt.Errorf("failed to check if collection exists: %w", err)
 	}
 
-	fmt.Printf("wrote %d bytes\n", totalBytes)
+	var c collection.Collection
+
+	if exists {
+		c, err = collection.Load(cmd.Store)
+		if err != nil {
+			return fmt.Errorf("failed to load collection: %w", err)
+		}
+
+		sym := c.Info().Symbol
+		if sym != cmd.Symbol {
+			err = fmt.Errorf(
+				"collection symbol '%s' does not match given '%s'", sym, cmd.Symbol)
+
+			return err
+		}
+
+		added := c.AddBars(bars)
+
+		fmt.Printf("added %d bars to existing collection", added)
+	} else {
+		info := collection.NewInfo(cmd.Symbol, collection.Resolution1Min)
+
+		c, err = collection.New(info, bars)
+		if err != nil {
+			return fmt.Errorf("failed to create new collection: %w", err)
+		}
+
+		fmt.Println("created new collection")
+	}
+
+	if err = c.Store(cmd.Store); err != nil {
+		return fmt.Errorf("failed to store collection: %w", err)
+	}
 
 	return nil
 }
