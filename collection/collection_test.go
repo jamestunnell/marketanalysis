@@ -22,11 +22,19 @@ func TestCollection(t *testing.T) {
 
 	c, err := collection.New(info, bars)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = c.Store(store)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
+	c2, err := collection.Load(store)
+
+	require.NoError(t, err)
+
+	// spot checks
+	assert.Equal(t, c.Info().Symbol, c2.Info().Symbol)
+	assert.Equal(t, len(c.GetBars(c.Timespan())), len(c2.GetBars(c2.Timespan())))
 }
 
 func makeTestStore(t *testing.T) (s collection.Store, cleanup func()) {
@@ -71,7 +79,7 @@ func makeTestBars(t *testing.T) []*models.Bar {
 
 	require.NoError(t, f.Close())
 
-	bars, err := models.LoadBars(fname)
+	bars, err := models.LoadBarsFromFile(fname)
 
 	require.NoError(t, err)
 

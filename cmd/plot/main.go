@@ -68,7 +68,7 @@ func klineChart(title, seriesName string, bars []*models.Bar) *charts.Kline {
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case bars.FullCommand():
-		bars, err := models.LoadBars(*barsIn)
+		bars, err := models.LoadBarsFromFile(*barsIn)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to load bars")
 		}

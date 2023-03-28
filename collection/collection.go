@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -27,6 +28,35 @@ const (
 	BarsItemName = "bars.jsonl"
 	InfoItemName = "info.json"
 )
+
+func Load(store Store) (Collection, error) {
+	d, err := store.LoadItem(InfoItemName)
+	if err != nil {
+		return nil, fmt.Errorf("failed load info item: %w", err)
+	}
+
+	var info Info
+	if err = json.Unmarshal(d, &info); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
+	}
+
+	d, err = store.LoadItem(BarsItemName)
+	if err != nil {
+		return nil, fmt.Errorf("failed load bars item: %w", err)
+	}
+
+	bars, err := models.LoadBars(bytes.NewReader(d))
+	if err != nil {
+		return nil, fmt.Errorf("failed process bars data: %w", err)
+	}
+
+	c := &collection{
+		info: &info,
+		bars: bars,
+	}
+
+	return c, nil
+}
 
 func New(info *Info, bars []*models.Bar) (Collection, error) {
 	c := &collection{
@@ -61,25 +91,6 @@ func (c *collection) AddBars(bars []*models.Bar) {
 	c.bars = append(c.bars, bars...)
 }
 
-// func Load(store Store) (*Collection, error) {
-// 	d, err := store.LoadItem(InfoItemName)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed load info item: %w", err)
-// 	}
-
-// 	var info Info
-// 	if err = json.Unmarshal(d, &info); err != nil {
-// 		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
-// 	}
-
-// 	c := &Collection{
-// 		Store: store,
-// 		Info:  &info,
-// 	}
-
-// 	return c, nil
-// }
-
 func (c *collection) Store(s Store) error {
 	d, err := json.Marshal(c.info)
 	if err != nil {
@@ -91,7 +102,14 @@ func (c *collection) Store(s Store) error {
 		return fmt.Errorf("failed store info item: %w", err)
 	}
 
-	err = models.StoreBars(c.bars, BarsItemName)
+	var b bytes.Buffer
+
+	err = models.StoreBars(c.bars, &b)
+	if err != nil {
+		return fmt.Errorf("failed make bars data: %w", err)
+	}
+
+	err = s.StoreItem(BarsItemName, b.Bytes())
 	if err != nil {
 		return fmt.Errorf("failed store bars item: %w", err)
 	}

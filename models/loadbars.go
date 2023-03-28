@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 )
 
-func LoadBars(fpath string) ([]*Bar, error) {
+func LoadBarsFromFile(fpath string) ([]*Bar, error) {
 	f, err := os.Open(fpath)
 	if err != nil {
 		err = fmt.Errorf("failed to open file %s: %w", fpath, err)
@@ -17,7 +18,11 @@ func LoadBars(fpath string) ([]*Bar, error) {
 
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
+	return LoadBars(f)
+}
+
+func LoadBars(r io.Reader) ([]*Bar, error) {
+	scanner := bufio.NewScanner(r)
 	bars := make([]*Bar, 0)
 	line := 1
 
@@ -48,5 +53,5 @@ func LoadBars(fpath string) ([]*Bar, error) {
 		return []*Bar{}, err
 	}
 
-	return bars, err
+	return bars, nil
 }
