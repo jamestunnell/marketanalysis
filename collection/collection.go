@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/models/bar"
 	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
 )
@@ -13,14 +13,14 @@ import (
 type Collection interface {
 	Info() *Info
 	Timespan() timespan.TimeSpan
-	GetBars(ts timespan.TimeSpan) []*models.Bar
-	AddBars([]*models.Bar) int
+	GetBars(ts timespan.TimeSpan) []*bar.Bar
+	AddBars([]*bar.Bar) int
 
 	Store(s Store) error
 }
 
 type collection struct {
-	bars  []*models.Bar
+	bars  []*bar.Bar
 	info  *Info
 	store Store
 }
@@ -64,7 +64,7 @@ func Load(store Store) (Collection, error) {
 		return nil, fmt.Errorf("failed load bars item: %w", err)
 	}
 
-	bars, err := models.LoadBars(bytes.NewReader(d))
+	bars, err := bar.LoadBars(bytes.NewReader(d))
 	if err != nil {
 		return nil, fmt.Errorf("failed process bars data: %w", err)
 	}
@@ -77,7 +77,7 @@ func Load(store Store) (Collection, error) {
 	return c, nil
 }
 
-func New(info *Info, bars []*models.Bar) (Collection, error) {
+func New(info *Info, bars []*bar.Bar) (Collection, error) {
 	c := &collection{
 		info: info,
 		bars: bars,
@@ -91,11 +91,11 @@ func (c *collection) Info() *Info {
 }
 
 func (c *collection) Timespan() timespan.TimeSpan {
-	return models.BarsTimespan(c.bars)
+	return bar.BarsTimespan(c.bars)
 }
 
-func (c *collection) GetBars(ts timespan.TimeSpan) []*models.Bar {
-	bars := []*models.Bar{}
+func (c *collection) GetBars(ts timespan.TimeSpan) []*bar.Bar {
+	bars := []*bar.Bar{}
 
 	for _, bar := range c.bars {
 		if ts.Contains(bar.Timestamp) {
@@ -106,7 +106,7 @@ func (c *collection) GetBars(ts timespan.TimeSpan) []*models.Bar {
 	return bars
 }
 
-func (c *collection) AddBars(bars []*models.Bar) int {
+func (c *collection) AddBars(bars []*bar.Bar) int {
 	added := 0
 
 	for _, bar := range bars {
@@ -141,7 +141,7 @@ func (c *collection) Store(s Store) error {
 
 	var b bytes.Buffer
 
-	err = models.StoreBars(c.bars, &b)
+	err = bar.StoreBars(c.bars, &b)
 	if err != nil {
 		return fmt.Errorf("failed make bars data: %w", err)
 	}

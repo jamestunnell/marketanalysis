@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/jamestunnell/marketanalysis/collection"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/models/bar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,7 +57,7 @@ func makeTestStore(t *testing.T) (s collection.Store, cleanup func()) {
 	return store, cleanup
 }
 
-func makeTestBars(t *testing.T) []*models.Bar {
+func makeTestBars(t *testing.T) []*bar.Bar {
 	const testBarsJSON = `
 {"t":"2023-03-16T13:30:00Z","o":386.82,"h":387.32,"l":386.72,"c":386.72,"v":725510,"n":5656,"vw":386.97766}
 {"t":"2023-03-16T13:31:00Z","o":386.72,"h":386.89,"l":386.5,"c":386.56,"v":481409,"n":4916,"vw":386.70493}
@@ -79,7 +79,7 @@ func makeTestBars(t *testing.T) []*models.Bar {
 
 	require.NoError(t, f.Close())
 
-	bars, err := models.LoadBarsFromFile(fname)
+	bars, err := bar.LoadBarsFromFile(fname)
 
 	require.NoError(t, err)
 

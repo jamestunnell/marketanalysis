@@ -1,4 +1,4 @@
-package models
+package bar
 
 import (
 	"github.com/rickb777/date/timespan"

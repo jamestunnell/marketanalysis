@@ -1,4 +1,4 @@
-package models
+package bar
 
 import (
 	"encoding/json"
@@ -26,6 +26,21 @@ type BarCommon struct {
 	Volume     uint64  `json:"v"`
 	TradeCount uint64  `json:"n"`
 	VWAP       float32 `json:"vw"`
+}
+
+func New(t time.Time, o, h, l, c float32, vol, trades uint64, vwap float32) *Bar {
+	return &Bar{
+		Timestamp: t,
+		BarCommon: &BarCommon{
+			Open:       o,
+			High:       h,
+			Low:        l,
+			Close:      c,
+			Volume:     vol,
+			TradeCount: trades,
+			VWAP:       vwap,
+		},
+	}
 }
 
 func NewFromAlpacaBar(alpacaBar marketdata.Bar) *Bar {

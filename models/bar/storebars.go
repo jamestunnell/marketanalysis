@@ -1,4 +1,4 @@
-package models
+package bar
 
 import (
 	"bufio"

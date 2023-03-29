@@ -8,7 +8,7 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/models/bar"
 	"github.com/rs/zerolog/log"
 )
 
@@ -22,7 +22,7 @@ var (
 	barsSeries  = bars.Flag("series", "Data series name").String()
 )
 
-func klineChart(title, seriesName string, bars []*models.Bar) *charts.Kline {
+func klineChart(title, seriesName string, bars []*bar.Bar) *charts.Kline {
 	if seriesName == "" {
 		seriesName = "data series"
 	}
@@ -68,7 +68,7 @@ func klineChart(title, seriesName string, bars []*models.Bar) *charts.Kline {
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case bars.FullCommand():
-		bars, err := models.LoadBarsFromFile(*barsIn)
+		bars, err := bar.LoadBarsFromFile(*barsIn)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to load bars")
 		}
