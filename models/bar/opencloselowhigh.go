@@ -1,3 +1,3 @@
 package bar
 
-type OpenCloseLowHigh [4]float32
+type OpenCloseLowHigh [4]float64

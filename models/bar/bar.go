@@ -19,16 +19,16 @@ type BarJSON struct {
 }
 
 type BarCommon struct {
-	Open       float32 `json:"o"`
-	High       float32 `json:"h"`
-	Low        float32 `json:"l"`
-	Close      float32 `json:"c"`
+	Open       float64 `json:"o"`
+	High       float64 `json:"h"`
+	Low        float64 `json:"l"`
+	Close      float64 `json:"c"`
 	Volume     uint64  `json:"v"`
 	TradeCount uint64  `json:"n"`
-	VWAP       float32 `json:"vw"`
+	VWAP       float64 `json:"vw"`
 }
 
-func New(t time.Time, o, h, l, c float32, vol, trades uint64, vwap float32) *Bar {
+func New(t time.Time, o, h, l, c float64, vol, trades uint64, vwap float64) *Bar {
 	return &Bar{
 		Timestamp: t,
 		BarCommon: &BarCommon{
@@ -45,13 +45,13 @@ func New(t time.Time, o, h, l, c float32, vol, trades uint64, vwap float32) *Bar
 
 func NewFromAlpacaBar(alpacaBar marketdata.Bar) *Bar {
 	bc := &BarCommon{
-		Open:       float32(alpacaBar.Open),
-		High:       float32(alpacaBar.High),
-		Low:        float32(alpacaBar.Low),
-		Close:      float32(alpacaBar.Close),
+		Open:       alpacaBar.Open,
+		High:       alpacaBar.High,
+		Low:        alpacaBar.Low,
+		Close:      alpacaBar.Close,
 		Volume:     alpacaBar.Volume,
 		TradeCount: alpacaBar.TradeCount,
-		VWAP:       float32(alpacaBar.VWAP),
+		VWAP:       alpacaBar.VWAP,
 	}
 
 	return &Bar{

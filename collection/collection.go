@@ -141,6 +141,8 @@ func (c *collection) Store(s Store) error {
 
 	var b bytes.Buffer
 
+	c.SortBars()
+
 	err = bar.StoreBars(c.bars, &b)
 	if err != nil {
 		return fmt.Errorf("failed make bars data: %w", err)
@@ -152,4 +154,10 @@ func (c *collection) Store(s Store) error {
 	}
 
 	return nil
+}
+
+func (c *collection) SortBars() {
+	slices.SortFunc(c.bars, func(a, b *bar.Bar) bool {
+		return a.Timestamp.Before(b.Timestamp)
+	})
 }
