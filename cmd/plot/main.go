@@ -136,11 +136,7 @@ func main() {
 
 		chart.Render(f)
 	case atrCmd.FullCommand():
-		atr, err := indicators.NewATR(*atrLength)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to make ATR indicator")
-		}
-
+		atr := indicators.NewATR(*atrLength)
 		warmupBars := bars[:atr.WarmupPeriod()]
 		remainingBars := bars[atr.WarmupPeriod():]
 

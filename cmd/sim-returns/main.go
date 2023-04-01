@@ -97,18 +97,26 @@ func printStats(x []float64) {
 
 func printProbs(vals []float64, start float64) {
 	fmt.Println("Loss Probabilities:")
-	fmt.Printf("  25%% or more: %f%%\n", 100.0*probLE(vals, start*0.75))
-	fmt.Printf("  50%% or more: %f%%\n", 100.0*probLE(vals, start*0.5))
-	fmt.Printf("  75%% or more: %f%%\n", 100.0*probLE(vals, start*0.25))
-	fmt.Printf("  100%% or more: %f%%\n", 100.0*probLE(vals, 0))
+	fmt.Printf("  0 - 25%%: %f%%\n", 100.0*probInRange(vals, start*0.75, start))
+	fmt.Printf("  25 - 50%%: %f%%\n", 100.0*probInRange(vals, start*0.5, start*0.75))
+	fmt.Printf("  50 - 75%%: %f%%\n", 100.0*probInRange(vals, start*0.25, start*0.5))
+	fmt.Printf("  100+%%: %f%%\n", 100.0*probLE(vals, 0))
 	fmt.Println("")
 
 	fmt.Println("Profit Probabilities:")
-	fmt.Printf("  25%% or more: %f%%\n", 100.0*probGE(vals, start*1.25))
-	fmt.Printf("  50%% or more: %f%%\n", 100.0*probGE(vals, start*1.5))
-	fmt.Printf("  75%% or more: %f%%\n", 100.0*probGE(vals, start*1.75))
-	fmt.Printf("  100%% or more: %f%%\n", 100.0*probGE(vals, start*2))
+	fmt.Printf("  0 - 25%%: %f%%\n", 100.0*probInRange(vals, start, start*1.25))
+	fmt.Printf("  25 - 50%%: %f%%\n", 100.0*probInRange(vals, start*1.25, start*1.5))
+	fmt.Printf("  50 - 75%%: %f%%\n", 100.0*probInRange(vals, start*1.5, start*1.75))
+	fmt.Printf("  100+%%: %f%%\n", 100.0*probGE(vals, start*2))
 	fmt.Println("")
+}
+
+func probInRange(vals []float64, min, max float64) float64 {
+	inRange := func(val float64) bool {
+		return val >= min && val < max
+	}
+
+	return float64(count(vals, inRange)) / float64(len(vals))
 }
 
 func probLE(vals []float64, level float64) float64 {
@@ -157,6 +165,7 @@ func getParams() *Params {
 	}
 
 	if *runs == 0 {
+
 		*runs = RunsDefault
 	}
 

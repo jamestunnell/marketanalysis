@@ -17,12 +17,8 @@ var (
 	errsNonPositiveWarmup = errors.New("length is not positive")
 )
 
-func NewATR(length int) (*ATR, error) {
-	if length <= 0 {
-		return nil, errsNonPositiveWarmup
-	}
-
-	return &ATR{length: length}, nil
+func NewATR(length int) *ATR {
+	return &ATR{length: length}
 }
 
 func (atr *ATR) WarmupPeriod() int {
