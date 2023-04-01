@@ -8,8 +8,5 @@ func (b *Bar) HeikinAshi(prev *Bar) *Bar {
 	high := math.Max(math.Max(b.High, b.Open), b.Close)
 	low := math.Max(math.Max(b.Low, b.Open), b.Close)
 
-	bar := New(
-		b.Timestamp, open, high, low, close, b.Volume, b.TradeCount, b.VWAP)
-
-	return bar
+	return New(b.Timestamp, open, high, low, close)
 }

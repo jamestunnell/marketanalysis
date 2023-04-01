@@ -2,9 +2,9 @@ package prediction_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models/bar"
 	"github.com/jamestunnell/marketanalysis/models/bar/testutil"
 	"github.com/jamestunnell/marketanalysis/prediction"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const trainingBarsJSON = `
+const testBarsJSON = `
 {"t":"2023-03-03T14:00:00Z","o":399.87,"h":400.12,"l":399.83,"c":400.09,"v":72296,"n":350,"vw":399.927154}
 {"t":"2023-03-03T14:01:00Z","o":400.1,"h":400.13,"l":399.97,"c":399.99,"v":33978,"n":209,"vw":400.058277}
 {"t":"2023-03-03T14:02:00Z","o":400.04,"h":400.09,"l":400,"c":400,"v":5943,"n":74,"vw":400.034729}
@@ -76,24 +76,61 @@ const trainingBarsJSON = `
 {"t":"2023-03-03T14:59:00Z","o":400.48,"h":400.57,"l":400.42,"c":400.55,"v":193058,"n":1692,"vw":400.507277}
 `
 
-func TestBarPredictor(t *testing.T) {
+const nTrainingBars = 30
+
+func TestBarPredictorMock(t *testing.T) {
+	const atrLen = 5
+
 	ctrl := gomock.NewController(t)
 	p := mock_prediction.NewMockPredictor(ctrl)
-	atr := indicators.NewATR(5)
 
-	bp := prediction.NewBarPredictor(2, atr, p)
+	p.EXPECT().InputCount().Return(9) // two prev + cur bar
+	p.EXPECT().OutputCount().Return(3)
+
+	bp, err := prediction.NewBarPredictor(time.Minute, atrLen, p)
+
+	require.NoError(t, err)
 
 	// no bars - can't train
 	assert.Error(t, bp.Train([]*bar.Bar{}))
 
-	bars := makeTestBars(t, trainingBarsJSON)
+	bars := makeTestBars(t, testBarsJSON)
 
 	// not enough bars for warmup period and training
 	assert.Error(t, bp.Train(bars[:5]))
 
-	p.EXPECT().Train(gomock.Len(len(bars) - 8))
+	// one less because the warmup only includes prev bars, but prev plus
+	// current is needed for each training bar
+	wp := bp.TotalWarmupPeriod()
+	nExpected := nTrainingBars - wp - 1
 
-	assert.NoError(t, bp.Train(bars))
+	p.EXPECT().Train(gomock.Len(nExpected))
+
+	// training succeeds
+	assert.NoError(t, bp.Train(bars[:nTrainingBars]))
+
+	warmupBars := bars[nTrainingBars : nTrainingBars+wp]
+	curBar := bars[nTrainingBars+wp]
+
+	// not warmed up for prediction though
+	_, err = bp.Predict(curBar)
+
+	assert.Error(t, err)
+
+	require.NoError(t, bp.WarmUp(warmupBars))
+
+	p.EXPECT().Predict(gomock.Len(9)).Return([]float64{1.0, 1.0, 1.0}, nil)
+
+	predBar, err := bp.Predict(curBar)
+
+	require.NoError(t, err)
+
+	atr := bp.ATR.Current()
+
+	assert.InDelta(t, curBar.Close, predBar.Open, 1e-6)
+	assert.InDelta(t, curBar.Close+atr, predBar.Close, 1e-6)
+	assert.InDelta(t, curBar.Close+2*atr, predBar.High, 1e-6)
+	assert.InDelta(t, curBar.Close-atr, predBar.Low, 1e-6)
 }
 
 func makeTestBars(t *testing.T, jsonStr string) []*bar.Bar {

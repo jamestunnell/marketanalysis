@@ -4,8 +4,15 @@ import (
 	"github.com/jamestunnell/marketanalysis/models/bar"
 )
 
-func MeasureBar(b *bar.Bar) (body, top, bottom float64) {
-	body = (b.Close - b.Open)
+type BarMeasure struct {
+	Body, Top, Bottom float64
+}
+
+func NewBarMeasure(b *bar.Bar, atr float64) *BarMeasure {
+	body := (b.Close - b.Open)
+
+	var top float64
+	var bottom float64
 
 	if body > 0 {
 		top = b.High - b.Close
@@ -15,5 +22,46 @@ func MeasureBar(b *bar.Bar) (body, top, bottom float64) {
 		bottom = b.Close - b.Low
 	}
 
-	return
+	body /= atr
+	top /= atr
+	bottom /= atr
+
+	return &BarMeasure{
+		Body:   body,
+		Top:    top,
+		Bottom: bottom,
+	}
+}
+
+func (m *BarMeasure) ToFloat64s() []float64 {
+	return []float64{m.Body, m.Top, m.Bottom}
+}
+
+func (m *BarMeasure) ToOHLC(atr, lastClose float64) *bar.OHLC {
+	body := m.Body * atr
+	top := m.Top * atr
+	bottom := m.Bottom * atr
+
+	o := lastClose
+	c := o + body
+
+	var l float64
+	var h float64
+
+	if body > 0 {
+		h = c + top
+		l = o - bottom
+	} else {
+		h = o + top
+		l = c - bottom
+	}
+
+	ohlc := &bar.OHLC{
+		Open:  o,
+		High:  h,
+		Low:   l,
+		Close: c,
+	}
+
+	return ohlc
 }

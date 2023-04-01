@@ -3,8 +3,12 @@ package prediction
 //go:generate mockgen -destination=mock_prediction/mocks.go . Predictor
 
 type Predictor interface {
-	Train(elems []*TrainingElem)
-	Predict(ins []float64) []float64
+	InputCount() int
+	OutputCount() int
+	Trained() bool
+
+	Train(elems []*TrainingElem) error
+	Predict(ins []float64) ([]float64, error)
 }
 
 type TrainingElem struct {

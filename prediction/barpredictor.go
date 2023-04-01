@@ -3,134 +3,188 @@ package prediction
 import (
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models/bar"
-	"golang.org/x/exp/slices"
 )
 
+type BarPredictorCore struct {
+	barDur    time.Duration
+	nPrevBars int
+	ATR       *indicators.ATR
+	prev      []*BarMeasure
+	warm      bool
+}
+
 type BarPredictor struct {
-	depth     int
-	atr       *indicators.ATR
+	*BarPredictorCore
 	predictor Predictor
 }
 
-type warmupResult struct {
-	Prev      [][]float64
-	Remaining []*bar.Bar
-}
+var errNotWarmedUp = errors.New("not warmed up")
 
 func NewBarPredictor(
-	depth int,
-	atr *indicators.ATR,
-	p Predictor) *BarPredictor {
-	return &BarPredictor{
-		depth:     depth,
-		atr:       atr,
-		predictor: p,
+	barDur time.Duration,
+	atrLen int,
+	p Predictor) (*BarPredictor, error) {
+	const nBarMeasureFeatures = 3
+
+	nIn := p.InputCount()
+	if (nIn % nBarMeasureFeatures) != 0 {
+		return nil, fmt.Errorf("predictor input count %d is not a multiple of 3", nIn)
 	}
+
+	nOut := p.OutputCount()
+	if nOut != nBarMeasureFeatures {
+		return nil, fmt.Errorf("predictor output count %d is not 3", nOut)
+	}
+
+	nInBars := nIn / nBarMeasureFeatures
+	nPrevBars := nInBars - 1
+	if nPrevBars <= 0 {
+		return nil, fmt.Errorf("prev bar count %d is not positive", nPrevBars)
+	}
+
+	core := &BarPredictorCore{
+		barDur:    barDur,
+		nPrevBars: nPrevBars,
+		ATR:       indicators.NewATR(atrLen),
+		prev:      []*BarMeasure{},
+		warm:      false,
+	}
+
+	bp := &BarPredictor{
+		BarPredictorCore: core,
+		predictor:        p,
+	}
+
+	return bp, nil
 }
 
-func (bp *BarPredictor) warmup(bars []*bar.Bar) (*warmupResult, error) {
-	wp := bp.atr.WarmupPeriod()
-	initLen := bp.depth + wp
-
-	if len(bars) <= initLen {
-		err := errors.New("too few bars")
-
-		return nil, err
+func (bp *BarPredictorCore) WarmUp(bars []*bar.Bar) error {
+	wp := bp.TotalWarmupPeriod()
+	if len(bars) != wp {
+		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
 	}
 
-	err := bp.atr.Initialize(bars[:wp])
+	atrWP := bp.ATR.WarmupPeriod()
+	atrWarmupBars := bars[:atrWP]
+
+	err := bp.ATR.WarmUp(atrWarmupBars)
 	if err != nil {
 		err = fmt.Errorf("failed to init ATR indicator: %w", err)
 
-		return nil, err
+		return err
 	}
 
-	atr := bp.atr.Current()
-	prev := [][]float64{}
+	for _, bar := range bars[atrWP:] {
+		m := NewBarMeasure(bar, bp.ATR.Current())
 
-	for i := wp; i < initLen; i++ {
-		bar := bars[i]
-		body, top, bottom := MeasureBar(bar)
+		bp.prev = append(bp.prev, m)
 
-		body /= atr
-		top /= atr
-		bottom /= atr
-
-		prev = append(prev, []float64{body, top, bottom})
-
-		atr = bp.atr.Update(bar)
+		_ = bp.ATR.Update(bar)
 	}
 
-	result := &warmupResult{
-		Prev:      prev,
-		Remaining: bars[initLen:],
-	}
-
-	return result, nil
-}
-
-func (bp *BarPredictor) Train(allBars []*bar.Bar) error {
-	result, err := bp.warmup(allBars)
-	if err != nil {
-		return fmt.Errorf("failed to warm up: %w")
-	}
-
-	atr := bp.atr.Current()
-	prev := result.Prev
-	elems := []*TrainingElem{}
-
-	for _, bar := range result.Remaining {
-		body, top, bottom := MeasureBar(bar)
-
-		body /= atr
-		top /= atr
-		bottom /= atr
-
-		cur := []float64{body, top, bottom}
-		elem := &TrainingElem{
-			Inputs:  combine(prev),
-			Outputs: cur,
-		}
-
-		elems = append(elems, elem)
-
-		atr = bp.atr.Update(bar)
-
-		// shift prev
-		for i := 0; i < (bp.depth - 1); i++ {
-			prev[i] = prev[i+1]
-		}
-		result.Prev[bp.depth-1] = cur
-	}
-
-	bp.predictor.Train(elems)
+	bp.warm = true
 
 	return nil
 }
 
-func (bp *BarPredictor) Predict(allBars []*bar.Bar) ([]*bar.Bar, error) {
-	result, err := bp.warmup(allBars)
-	if err != nil {
-		return []*bar.Bar{}, fmt.Errorf("failed to warm up: %w")
-	}
-
-	prev := result.Prev
-	for _, bar := range result.Remaining {
-		// TODO
-	}
-
-	return []*bar.Bar{}, nil
+func (bp *BarPredictorCore) TotalWarmupPeriod() int {
+	return bp.ATR.WarmupPeriod() + bp.nPrevBars
 }
 
-func combine(fSlices [][]float64) []float64 {
+func (bp *BarPredictor) Train(bars []*bar.Bar) error {
+	trainingCore := &BarPredictorCore{
+		barDur:    bp.barDur,
+		nPrevBars: bp.nPrevBars,
+		ATR:       indicators.NewATR(bp.ATR.Length()),
+		prev:      []*BarMeasure{},
+		warm:      false,
+	}
+
+	wp := trainingCore.TotalWarmupPeriod()
+	if len(bars) < (wp + 1) {
+		return commonerrs.NewErrMinBarCount("warmup+training", wp+1, len(bars))
+	}
+
+	warmupBars := bars[:wp]
+	trainingBars := bars[wp:]
+
+	if err := trainingCore.WarmUp(warmupBars); err != nil {
+		return fmt.Errorf("failed to ")
+	}
+
+	elems := []*TrainingElem{}
+	cur := NewBarMeasure(trainingBars[0], trainingCore.ATR.Current())
+
+	for i := 1; i < len(trainingBars); i++ {
+		ins := combine(trainingCore.prev, cur)
+		atr := trainingCore.ATR.Update(trainingBars[i])
+		pred := NewBarMeasure(trainingBars[i], atr)
+
+		elem := &TrainingElem{
+			Inputs:  ins,
+			Outputs: pred.ToFloat64s(),
+		}
+
+		elems = append(elems, elem)
+
+		// shift prev
+		for i := 0; i < (trainingCore.nPrevBars - 1); i++ {
+			trainingCore.prev[i] = trainingCore.prev[i+1]
+		}
+		trainingCore.prev[trainingCore.nPrevBars-1] = cur
+		cur = pred
+	}
+
+	return bp.predictor.Train(elems)
+}
+
+func (bp *BarPredictor) Predict(curBar *bar.Bar) (*bar.Bar, error) {
+	if !bp.warm {
+		return nil, errNotWarmedUp
+	}
+
+	atr := bp.ATR.Current()
+	cur := NewBarMeasure(curBar, atr)
+	ins := combine(bp.prev, cur)
+
+	outs, err := bp.predictor.Predict(ins)
+	if err != nil {
+		return nil, fmt.Errorf("failed to predict: %w", err)
+	}
+
+	predM := &BarMeasure{
+		Body:   outs[0],
+		Top:    outs[1],
+		Bottom: outs[2],
+	}
+
+	atr = bp.ATR.Update(curBar)
+
+	tNext := curBar.Timestamp.Add(bp.barDur)
+	predBar := bar.NewFromOHLC(tNext, predM.ToOHLC(atr, curBar.Close))
+
+	// shift prev
+	for i := 0; i < (bp.nPrevBars - 1); i++ {
+		bp.prev[i] = bp.prev[i+1]
+	}
+	bp.prev[bp.nPrevBars-1] = cur
+
+	return predBar, nil
+}
+
+func combine(prev []*BarMeasure, cur *BarMeasure) []float64 {
 	all := []float64{}
 
-	for _, fSlice := range fSlices {
-		all = append(all, slices.Clone(fSlice)...)
+	for _, m := range prev {
+		all = append(all, m.ToFloat64s()...)
 	}
+
+	all = append(all, cur.ToFloat64s()...)
 
 	return all
 }

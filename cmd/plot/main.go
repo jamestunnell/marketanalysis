@@ -59,7 +59,7 @@ func klineChart(title, seriesName string, bars []*bar.Bar) *charts.Kline {
 	y := make([]opts.KlineData, 0)
 	for i := 0; i < len(bars); i++ {
 		x = append(x, bars[i].Timestamp.Format(time.RFC3339))
-		y = append(y, opts.KlineData{Value: bars[i].OpenCloseLowHigh()})
+		y = append(y, opts.KlineData{Value: bars[i].OHLC.Float64s()})
 	}
 
 	kline.SetGlobalOptions(
@@ -140,7 +140,7 @@ func main() {
 		warmupBars := bars[:atr.WarmupPeriod()]
 		remainingBars := bars[atr.WarmupPeriod():]
 
-		err = atr.Initialize(warmupBars)
+		err = atr.WarmUp(warmupBars)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to init ATR indicator")
 		}

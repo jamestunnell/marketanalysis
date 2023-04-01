@@ -34,12 +34,41 @@ func (m *MockPredictor) EXPECT() *MockPredictorMockRecorder {
 	return m.recorder
 }
 
+// InputCount mocks base method.
+func (m *MockPredictor) InputCount() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InputCount")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// InputCount indicates an expected call of InputCount.
+func (mr *MockPredictorMockRecorder) InputCount() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InputCount", reflect.TypeOf((*MockPredictor)(nil).InputCount))
+}
+
+// OutputCount mocks base method.
+func (m *MockPredictor) OutputCount() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutputCount")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// OutputCount indicates an expected call of OutputCount.
+func (mr *MockPredictorMockRecorder) OutputCount() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutputCount", reflect.TypeOf((*MockPredictor)(nil).OutputCount))
+}
+
 // Predict mocks base method.
-func (m *MockPredictor) Predict(arg0 []float64) []float64 {
+func (m *MockPredictor) Predict(arg0 []float64) ([]float64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Predict", arg0)
 	ret0, _ := ret[0].([]float64)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Predict indicates an expected call of Predict.
@@ -49,13 +78,29 @@ func (mr *MockPredictorMockRecorder) Predict(arg0 interface{}) *gomock.Call {
 }
 
 // Train mocks base method.
-func (m *MockPredictor) Train(arg0 []*prediction.TrainingElem) {
+func (m *MockPredictor) Train(arg0 []*prediction.TrainingElem) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Train", arg0)
+	ret := m.ctrl.Call(m, "Train", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Train indicates an expected call of Train.
 func (mr *MockPredictorMockRecorder) Train(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockPredictor)(nil).Train), arg0)
+}
+
+// Trained mocks base method.
+func (m *MockPredictor) Trained() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Trained")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Trained indicates an expected call of Trained.
+func (mr *MockPredictorMockRecorder) Trained() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trained", reflect.TypeOf((*MockPredictor)(nil).Trained))
 }

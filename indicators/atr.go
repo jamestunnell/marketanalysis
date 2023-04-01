@@ -1,8 +1,7 @@
 package indicators
 
 import (
-	"errors"
-
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models/bar"
 )
 
@@ -12,22 +11,22 @@ type ATR struct {
 	current float64
 }
 
-var (
-	errsBarCount          = errors.New("wrong bar count")
-	errsNonPositiveWarmup = errors.New("length is not positive")
-)
-
 func NewATR(length int) *ATR {
 	return &ATR{length: length}
+}
+
+func (atr *ATR) Length() int {
+	return atr.length
 }
 
 func (atr *ATR) WarmupPeriod() int {
 	return atr.length + 1
 }
 
-func (atr *ATR) Initialize(bars []*bar.Bar) error {
-	if len(bars) != atr.WarmupPeriod() {
-		return errsBarCount
+func (atr *ATR) WarmUp(bars []*bar.Bar) error {
+	wp := atr.WarmupPeriod()
+	if len(bars) != wp {
+		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
 	}
 
 	sum := 0.0
