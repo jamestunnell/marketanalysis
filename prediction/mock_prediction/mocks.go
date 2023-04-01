@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	prediction "github.com/jamestunnell/marketanalysis/prediction"
+	training "github.com/patrikeh/go-deep/training"
 )
 
 // MockPredictor is a mock of Predictor interface.
@@ -78,29 +78,15 @@ func (mr *MockPredictorMockRecorder) Predict(arg0 interface{}) *gomock.Call {
 }
 
 // Train mocks base method.
-func (m *MockPredictor) Train(arg0 []*prediction.TrainingElem) error {
+func (m *MockPredictor) Train(arg0 training.Examples, arg1 int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Train", arg0)
+	ret := m.ctrl.Call(m, "Train", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Train indicates an expected call of Train.
-func (mr *MockPredictorMockRecorder) Train(arg0 interface{}) *gomock.Call {
+func (mr *MockPredictorMockRecorder) Train(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockPredictor)(nil).Train), arg0)
-}
-
-// Trained mocks base method.
-func (m *MockPredictor) Trained() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Trained")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Trained indicates an expected call of Trained.
-func (mr *MockPredictorMockRecorder) Trained() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trained", reflect.TypeOf((*MockPredictor)(nil).Trained))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockPredictor)(nil).Train), arg0, arg1)
 }

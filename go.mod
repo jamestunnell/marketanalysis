@@ -10,6 +10,7 @@ require (
 	github.com/go-echarts/go-echarts/v2 v2.2.5
 	github.com/golang/mock v1.6.0
 	github.com/montanaflynn/stats v0.7.0
+	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5
 	github.com/rickb777/date v1.20.1
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.2

@@ -8,6 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/patrikeh/go-deep/training"
 )
 
 type BarPredictorCore struct {
@@ -96,7 +97,7 @@ func (bp *BarPredictorCore) TotalWarmupPeriod() int {
 	return bp.ATR.WarmupPeriod() + bp.nPrevBars
 }
 
-func (bp *BarPredictor) Train(bars []*bar.Bar) error {
+func (bp *BarPredictor) Train(bars []*bar.Bar, nIter int) error {
 	trainingCore := &BarPredictorCore{
 		barDur:    bp.barDur,
 		nPrevBars: bp.nPrevBars,
@@ -117,7 +118,7 @@ func (bp *BarPredictor) Train(bars []*bar.Bar) error {
 		return fmt.Errorf("failed to ")
 	}
 
-	elems := []*TrainingElem{}
+	examples := training.Examples{}
 	cur := NewBarMeasure(trainingBars[0], trainingCore.ATR.Current())
 
 	for i := 1; i < len(trainingBars); i++ {
@@ -125,12 +126,12 @@ func (bp *BarPredictor) Train(bars []*bar.Bar) error {
 		atr := trainingCore.ATR.Update(trainingBars[i])
 		pred := NewBarMeasure(trainingBars[i], atr)
 
-		elem := &TrainingElem{
-			Inputs:  ins,
-			Outputs: pred.ToFloat64s(),
+		example := training.Example{
+			Input:    ins,
+			Response: pred.ToFloat64s(),
 		}
 
-		elems = append(elems, elem)
+		examples = append(examples, example)
 
 		// shift prev
 		for i := 0; i < (trainingCore.nPrevBars - 1); i++ {
@@ -140,7 +141,7 @@ func (bp *BarPredictor) Train(bars []*bar.Bar) error {
 		cur = pred
 	}
 
-	return bp.predictor.Train(elems)
+	return bp.predictor.Train(examples, nIter)
 }
 
 func (bp *BarPredictor) Predict(curBar *bar.Bar) (*bar.Bar, error) {
