@@ -4,6 +4,7 @@ package prediction
 
 type Predictor interface {
 	Train(elems []*TrainingElem)
+	Predict(ins []float64) []float64
 }
 
 type TrainingElem struct {

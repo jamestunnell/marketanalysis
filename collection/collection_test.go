@@ -6,6 +6,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models/bar/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,20 +67,7 @@ func makeTestBars(t *testing.T) []*bar.Bar {
 {"t":"2023-03-16T13:34:00Z","o":386.64,"h":387.18,"l":386.48,"c":387.099,"v":444607,"n":4265,"vw":386.76712}
 `
 
-	f, err := os.CreateTemp("", "collectiontests*")
-
-	require.NoError(t, err)
-
-	fname := f.Name()
-	defer os.Remove(fname)
-
-	_, err = f.WriteString(testBarsJSON)
-
-	require.NoError(t, err)
-
-	require.NoError(t, f.Close())
-
-	bars, err := bar.LoadBarsFromFile(fname)
+	bars, err := testutil.MakeTestBars(testBarsJSON)
 
 	require.NoError(t, err)
 

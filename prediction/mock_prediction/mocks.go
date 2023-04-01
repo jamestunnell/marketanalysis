@@ -34,6 +34,20 @@ func (m *MockPredictor) EXPECT() *MockPredictorMockRecorder {
 	return m.recorder
 }
 
+// Predict mocks base method.
+func (m *MockPredictor) Predict(arg0 []float64) []float64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Predict", arg0)
+	ret0, _ := ret[0].([]float64)
+	return ret0
+}
+
+// Predict indicates an expected call of Predict.
+func (mr *MockPredictorMockRecorder) Predict(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Predict", reflect.TypeOf((*MockPredictor)(nil).Predict), arg0)
+}
+
 // Train mocks base method.
 func (m *MockPredictor) Train(arg0 []*prediction.TrainingElem) {
 	m.ctrl.T.Helper()

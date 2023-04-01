@@ -26,15 +26,15 @@ func NewBarPredictor(
 	}
 }
 
-func (bc *BarPredictor) Train(trainingBars []*bar.Bar) error {
+func (bc *BarPredictor) Train(td []*bar.Bar) error {
 	wp := bc.atr.WarmupPeriod()
 	initLen := bc.depth + wp
 
-	if len(trainingBars) <= initLen {
+	if len(td) <= initLen {
 		return errors.New("not enough bars for init and training")
 	}
 
-	err := bc.atr.Initialize(trainingBars[:wp])
+	err := bc.atr.Initialize(td[:wp])
 	if err != nil {
 		return fmt.Errorf("failed to init ATR indicator: %w", err)
 	}
@@ -43,7 +43,7 @@ func (bc *BarPredictor) Train(trainingBars []*bar.Bar) error {
 	prev := [][]float64{}
 
 	for i := wp; i < initLen; i++ {
-		bar := trainingBars[i]
+		bar := td[i]
 		body, top, bottom := MeasureBar(bar)
 
 		body /= atr
@@ -56,8 +56,8 @@ func (bc *BarPredictor) Train(trainingBars []*bar.Bar) error {
 	}
 
 	elems := []*TrainingElem{}
-	for i := initLen; i < len(trainingBars); i++ {
-		bar := trainingBars[i]
+	for i := initLen; i < len(td); i++ {
+		bar := td[i]
 		body, top, bottom := MeasureBar(bar)
 
 		body /= atr
