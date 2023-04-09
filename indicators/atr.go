@@ -2,12 +2,12 @@ package indicators
 
 import (
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type ATR struct {
 	length  int
-	prevBar *bar.Bar
+	prevBar *models.Bar
 	current float64
 }
 
@@ -23,7 +23,7 @@ func (atr *ATR) WarmupPeriod() int {
 	return atr.length + 1
 }
 
-func (atr *ATR) WarmUp(bars []*bar.Bar) error {
+func (atr *ATR) WarmUp(bars []*models.Bar) error {
 	wp := atr.WarmupPeriod()
 	if len(bars) != wp {
 		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
@@ -47,7 +47,7 @@ func (atr *ATR) Current() float64 {
 	return atr.current
 }
 
-func (atr *ATR) Update(bar *bar.Bar) float64 {
+func (atr *ATR) Update(bar *models.Bar) float64 {
 	tr := TrueRange(bar, atr.prevBar)
 	n := float64(atr.length)
 

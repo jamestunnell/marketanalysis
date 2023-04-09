@@ -1,8 +1,9 @@
-package bar
+package models
 
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
@@ -18,13 +19,20 @@ type BarJSON struct {
 	*OHLC
 }
 
+type OHLC struct {
+	Open  float64 `json:"o"`
+	High  float64 `json:"h"`
+	Low   float64 `json:"l"`
+	Close float64 `json:"c"`
+}
+
 // type BarCommon struct {
 // 	Volume     uint64  `json:"v"`
 // 	TradeCount uint64  `json:"n"`
 // 	VWAP       float64 `json:"vw"`
 // }
 
-func New(t time.Time, o, h, l, c float64) *Bar {
+func NewBar(t time.Time, o, h, l, c float64) *Bar {
 	return &Bar{
 		Timestamp: t,
 		OHLC: &OHLC{
@@ -39,14 +47,14 @@ func New(t time.Time, o, h, l, c float64) *Bar {
 	}
 }
 
-func NewFromOHLC(t time.Time, ohlc *OHLC) *Bar {
+func NewBarFromOHLC(t time.Time, ohlc *OHLC) *Bar {
 	return &Bar{
 		Timestamp: t,
 		OHLC:      ohlc,
 	}
 }
 
-func NewFromAlpacaBar(alpacaBar marketdata.Bar) *Bar {
+func NewBarFromAlpaca(alpacaBar marketdata.Bar) *Bar {
 	ohlc := &OHLC{
 		Open:  alpacaBar.Open,
 		High:  alpacaBar.High,
@@ -88,4 +96,17 @@ func (b *Bar) UnmarshalJSON(d []byte) error {
 	b.Timestamp = ts
 
 	return nil
+}
+
+func (b *Bar) HeikinAshi(prev *Bar) *Bar {
+	open := 0.5 * (prev.Open + prev.Close)
+	close := 0.25 * (b.Open + b.High + b.Low + b.Close)
+	high := math.Max(math.Max(b.High, b.Open), b.Close)
+	low := math.Max(math.Max(b.Low, b.Open), b.Close)
+
+	return NewBar(b.Timestamp, open, high, low, close)
+}
+
+func (ohlc *OHLC) Float64s() []float64 {
+	return []float64{ohlc.Open, ohlc.High, ohlc.Low, ohlc.Close}
 }

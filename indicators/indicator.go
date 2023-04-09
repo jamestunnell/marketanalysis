@@ -1,10 +1,10 @@
 package indicators
 
-import "github.com/jamestunnell/marketanalysis/models/bar"
+import "github.com/jamestunnell/marketanalysis/models"
 
 type Indicator interface {
 	WarmupPeriod() int
-	Initialize(bars []*bar.Bar) error
+	Initialize(bars []*models.Bar) error
 	Current() float64
-	Update(bar *bar.Bar) float64
+	Update(bar *models.Bar) float64
 }

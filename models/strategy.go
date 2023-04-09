@@ -1,7 +1,5 @@
 package models
 
-import "github.com/jamestunnell/marketanalysis/models/bar"
-
 type Strategy interface {
 	Type() string
 	Params() map[string]any
@@ -9,7 +7,7 @@ type Strategy interface {
 	PositionSignal() chan PositionType
 
 	WarmupPeriod() int
-	WarmUp(bars []*bar.Bar) error
+	WarmUp(bars []*Bar) error
 
-	Update(bar *bar.Bar)
+	Update(bar *Bar)
 }

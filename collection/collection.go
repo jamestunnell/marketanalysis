@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
 )
@@ -13,14 +13,14 @@ import (
 type Collection interface {
 	Info() *Info
 	Timespan() timespan.TimeSpan
-	GetBars(ts timespan.TimeSpan) []*bar.Bar
-	AddBars([]*bar.Bar) int
+	GetBars(ts timespan.TimeSpan) models.Bars
+	AddBars(models.Bars) int
 
 	Store(s Store) error
 }
 
 type collection struct {
-	bars  []*bar.Bar
+	bars  models.Bars
 	info  *Info
 	store Store
 }
@@ -64,7 +64,7 @@ func Load(store Store) (Collection, error) {
 		return nil, fmt.Errorf("failed load bars item: %w", err)
 	}
 
-	bars, err := bar.LoadBars(bytes.NewReader(d))
+	bars, err := models.LoadBars(bytes.NewReader(d))
 	if err != nil {
 		return nil, fmt.Errorf("failed process bars data: %w", err)
 	}
@@ -77,7 +77,7 @@ func Load(store Store) (Collection, error) {
 	return c, nil
 }
 
-func New(info *Info, bars []*bar.Bar) (Collection, error) {
+func New(info *Info, bars models.Bars) (Collection, error) {
 	c := &collection{
 		info: info,
 		bars: bars,
@@ -91,11 +91,11 @@ func (c *collection) Info() *Info {
 }
 
 func (c *collection) Timespan() timespan.TimeSpan {
-	return bar.BarsTimespan(c.bars)
+	return c.bars.Timespan()
 }
 
-func (c *collection) GetBars(ts timespan.TimeSpan) []*bar.Bar {
-	bars := []*bar.Bar{}
+func (c *collection) GetBars(ts timespan.TimeSpan) models.Bars {
+	bars := models.Bars{}
 
 	for _, bar := range c.bars {
 		if ts.Contains(bar.Timestamp) {
@@ -106,7 +106,7 @@ func (c *collection) GetBars(ts timespan.TimeSpan) []*bar.Bar {
 	return bars
 }
 
-func (c *collection) AddBars(bars []*bar.Bar) int {
+func (c *collection) AddBars(bars models.Bars) int {
 	added := 0
 
 	for _, bar := range bars {
@@ -143,7 +143,7 @@ func (c *collection) Store(s Store) error {
 
 	c.SortBars()
 
-	err = bar.StoreBars(c.bars, &b)
+	err = c.bars.Store(&b)
 	if err != nil {
 		return fmt.Errorf("failed make bars data: %w", err)
 	}
@@ -157,7 +157,7 @@ func (c *collection) Store(s Store) error {
 }
 
 func (c *collection) SortBars() {
-	slices.SortFunc(c.bars, func(a, b *bar.Bar) bool {
+	slices.SortFunc(c.bars, func(a, b *models.Bar) bool {
 		return a.Timestamp.Before(b.Timestamp)
 	})
 }

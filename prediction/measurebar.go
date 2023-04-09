@@ -1,14 +1,14 @@
 package prediction
 
 import (
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type BarMeasure struct {
 	Body, Top, Bottom float64
 }
 
-func NewBarMeasure(b *bar.Bar, atr float64) *BarMeasure {
+func NewBarMeasure(b *models.Bar, atr float64) *BarMeasure {
 	body := (b.Close - b.Open)
 
 	var top float64
@@ -37,7 +37,7 @@ func (m *BarMeasure) ToFloat64s() []float64 {
 	return []float64{m.Body, m.Top, m.Bottom}
 }
 
-func (m *BarMeasure) ToOHLC(atr, lastClose float64) *bar.OHLC {
+func (m *BarMeasure) ToOHLC(atr, lastClose float64) *models.OHLC {
 	body := m.Body * atr
 	top := m.Top * atr
 	bottom := m.Bottom * atr
@@ -56,7 +56,7 @@ func (m *BarMeasure) ToOHLC(atr, lastClose float64) *bar.OHLC {
 		l = c - bottom
 	}
 
-	ohlc := &bar.OHLC{
+	ohlc := &models.OHLC{
 		Open:  o,
 		High:  h,
 		Low:   l,

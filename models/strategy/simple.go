@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/models/bar"
 )
 
 type Simple struct {
@@ -45,7 +44,7 @@ func (s *Simple) WarmupPeriod() int {
 	return s.algo.WarmupPeriod()
 }
 
-func (s *Simple) WarmUp(bars []*bar.Bar) error {
+func (s *Simple) WarmUp(bars []*models.Bar) error {
 	if err := s.algo.WarmUp(bars); err != nil {
 		return fmt.Errorf("failed to warm up algo: %w", err)
 	}
@@ -53,7 +52,7 @@ func (s *Simple) WarmUp(bars []*bar.Bar) error {
 	return nil
 }
 
-func (s *Simple) Update(bar *bar.Bar) {
+func (s *Simple) Update(bar *models.Bar) {
 	s.algo.Update(bar)
 }
 

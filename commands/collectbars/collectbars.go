@@ -8,7 +8,7 @@ import (
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/jamestunnell/marketanalysis/collection"
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -84,9 +84,9 @@ func (cmd *Command) Run() error {
 
 	fmt.Printf("collected %d bars\n", len(alpacaBars))
 
-	bars := make([]*bar.Bar, len(alpacaBars))
+	bars := make([]*models.Bar, len(alpacaBars))
 	for i, alpacaBar := range alpacaBars {
-		bars[i] = bar.NewFromAlpacaBar(alpacaBar)
+		bars[i] = models.NewBarFromAlpaca(alpacaBar)
 	}
 
 	exists, err := collection.Exists(cmd.Store)

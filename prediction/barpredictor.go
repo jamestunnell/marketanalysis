@@ -7,7 +7,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/indicators"
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/patrikeh/go-deep/training"
 )
 
@@ -64,7 +64,7 @@ func NewBarPredictor(
 	return bp, nil
 }
 
-func (bp *BarPredictorCore) WarmUp(bars []*bar.Bar) error {
+func (bp *BarPredictorCore) WarmUp(bars []*models.Bar) error {
 	wp := bp.TotalWarmupPeriod()
 	if len(bars) != wp {
 		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
@@ -97,7 +97,7 @@ func (bp *BarPredictorCore) TotalWarmupPeriod() int {
 	return bp.ATR.WarmupPeriod() + bp.nPrevBars
 }
 
-func (bp *BarPredictor) Train(bars []*bar.Bar, nIter int) error {
+func (bp *BarPredictor) Train(bars []*models.Bar, nIter int) error {
 	trainingCore := &BarPredictorCore{
 		barDur:    bp.barDur,
 		nPrevBars: bp.nPrevBars,
@@ -144,7 +144,7 @@ func (bp *BarPredictor) Train(bars []*bar.Bar, nIter int) error {
 	return bp.predictor.Train(examples, nIter)
 }
 
-func (bp *BarPredictor) Predict(curBar *bar.Bar) (*bar.Bar, error) {
+func (bp *BarPredictor) Predict(curBar *models.Bar) (*models.Bar, error) {
 	if !bp.warm {
 		return nil, errNotWarmedUp
 	}
@@ -167,7 +167,7 @@ func (bp *BarPredictor) Predict(curBar *bar.Bar) (*bar.Bar, error) {
 	atr = bp.ATR.Update(curBar)
 
 	tNext := curBar.Timestamp.Add(bp.barDur)
-	predBar := bar.NewFromOHLC(tNext, predM.ToOHLC(atr, curBar.Close))
+	predBar := models.NewBarFromOHLC(tNext, predM.ToOHLC(atr, curBar.Close))
 
 	// shift prev
 	for i := 0; i < (bp.nPrevBars - 1); i++ {

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jamestunnell/marketanalysis/models/bar"
-	"github.com/jamestunnell/marketanalysis/models/bar/testutil"
+	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/models/testutil"
 	"github.com/jamestunnell/marketanalysis/prediction"
 	"github.com/jamestunnell/marketanalysis/prediction/mock_prediction"
 	"github.com/patrikeh/go-deep"
@@ -154,7 +154,7 @@ func TestBarPredictorMock(t *testing.T) {
 	require.NoError(t, err)
 
 	// no bars - can't train
-	assert.Error(t, bp.Train([]*bar.Bar{}, 100))
+	assert.Error(t, bp.Train([]*models.Bar{}, 100))
 
 	bars := makeTestBars(t, testBarsJSON)
 
@@ -253,7 +253,7 @@ func TestBarPredictorReal(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func makeTestBars(t *testing.T, jsonStr string) []*bar.Bar {
+func makeTestBars(t *testing.T, jsonStr string) []*models.Bar {
 
 	bars, err := testutil.MakeTestBars(jsonStr)
 

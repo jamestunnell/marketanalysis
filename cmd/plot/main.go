@@ -9,7 +9,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/indicators"
-	"github.com/jamestunnell/marketanalysis/models/bar"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 )
@@ -52,7 +52,7 @@ func lineChart(title, seriesName string, times []time.Time, data []float64) *cha
 	return line
 }
 
-func klineChart(title, seriesName string, bars []*bar.Bar) *charts.Kline {
+func klineChart(title, seriesName string, bars []*models.Bar) *charts.Kline {
 	kline := charts.NewKLine()
 
 	x := make([]string, 0)
