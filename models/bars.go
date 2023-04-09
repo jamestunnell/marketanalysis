@@ -60,6 +60,16 @@ func LoadBars(r io.Reader) (Bars, error) {
 	return bars, nil
 }
 
+func (bars Bars) ClosePrices() []float64 {
+	closes := make([]float64, len(bars))
+
+	for i, bar := range bars {
+		closes[i] = bar.Close
+	}
+
+	return closes
+}
+
 func (bars Bars) Timespan() timespan.TimeSpan {
 	if len(bars) == 0 {
 		return timespan.TimeSpan{}
