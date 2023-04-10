@@ -42,7 +42,7 @@ func (sma *SMA) Update(bar *models.Bar) float64 {
 
 	sma.buf.Add(bar.Close)
 
-	sma.current = sma.buf.Sum()
+	sma.current = sma.buf.Sum() / float64(sma.len)
 
 	return sma.current
 }

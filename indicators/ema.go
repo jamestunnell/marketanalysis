@@ -34,7 +34,7 @@ func (ema *EMA) WarmUp(bars models.Bars) error {
 		sum += close
 	}
 
-	ema.current = sum
+	ema.current = sum / float64(ema.len)
 	ema.warm = true
 
 	return nil
