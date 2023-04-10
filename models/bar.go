@@ -71,6 +71,13 @@ func NewBarFromAlpaca(alpacaBar marketdata.Bar) *Bar {
 	}
 }
 
+func (b *Bar) Local() *Bar {
+	return &Bar{
+		Timestamp: b.Timestamp.Local(),
+		OHLC:      b.OHLC,
+	}
+}
+
 func (b *Bar) MarshalJSON() ([]byte, error) {
 	bj := &BarJSON{
 		Timestamp: b.Timestamp.Format(time.RFC3339),

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date/timespan"
 )
 
@@ -58,6 +59,14 @@ func LoadBars(r io.Reader) (Bars, error) {
 	}
 
 	return bars, nil
+}
+
+func (bars Bars) Local() Bars {
+	localBars := sliceutils.Map(bars, func(b *Bar) *Bar {
+		return b.Local()
+	})
+
+	return Bars(localBars)
 }
 
 func (bars Bars) ClosePrices() []float64 {

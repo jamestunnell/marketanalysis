@@ -33,6 +33,10 @@ func NewTrendFollower(params models.Params) (models.Strategy, error) {
 		return nil, fmt.Errorf("failed to get slow period param: %w", err)
 	}
 
+	if fastPeriod >= slowPeriod {
+		return nil, fmt.Errorf("fast period %d is not less than slow period %d", fastPeriod, slowPeriod)
+	}
+
 	fastEMA := indicators.NewEMA(fastPeriod)
 	slowEMA := indicators.NewEMA(slowPeriod)
 
