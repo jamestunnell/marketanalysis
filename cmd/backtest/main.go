@@ -59,6 +59,11 @@ func main() {
 	totalPL := 0.0
 	nWinning := 0
 	nPositions := 0
+	nDays := 0
+
+	fmt.Println("Running backtests")
+	fmt.Printf("Start: %v\n", start)
+	fmt.Printf("End: %v\n", end)
 
 	// test each day separately
 	for dt := start; !dt.After(end); dt = dt.Add(24 * time.Hour) {
@@ -78,6 +83,12 @@ func main() {
 		})
 
 		if len(daytradeBars) > 0 {
+			if !*verbose {
+				fmt.Printf(".")
+			}
+
+			nDays++
+
 			if *verbose {
 				fmt.Printf("backtesting %d bars for %04d-%02d-%02d\n", len(daytradeBars), yyyy, mm, dd)
 			}
@@ -142,6 +153,8 @@ func main() {
 
 	fmt.Printf("\n\nWinning: %d/%d (%f%%)\n", nWinning, nPositions, 100.0*float64(nWinning)/float64(nPositions))
 	fmt.Printf("Total P/L: %f\n", totalPL)
+	fmt.Printf("Average Daily P/L: %f\n", totalPL/float64(nDays))
+	fmt.Printf("Average Trade P/L: %f\n", totalPL/float64(nPositions))
 }
 
 func backtest(strat models.Strategy, bars []*models.Bar) {
