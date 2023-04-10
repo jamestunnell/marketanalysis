@@ -5,11 +5,12 @@ import "time"
 type PositionType int
 
 const (
-	PositionLong  PositionType = 1
-	PositionShort PositionType = -1
+	PositionTypeLong  = "long"
+	PositionTypeShort = "short"
 )
 
 type Position interface {
+	Type() string
 	Entry() *TimePrice
 	Exit() *TimePrice
 
@@ -94,6 +95,10 @@ func (p *PositionBase) Close(t time.Time, price float64) {
 	p.exit = &TimePrice{Time: t, Price: price}
 }
 
+func (p *LongPosition) Type() string {
+	return PositionTypeLong
+}
+
 func (p *LongPosition) ClosedProfitLoss() (float64, bool) {
 	if p.IsOpen() {
 		return 0.0, false
@@ -108,6 +113,10 @@ func (p *LongPosition) OpenProfitLoss(currentPrice float64) (float64, bool) {
 	}
 
 	return currentPrice - p.entry.Price, true
+}
+
+func (p *ShortPosition) Type() string {
+	return PositionTypeShort
 }
 
 func (p *ShortPosition) ClosedProfitLoss() (float64, bool) {
