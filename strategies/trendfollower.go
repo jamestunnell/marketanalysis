@@ -79,7 +79,7 @@ func (tf *TrendFollower) WarmupPeriod() int {
 	return tf.slowPeriod
 }
 
-func (tf *TrendFollower) WarmUp(bars []*models.Bar) error {
+func (tf *TrendFollower) Initialize(bars []*models.Bar) error {
 	fastWUBars := bars[len(bars)-tf.fastPeriod:]
 	if err := tf.fastEMA.WarmUp(fastWUBars); err != nil {
 		return fmt.Errorf("failed to warm up fast EMA: %w", err)
@@ -88,6 +88,9 @@ func (tf *TrendFollower) WarmUp(bars []*models.Bar) error {
 	if err := tf.slowEMA.WarmUp(bars); err != nil {
 		return fmt.Errorf("failed to warm up slow EMA: %w", err)
 	}
+
+	tf.closedPositions = []models.Position{}
+	tf.openPosition = nil
 
 	return nil
 }

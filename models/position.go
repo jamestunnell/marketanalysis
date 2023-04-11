@@ -33,6 +33,32 @@ type PositionBase struct {
 	entry, exit *TimePrice
 }
 
+type PositionsAnalysis struct {
+	Winning float64
+	TotalPL float64
+}
+
+func AnalyzePositions(positions []Position) *PositionsAnalysis {
+	totalPL := 0.0
+	nWinning := 0
+
+	for _, pos := range positions {
+		pl, _ := pos.ClosedProfitLoss()
+		if pl > 0.0 {
+			nWinning++
+		}
+
+		totalPL += pl
+	}
+
+	winning := float64(nWinning) / float64(len(positions))
+
+	return &PositionsAnalysis{
+		Winning: winning,
+		TotalPL: totalPL,
+	}
+}
+
 func OpenPositions(ps []Position) []Position {
 	openPs := []Position{}
 

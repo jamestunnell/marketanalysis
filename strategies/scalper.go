@@ -45,7 +45,7 @@ func NewScalper(params models.Params) (models.Strategy, error) {
 	fastEMA := indicators.NewEMA(fastPeriod)
 	slowEMA := indicators.NewEMA(slowPeriod)
 
-	tf := &Scalper{
+	sc := &Scalper{
 		direction:       0,
 		closedPositions: []models.Position{},
 		openPosition:    nil,
@@ -57,78 +57,81 @@ func NewScalper(params models.Params) (models.Strategy, error) {
 		takeProfit:      takeProfit,
 	}
 
-	return tf, nil
+	return sc, nil
 }
 
-func (tf *Scalper) Type() string {
+func (sc *Scalper) Type() string {
 	return TypeScalper
 }
 
-func (tf *Scalper) Params() models.Params {
-	return tf.params
+func (sc *Scalper) Params() models.Params {
+	return sc.params
 }
 
-func (tf *Scalper) ClosedPositions() []models.Position {
-	return tf.closedPositions
+func (sc *Scalper) ClosedPositions() []models.Position {
+	return sc.closedPositions
 }
 
-func (tf *Scalper) Close(bar *models.Bar) {
-	if tf.openPosition != nil {
-		tf.openPosition.Close(bar.Timestamp, bar.Close)
+func (sc *Scalper) Close(bar *models.Bar) {
+	if sc.openPosition != nil {
+		sc.openPosition.Close(bar.Timestamp, bar.Close)
 
-		tf.closedPositions = append(tf.closedPositions, tf.openPosition)
-		tf.openPosition = nil
+		sc.closedPositions = append(sc.closedPositions, sc.openPosition)
+		sc.openPosition = nil
 	}
 }
 
-func (tf *Scalper) WarmupPeriod() int {
-	return tf.slowPeriod
+func (sc *Scalper) WarmupPeriod() int {
+	return sc.slowPeriod
 }
 
-func (tf *Scalper) WarmUp(bars []*models.Bar) error {
-	fastWUBars := bars[len(bars)-tf.fastPeriod:]
-	if err := tf.fastEMA.WarmUp(fastWUBars); err != nil {
+func (sc *Scalper) Initialize(bars []*models.Bar) error {
+	fastWUBars := bars[len(bars)-sc.fastPeriod:]
+	if err := sc.fastEMA.WarmUp(fastWUBars); err != nil {
 		return fmt.Errorf("failed to warm up fast EMA: %w", err)
 	}
 
-	if err := tf.slowEMA.WarmUp(bars); err != nil {
+	if err := sc.slowEMA.WarmUp(bars); err != nil {
 		return fmt.Errorf("failed to warm up slow EMA: %w", err)
 	}
+
+	sc.closedPositions = []models.Position{}
+	sc.openPosition = nil
 
 	return nil
 }
 
-func (tf *Scalper) Update(bar *models.Bar) {
-	fast := tf.fastEMA.Update(bar)
-	slow := tf.slowEMA.Update(bar)
+func (sc *Scalper) Update(bar *models.Bar) {
+	fast := sc.fastEMA.Update(bar)
+	slow := sc.slowEMA.Update(bar)
 	diff := fast - slow
 
-	if tf.openPosition == nil {
-		if diff > 0.0 && tf.direction <= 0 {
-			tf.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
-			tf.direction = 1
-		} else if diff < 0.0 && tf.direction >= 0 {
-			tf.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
-			tf.direction = -1
+	if sc.openPosition == nil {
+		if diff > 0.0 && sc.direction <= 0 {
+			sc.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
+			sc.direction = 1
+		} else if diff < 0.0 && sc.direction >= 0 {
+			sc.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
+			sc.direction = -1
 		}
 
 		return
 	}
 
-	pl, _ := tf.openPosition.OpenProfitLoss(bar.Close)
-	if pl >= tf.takeProfit {
-		tf.Close(bar)
+	pl, _ := sc.openPosition.OpenProfitLoss(bar.Close)
+	if pl >= sc.takeProfit {
+		sc.Close(bar)
 
-		tf.openPosition = nil
-	} else if diff > 0.0 && tf.direction == -1 {
-		tf.Close(bar)
+		sc.openPosition = nil
+	} else if diff > 0.0 && sc.direction == -1 {
+		sc.Close(bar)
 
-		tf.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
-		tf.direction = 1
-	} else if diff < 0.0 && tf.direction == 1 {
-		tf.Close(bar)
+		sc.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
+		sc.direction = 1
+	} else if diff < 0.0 && sc.direction == 1 {
+		sc.Close(bar)
 
-		tf.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
-		tf.direction = -1
+		sc.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
+		sc.direction = -1
 	}
 }
