@@ -14,7 +14,7 @@ type OrderedInts struct {
 	Min, Max int
 }
 
-func RandomOrderedInts(len int, rng *rand.Rand, min, max int) (PartialGenome, error) {
+func RandomOrderedInts(len int, rng *rand.Rand, min, max int) PartialGenome {
 	ints := make([]int, len)
 
 	for i := 0; i < len; i++ {
@@ -28,7 +28,7 @@ func RandomOrderedInts(len int, rng *rand.Rand, min, max int) (PartialGenome, er
 		Ints:   eaopt.IntSlice(ints),
 		Min:    min,
 		Max:    max,
-	}, nil
+	}
 }
 
 func (p *OrderedInts) Mutate(rng *rand.Rand) {
@@ -43,6 +43,9 @@ func (p *OrderedInts) Crossover(genome PartialGenome, rng *rand.Rand) {
 	other := genome.(*OrderedInts)
 
 	eaopt.CrossOX(p.Ints, other.Ints, rng)
+
+	sort.Ints(p.Ints)
+	sort.Ints(other.Ints)
 }
 
 func (p *OrderedInts) Clone() PartialGenome {

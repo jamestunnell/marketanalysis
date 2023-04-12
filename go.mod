@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
+	github.com/MaxHalford/eaopt v0.4.2
 	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.0.1
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
@@ -50,6 +51,7 @@ require (
 	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
 	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

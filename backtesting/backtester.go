@@ -1,6 +1,6 @@
 package backtesting
 
-type Backtester interface {
+type Tester interface {
 	RunTest() (*Report, error)
 	Advance()
 	AnyLeft() bool

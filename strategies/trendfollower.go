@@ -8,12 +8,12 @@ import (
 )
 
 type TrendFollower struct {
-	direction              int
-	params                 models.Params
-	fastPeriod, slowPeriod int
-	fastEMA, slowEMA       models.Indicator
-	closedPositions        []models.Position
-	openPosition           models.Position
+	direction       int
+	params          models.Params
+	fastEMA         models.Indicator
+	slowEMA         models.Indicator
+	closedPositions []models.Position
+	openPosition    models.Position
 }
 
 const (
@@ -47,8 +47,6 @@ func NewTrendFollower(params models.Params) (models.Strategy, error) {
 		params:          params,
 		fastEMA:         fastEMA,
 		slowEMA:         slowEMA,
-		fastPeriod:      fastPeriod,
-		slowPeriod:      slowPeriod,
 	}
 
 	return tf, nil
@@ -76,11 +74,11 @@ func (tf *TrendFollower) Close(bar *models.Bar) {
 }
 
 func (tf *TrendFollower) WarmupPeriod() int {
-	return tf.slowPeriod
+	return tf.slowEMA.WarmupPeriod()
 }
 
 func (tf *TrendFollower) Initialize(bars []*models.Bar) error {
-	fastWUBars := bars[len(bars)-tf.fastPeriod:]
+	fastWUBars := bars[len(bars)-tf.fastEMA.WarmupPeriod():]
 	if err := tf.fastEMA.WarmUp(fastWUBars); err != nil {
 		return fmt.Errorf("failed to warm up fast EMA: %w", err)
 	}

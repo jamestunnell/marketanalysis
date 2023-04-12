@@ -34,8 +34,7 @@ type PositionBase struct {
 }
 
 type PositionsAnalysis struct {
-	Winning float64
-	TotalPL float64
+	Winning, TotalPL float64
 }
 
 func AnalyzePositions(positions []Position) *PositionsAnalysis {

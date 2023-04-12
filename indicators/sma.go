@@ -1,6 +1,9 @@
 package indicators
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/buffer"
@@ -18,6 +21,24 @@ func NewSMA(len int) models.Indicator {
 		buf:     nil,
 		current: 0.0,
 	}
+}
+
+func (sma *SMA) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&MovingAvgJSON{Length: sma.len})
+}
+
+func (sma *SMA) UnmarshalJSON(d []byte) error {
+	var maj MovingAvgJSON
+
+	if err := json.Unmarshal(d, &maj); err != nil {
+		return fmt.Errorf("failed to unmarshal EMM JSON: %w", err)
+	}
+
+	sma.len = maj.Length
+	sma.buf = nil
+	sma.current = 0.0
+
+	return nil
 }
 
 func (sma *SMA) WarmupPeriod() int {

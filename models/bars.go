@@ -110,7 +110,13 @@ func (bars Bars) StoreToFile(fpath string) error {
 
 	w := bufio.NewWriter(f)
 
-	return bars.Store(w)
+	if err = bars.Store(w); err != nil {
+		return err
+	}
+
+	w.Flush()
+
+	return nil
 }
 
 func (bars Bars) Store(w io.Writer) error {

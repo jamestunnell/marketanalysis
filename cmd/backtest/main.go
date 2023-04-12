@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/jamestunnell/marketanalysis/backtesting"
@@ -17,22 +18,14 @@ type Command interface {
 }
 
 var (
-	app     = kingpin.New("backtest", "Backtest trading strategy.")
-	dataDir = app.Flag("datadir", "Collection dir path.").Required().String()
-	verbose = app.Flag("verbose", "Print all messages.").Bool()
-
-	tf     = app.Command("trendfollower", "Test a trend-following strategy.")
-	tfFast = tf.Flag("fast", "Fast EMA period").Required().Int()
-	tfSlow = tf.Flag("slow", "Slow EMA period").Required().Int()
-
-	sc           = app.Command("scalper", "Test a scalping strategy.")
-	scFast       = sc.Flag("fast", "Fast EMA period").Required().Int()
-	scSlow       = sc.Flag("slow", "Slow EMA period").Required().Int()
-	scTakeProfit = sc.Flag("takeprofit", "Take profit points").Required().Float64()
+	app       = kingpin.New("backtest", "Backtest trading strategy.")
+	dataDir   = app.Flag("datadir", "Collection dir path.").Required().String()
+	stratfile = app.Flag("stratfile", "Strategy JSON stratfile.").Required().String()
+	verbose   = app.Flag("verbose", "Print all messages.").Bool()
 )
 
 func main() {
-	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
+	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	s, err := collection.NewDirStore(*dataDir)
 	if err != nil {
@@ -44,33 +37,13 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load collection")
 	}
 
-	var strat models.Strategy
-
-	switch cmd {
-	case tf.FullCommand():
-		params := models.Params{
-			strategies.ParamFastPeriod: *tfFast,
-			strategies.ParamSlowPeriod: *tfSlow,
-		}
-
-		strat, err = strategies.NewTrendFollower(params)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to make trend follower strategy")
-		}
-	case sc.FullCommand():
-		params := models.Params{
-			strategies.ParamFastPeriod: *scFast,
-			strategies.ParamSlowPeriod: *scSlow,
-			strategies.ParamTakeProfit: *scTakeProfit,
-		}
-
-		strat, err = strategies.NewScalper(params)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to make scalper strategy")
-		}
+	strat, err := strategies.LoadStrategyFromFile(*stratfile)
+	if err != nil {
+		log.Fatal().Err(err).Str("stratfile", *stratfile).Msg("failed to load strategy")
 	}
 
-	dt := backtesting.NewDayTrader(c, strat)
+	dc := backtesting.NewSequentialDates(c.Timespan().DateRangeIn(time.Local))
+	dt := backtesting.NewDayTrader(c, strat, dc)
 	positions := []models.Position{}
 
 	fmt.Println("Running backtests")

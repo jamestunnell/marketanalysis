@@ -12,10 +12,15 @@ import (
 )
 
 type DayTrader struct {
-	Collection collection.Collection
-	Strategy   models.Strategy
-	Timespan   timespan.TimeSpan
-	Current    date.Date
+	Collection     collection.Collection
+	Strategy       models.Strategy
+	DateController DateController
+}
+
+type DateController interface {
+	Current() date.Date
+	Advance()
+	AnyLeft() bool
 }
 
 const (
@@ -23,30 +28,22 @@ const (
 	DayTradeMarketCloseLocalMin = 780
 )
 
-func NewDayTrader(c collection.Collection, s models.Strategy) Backtester {
-	ts := c.Timespan()
-	current := date.NewAt(ts.Start())
-
+func NewDayTrader(
+	c collection.Collection,
+	s models.Strategy,
+	dc DateController) *DayTrader {
 	return &DayTrader{
-		Collection: c,
-		Strategy:   s,
-		Timespan:   ts,
-		Current:    current,
+		Collection:     c,
+		Strategy:       s,
+		DateController: dc,
 	}
 }
 
 func (t *DayTrader) RunTest() (*Report, error) {
-	open := t.Current.Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
-	close := t.Current.Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
+	open := t.DateController.Current().Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
+	close := t.DateController.Current().Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
 	ts := timespan.NewTimeSpan(open, close)
 	bars := t.Collection.GetBars(ts)
-
-	// log.Debug().
-	// 	Str("current date", t.Current.FormatISO(4)).
-	// 	Time("open", open).
-	// 	Time("close", close).
-	// 	Int("bar count", len(bars)).
-	// 	Msg("day trade backtest")
 
 	report := &Report{
 		Start:     open,
@@ -68,9 +65,9 @@ func (t *DayTrader) RunTest() (*Report, error) {
 }
 
 func (t *DayTrader) Advance() {
-	t.Current = t.Current.Add(1)
+	t.DateController.Advance()
 }
 
 func (t *DayTrader) AnyLeft() bool {
-	return t.Current.UTC().Before(t.Timespan.End())
+	return t.DateController.AnyLeft()
 }
