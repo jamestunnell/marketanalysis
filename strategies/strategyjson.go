@@ -2,17 +2,19 @@ package strategies
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/params"
 )
 
 type StrategyJSON struct {
-	Type   string        `json:"type"`
-	Params models.Params `json:"params"`
+	Type   string                     `json:"type"`
+	Params map[string]json.RawMessage `json:"params"`
 }
 
 func LoadStrategyFromFile(fpath string) (models.Strategy, error) {
@@ -42,6 +44,16 @@ func LoadStrategy(r io.Reader) (models.Strategy, error) {
 		return nil, err
 	}
 
+	ps := models.Params{}
+	for name, rawMsg := range stratJSON.Params {
+		p, err := params.LoadParam(bytes.NewReader(rawMsg))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load param '%s': %w", name, err)
+		}
+
+		ps[name] = p
+	}
+
 	var newStrategy func(models.Params) (models.Strategy, error)
 
 	switch stratJSON.Type {
@@ -55,7 +67,7 @@ func LoadStrategy(r io.Reader) (models.Strategy, error) {
 		return nil, fmt.Errorf("unknown strategy type '%s'", stratJSON.Type)
 	}
 
-	strat, err := NewTrendFollower(stratJSON.Params)
+	strat, err := newStrategy(ps)
 	if err != nil {
 		err = fmt.Errorf("failed to make %s strategy: %w", stratJSON.Type, err)
 
@@ -86,9 +98,19 @@ func StoreStrategyToFile(s models.Strategy, fpath string) error {
 }
 
 func StoreStrategy(s models.Strategy, w io.Writer) error {
+	ps := map[string]json.RawMessage{}
+	for name, param := range s.Params() {
+		var buf bytes.Buffer
+		if err := params.StoreParam(param, &buf); err != nil {
+			return fmt.Errorf("failed to store param '%s': %w", name, err)
+		}
+
+		ps[name] = buf.Bytes()
+	}
+
 	stratJSON := &StrategyJSON{
 		Type:   s.Type(),
-		Params: s.Params(),
+		Params: ps,
 	}
 
 	d, err := json.Marshal(stratJSON)

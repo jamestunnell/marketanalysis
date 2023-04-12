@@ -42,7 +42,11 @@ func (p *OrderedInts) Mutate(rng *rand.Rand) {
 func (p *OrderedInts) Crossover(genome PartialGenome, rng *rand.Rand) {
 	other := genome.(*OrderedInts)
 
-	eaopt.CrossOX(p.Ints, other.Ints, rng)
+	for i, val := range p.Ints {
+		if rng.Float64() < 0.5 {
+			p.Ints[i], other.Ints[i] = other.Ints[i], val
+		}
+	}
 
 	sort.Ints(p.Ints)
 	sort.Ints(other.Ints)

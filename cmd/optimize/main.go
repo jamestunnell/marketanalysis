@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/optimization"
+	"github.com/jamestunnell/marketanalysis/params"
 	"github.com/jamestunnell/marketanalysis/strategies"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
@@ -21,6 +23,9 @@ type PartsToStrategyFunc func(parts []optimization.PartialGenome) (models.Strate
 const (
 	DefaultMaxPeriod = 200
 	DefaultTestDays  = 100
+
+	DefaultMinTakeProfit = 0.5
+	DefaultMaxTakeProfit = 2.0
 )
 
 var (
@@ -31,6 +36,10 @@ var (
 	outFile   = app.Flag("outfile", "Filepath for stategy JSON file. Default is strategy.json").String()
 
 	tf = app.Command("trendfollower", "Optimize a trend-following strategy.")
+
+	sc            = app.Command("scalper", "Optimize a scalper strategy.")
+	minTakeProfit = sc.Flag("mintakeprofit", "Maximum take profit param value. Default is 0.5").Float()
+	maxTakeProfit = sc.Flag("maxtakeprofit", "Maximum take profit param value. Default is 2.0").Float()
 )
 
 func main() {
@@ -72,13 +81,13 @@ func main() {
 		partsToStrategy = func(parts []optimization.PartialGenome) (models.Strategy, error) {
 			periods := parts[0].(*optimization.OrderedInts)
 			params := models.Params{
-				strategies.ParamFastPeriod: periods.Ints[0],
-				strategies.ParamSlowPeriod: periods.Ints[1],
+				strategies.ParamFastPeriod: params.NewInt(periods.Ints[0]),
+				strategies.ParamSlowPeriod: params.NewInt(periods.Ints[1]),
 			}
 
 			s, err := strategies.NewTrendFollower(params)
 			if err != nil {
-				return nil, fmt.Errorf("failed to make strategy: %w", err)
+				return nil, fmt.Errorf("failed to make trend follower strategy: %w", err)
 			}
 
 			return s, nil
@@ -88,6 +97,38 @@ func main() {
 
 			return optimization.NewCompositeGenome(makeFit(partsToStrategy, c), periods)
 		}
+	case sc.FullCommand():
+		if *minTakeProfit == 0.0 {
+			*minTakeProfit = DefaultMinTakeProfit
+		}
+
+		if *maxTakeProfit == 0.0 {
+			*maxTakeProfit = DefaultMaxTakeProfit
+		}
+
+		partsToStrategy = func(parts []optimization.PartialGenome) (models.Strategy, error) {
+			periods := parts[0].(*optimization.OrderedInts)
+			takeProfit := parts[1].(*optimization.FloatValue)
+
+			params := models.Params{
+				strategies.ParamFastPeriod: params.NewInt(periods.Ints[0]),
+				strategies.ParamSlowPeriod: params.NewInt(periods.Ints[1]),
+				strategies.ParamTakeProfit: params.NewFloat(takeProfit.Value),
+			}
+
+			s, err := strategies.NewScalper(params)
+			if err != nil {
+				return nil, fmt.Errorf("failed to make scalper strategy: %w", err)
+			}
+
+			return s, nil
+		}
+		newGenome = func(rng *rand.Rand) eaopt.Genome {
+			periods := optimization.RandomOrderedInts(2, rng, 1, *maxPeriod)
+			takeProfit := optimization.RandomFloatValue(rng, *minTakeProfit, *maxTakeProfit)
+
+			return optimization.NewCompositeGenome(makeFit(partsToStrategy, c), periods, takeProfit)
+		}
 	}
 
 	if newGenome == nil {
@@ -96,9 +137,9 @@ func main() {
 
 	config := eaopt.NewDefaultGAConfig()
 
-	config.HofSize = 25
-	config.PopSize = 250
-	config.NGenerations = 500
+	config.HofSize = 5
+	config.PopSize = 100
+	config.NGenerations = 300
 	config.ParallelEval = true
 
 	best, err := optimization.EAOpt(newGenome, config)
@@ -106,8 +147,8 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to optimize")
 	}
 
-	fmt.Println("Hall of Fame:")
-	fmt.Println("Fitness\tParams")
+	fmt.Println("\nHall of Fame:")
+	fmt.Println("Fitness\tStrategy JSON")
 	for i := 0; (i < 10) && (i < len(best)); i++ {
 		cg := best[i].Genome.(*optimization.CompositeGenome)
 		s, err := partsToStrategy(cg.Parts)
@@ -115,7 +156,11 @@ func main() {
 			log.Warn().Err(err).Msg("failed to make strategy with composite genome parts")
 		}
 
-		fmt.Printf("%f\t%#v\n", best[i].Fitness, s.Params())
+		var buf bytes.Buffer
+
+		strategies.StoreStrategy(s, &buf)
+
+		fmt.Printf("%f\t%#v\n", best[i].Fitness, buf.String())
 
 		if i == 0 {
 			err = strategies.StoreStrategyToFile(s, *outFile)
@@ -151,8 +196,12 @@ func makeFit(f PartsToStrategyFunc, c collection.Collection) optimization.Compos
 			return 0.0, err
 		}
 
+		var buf bytes.Buffer
+
+		strategies.StoreStrategy(s, &buf)
+
 		log.Debug().
-			Interface("params", s.Params()).
+			// Str("strategy", buf.String()).
 			Float64("fitness", fitVal).
 			Msg("evaluated strategy")
 

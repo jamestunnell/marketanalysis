@@ -3,6 +3,7 @@ package optimization
 import (
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/MaxHalford/eaopt"
 )
@@ -18,13 +19,24 @@ func EAOpt(newGenome NewGenomeFunc, config eaopt.GAConfig) (eaopt.Individuals, e
 		return eaopt.Individuals{}, err
 	}
 
+	// just used for rand ID in cloning indivuals
+	rng := rand.New(rand.NewSource(time.Now().Unix()))
+
+	best := eaopt.Individuals{}
+
 	// Add a callback to stop when the problem is solved
-	ga.EarlyStop = func(ga *eaopt.GA) bool {
-		return ga.HallOfFame[0].Fitness == 0.0
+	ga.Callback = func(ga *eaopt.GA) {
+		newBest := make(eaopt.Individuals, len(ga.HallOfFame))
+
+		for i, indiv := range ga.HallOfFame {
+			newBest[i] = indiv.Clone(rng)
+		}
+
+		best = newBest
 	}
 
 	// Run the GA
 	ga.Minimize(newGenome)
 
-	return ga.HallOfFame, nil
+	return best, nil
 }
