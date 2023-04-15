@@ -166,6 +166,13 @@ func (zz *Pivots) Update(t time.Time, val float64) bool {
 			zz.Pivots.Add(zz.primaryCandidate)
 
 			zz.primaryCandidate = zz.secondaryCandidate
+		} else {
+			if zz.secondaryCandidate == nil {
+				zz.secondaryCandidate = NewPivotLow(t, val)
+			} else {
+				zz.secondaryCandidate.Time = t
+				zz.secondaryCandidate.Value = val
+			}
 		}
 	case DirDown:
 		if val <= zz.primaryCandidate.Value {
@@ -175,6 +182,13 @@ func (zz *Pivots) Update(t time.Time, val float64) bool {
 		} else if (val > prev.Value) || (t.Sub(zz.primaryCandidate.Time) >= zz.maxAge) {
 			zz.Pivots.Add(zz.primaryCandidate)
 			zz.primaryCandidate = zz.secondaryCandidate
+		} else {
+			if zz.secondaryCandidate == nil {
+				zz.secondaryCandidate = NewPivotHigh(t, val)
+			} else {
+				zz.secondaryCandidate.Time = t
+				zz.secondaryCandidate.Value = val
+			}
 		}
 	}
 
