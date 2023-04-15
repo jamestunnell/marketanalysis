@@ -1,11 +1,10 @@
-package predictors
+package indicators
 
 import (
 	"fmt"
 	"sort"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
@@ -14,9 +13,9 @@ import (
 )
 
 type MAOrdering struct {
-	params         models.Params
-	MAs            []*indicators.EMA
-	signal         *indicators.SMA
+	// params         models.Params
+	MAs            []*EMA
+	signal         *SMA
 	warmupPeriod   int
 	uptrendIndices []float64
 	correlation    float64
@@ -32,7 +31,7 @@ const (
 	ParamSignalLen  = "signalLen"
 )
 
-func NewMAOrdering(params models.Params) (*MAOrdering, error) {
+func NewMAOrderingFromParams(params models.Params) (*MAOrdering, error) {
 	periodMin, err := params.GetInt(ParamMinPeriod)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get period min param: %w", err)
@@ -53,6 +52,11 @@ func NewMAOrdering(params models.Params) (*MAOrdering, error) {
 		return nil, fmt.Errorf("failed to get signal len param: %w", err)
 	}
 
+	return NewMAOrdering(periodMin, periodMax, nPeriods, signalLen)
+}
+
+func NewMAOrdering(
+	periodMin, periodMax, nPeriods, signalLen int) (*MAOrdering, error) {
 	if periodMin >= periodMax {
 		return nil, fmt.Errorf("period min %d is not less than period max %d", periodMin, periodMax)
 	}
@@ -62,19 +66,19 @@ func NewMAOrdering(params models.Params) (*MAOrdering, error) {
 	}
 
 	periods := util.LinSpaceInts(periodMin, periodMax, nPeriods)
-	mas := make([]*indicators.EMA, nPeriods)
+	mas := make([]*EMA, nPeriods)
 	uptrendIndices := make([]float64, nPeriods)
 
 	for i, period := range periods {
-		mas[i] = indicators.NewEMA(period)
+		mas[i] = NewEMA(period)
 		uptrendIndices[i] = float64(i)
 	}
 
-	signalSMA := indicators.NewSMA(signalLen)
+	signalSMA := NewSMA(signalLen)
 	wuPeriod := signalSMA.Period() + sliceutils.Last(mas).Period()
 
 	mao := &MAOrdering{
-		params:         params,
+		// params:         params,
 		signal:         signalSMA,
 		MAs:            mas,
 		warmupPeriod:   wuPeriod,
@@ -143,14 +147,14 @@ func (mao *MAOrdering) Correlation() float64 {
 }
 
 func (mao *MAOrdering) updateCorrelation() {
-	values := sliceutils.Map(mao.MAs, func(ma *indicators.EMA) float64 {
+	values := sliceutils.Map(mao.MAs, func(ma *EMA) float64 {
 		return ma.Current()
 	})
 
 	sort.Float64s(values)
 
 	// find the indices of the values after they are sorted
-	currentIndices := sliceutils.Map(mao.MAs, func(ma *indicators.EMA) float64 {
+	currentIndices := sliceutils.Map(mao.MAs, func(ma *EMA) float64 {
 		return float64(slices.Index(values, ma.Current()))
 	})
 
