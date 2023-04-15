@@ -2,21 +2,20 @@ package commonerrs
 
 import "fmt"
 
-type ErrMinBarCount struct {
-	Purpose     string
-	Actual, Min int
+type ErrLessThanMin struct {
+	Name        string
+	Min, Actual any
 }
 
-func NewErrMinBarCount(
-	purpose string, min, actual int) *ErrMinBarCount {
-	return &ErrMinBarCount{
-		Purpose: purpose,
-		Min:     min,
-		Actual:  actual,
+func NewErrLessThanMin(name string, actual, min any) *ErrLessThanMin {
+	return &ErrLessThanMin{
+		Name:   name,
+		Min:    min,
+		Actual: actual,
 	}
 }
 
-func (err *ErrMinBarCount) Error() string {
-	const strFmt = "expected at least %d %s bars, got %d"
-	return fmt.Sprintf(strFmt, err.Min, err.Purpose, err.Actual)
+func (err *ErrLessThanMin) Error() string {
+	const strFmt = "%s %v is less than min %v"
+	return fmt.Sprintf(strFmt, err.Name, err.Actual, err.Min)
 }

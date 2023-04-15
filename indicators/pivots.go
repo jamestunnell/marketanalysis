@@ -1,34 +1,78 @@
 package indicators
 
 import (
+	"time"
+
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
 type Pivots struct {
-	Length       int
-	NPivots      int
-	PrevPivots   []float64
-	Candidate    float64
-	CandidateAge int
-	Direction    Direction
+	Length             int
+	NPivots            int
+	Pivots             *buffer.CircularBuffer[*Pivot]
+	primaryCandidate   *Pivot
+	secondaryCandidate *Pivot
+	maxAge, tDelta     time.Duration
 }
 
-type Direction int
+type Pivot struct {
+	Type  PivotType
+	Time  time.Time
+	Value float64
+}
+
+type PivotType int
 
 const (
-	Up   = 1
-	Flat = 0
-	Down = -1
+	PivotNeutral PivotType = iota
+	PivotLow
+	PivotHigh
 )
 
-func NewPivots(length, nPivots int) *Pivots {
-	return &Pivots{
-		Length:       length,
-		NPivots:      nPivots,
-		PrevPivots:   []float64{},
-		Candidate:    0.0,
-		CandidateAge: 0,
-		Direction:    Flat,
+func NewPivots(length, nPivots int) (*Pivots, error) {
+	if length < 2 {
+		return nil, commonerrs.NewErrLessThanMin("length", length, 2)
+	}
+
+	if nPivots < 2 {
+		return nil, commonerrs.NewErrLessThanMin("nPivots", nPivots, 2)
+	}
+
+	pivs := &Pivots{
+		Length:             length,
+		NPivots:            nPivots,
+		Pivots:             nil,
+		primaryCandidate:   nil,
+		secondaryCandidate: nil,
+		maxAge:             0,
+		tDelta:             0,
+	}
+
+	return pivs, nil
+}
+
+func NewPivotNeutral(t time.Time, val float64) *Pivot {
+	return &Pivot{
+		Type:  PivotNeutral,
+		Time:  t,
+		Value: val,
+	}
+}
+
+func NewPivotHigh(t time.Time, val float64) *Pivot {
+	return &Pivot{
+		Type:  PivotHigh,
+		Time:  t,
+		Value: val,
+	}
+}
+
+func NewPivotLow(t time.Time, val float64) *Pivot {
+	return &Pivot{
+		Type:  PivotLow,
+		Time:  t,
+		Value: val,
 	}
 }
 
@@ -36,83 +80,120 @@ func (zz *Pivots) WarmupPeriod() int {
 	return zz.Length
 }
 
-func (zz *Pivots) addPivot(pivot float64) {
-	zz.PrevPivots = append(zz.PrevPivots, pivot)
-}
-
-func (zz *Pivots) WarmUp(vals []float64) error {
+func (zz *Pivots) WarmUp(times []time.Time, vals []float64) error {
 	if len(vals) != zz.Length {
 		return commonerrs.NewErrExactCount("warmup vals", zz.Length, len(vals))
 	}
 
-	lastIdx := len(vals) - 1
-
-	// find most recent pivot(s)
-	min, max, minIdx, maxIdx := minMax(vals)
-	if minIdx < maxIdx {
-		zz.addPivot(min)
-
-		if maxIdx < lastIdx {
-			zz.addPivot(max)
-
-			zz.Candidate = vals[lastIdx]
-			zz.Direction = Down
-		} else {
-			zz.Candidate = max
-			zz.Direction = Up
-		}
-	} else {
-		zz.addPivot(max)
-
-		if minIdx < lastIdx {
-			zz.addPivot(min)
-
-			zz.Candidate = vals[lastIdx]
-			zz.Direction = Up
-		} else {
-			zz.Candidate = min
-			zz.Direction = Down
-		}
+	if len(times) != zz.Length {
+		return commonerrs.NewErrExactCount("warmup times", zz.Length, len(times))
 	}
 
-	zz.CandidateAge = 0
+	zz.Pivots = buffer.NewCircularBuffer[*Pivot](zz.NPivots)
+	zz.primaryCandidate = nil
+	zz.secondaryCandidate = nil
+	zz.tDelta = times[1].Sub(times[0])
+	zz.maxAge = zz.tDelta * time.Duration(zz.Length)
+
+	zz.Pivots.Add(NewPivotNeutral(times[0], vals[0]))
+
+	min, max, minIdx, maxIdx := minMax(vals)
+
+	// flat signal - no cand-date for next pivot yet
+	if minIdx == maxIdx {
+		return nil
+	}
+
+	var startUpdates int
+
+	if minIdx == 0 || (maxIdx < minIdx) {
+		zz.primaryCandidate = NewPivotHigh(times[maxIdx], max)
+
+		startUpdates = maxIdx + 1
+	} else {
+		zz.primaryCandidate = NewPivotLow(times[minIdx], min)
+
+		startUpdates = minIdx + 1
+	}
+
+	// this should take care of remaining warmup values
+	for i := startUpdates; i < zz.Length; i++ {
+		_ = zz.Update(times[i], vals[i])
+	}
 
 	return nil
 }
 
-func (zz *Pivots) Update(val float64) {
-	switch zz.Direction {
-	case Up:
-		if val >= zz.Candidate {
-			zz.Candidate = val
-			zz.CandidateAge = 0
-		} else {
-			zz.CandidateAge++
+func (zz *Pivots) Direction() Direction {
+	if zz.primaryCandidate == nil {
+		return DirNone
+	}
 
-			if zz.CandidateAge >= zz.Length {
-				zz.addPivot(zz.Candidate)
+	switch zz.primaryCandidate.Type {
+	case PivotHigh:
+		return DirUp
+	case PivotLow:
+		return DirDown
+	}
 
-				zz.Candidate = val
-				zz.CandidateAge = 0
-				zz.Direction = Down
-			}
+	return DirNone
+}
+
+func (zz *Pivots) Update(t time.Time, val float64) bool {
+	// make sure it's warmed up
+	if zz.Pivots == nil {
+		return false
+	}
+
+	dir := zz.Direction()
+	prev, _ := zz.Pivots.Newest()
+
+	switch dir {
+	case DirNone:
+		if val > prev.Value {
+			zz.Pivots.Add(NewPivotNeutral(t.Add(-zz.tDelta), prev.Value))
+			zz.primaryCandidate = NewPivotHigh(t, val)
+		} else if val < prev.Value {
+			zz.Pivots.Add(NewPivotNeutral(t.Add(-zz.tDelta), prev.Value))
+			zz.primaryCandidate = NewPivotLow(t, val)
 		}
-	case Down:
-		if val <= zz.Candidate {
-			zz.Candidate = val
-			zz.CandidateAge = 0
-		} else {
-			zz.CandidateAge++
+	case DirUp:
+		if val >= zz.primaryCandidate.Value {
+			zz.primaryCandidate.Value = val
+			zz.primaryCandidate.Time = t
+			zz.secondaryCandidate = nil
+		} else if (val < prev.Value) || (t.Sub(zz.primaryCandidate.Time) >= zz.maxAge) {
+			zz.Pivots.Add(zz.primaryCandidate)
 
-			if zz.CandidateAge >= zz.Length {
-				zz.addPivot(zz.Candidate)
-
-				zz.Candidate = val
-				zz.CandidateAge = 0
-				zz.Direction = Up
-			}
+			zz.primaryCandidate = zz.secondaryCandidate
+		}
+	case DirDown:
+		if val <= zz.primaryCandidate.Value {
+			zz.primaryCandidate.Value = val
+			zz.primaryCandidate.Time = t
+			zz.secondaryCandidate = nil
+		} else if (val > prev.Value) || (t.Sub(zz.primaryCandidate.Time) >= zz.maxAge) {
+			zz.Pivots.Add(zz.primaryCandidate)
+			zz.primaryCandidate = zz.secondaryCandidate
 		}
 	}
+
+	return dir != zz.Direction()
+}
+
+func (zz *Pivots) PivotsAfter(t time.Time) []*Pivot {
+	pivs := []*Pivot{}
+	zz.Pivots.Each(func(piv *Pivot) {
+		if piv.Time.After(t) {
+			pivs = append(pivs, piv)
+		}
+	})
+
+	return pivs
+}
+
+func (zz *Pivots) NewestPivot() (*Pivot, bool) {
+	return zz.Pivots.Newest()
 }
 
 func minMax(vals []float64) (min, max float64, minIdx, maxIdx int) {
