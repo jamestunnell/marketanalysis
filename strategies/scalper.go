@@ -12,7 +12,7 @@ type Scalper struct {
 	params                 models.Params
 	fastPeriod, slowPeriod int
 	takeProfit             float64
-	fastEMA, slowEMA       models.Indicator
+	fastEMA, slowEMA       *indicators.EMA
 	closedPositions        []models.Position
 	openPosition           models.Position
 }
@@ -85,13 +85,17 @@ func (sc *Scalper) WarmupPeriod() int {
 	return sc.slowPeriod
 }
 
-func (sc *Scalper) Initialize(bars []*models.Bar) error {
-	fastWUBars := bars[len(bars)-sc.fastPeriod:]
-	if err := sc.fastEMA.WarmUp(fastWUBars); err != nil {
+func (sc *Scalper) Initialize(bars models.Bars) error {
+	fastWUBars := bars[:sc.fastPeriod]
+	if err := sc.fastEMA.WarmUp(fastWUBars.ClosePrices()); err != nil {
 		return fmt.Errorf("failed to warm up fast EMA: %w", err)
 	}
 
-	if err := sc.slowEMA.WarmUp(bars); err != nil {
+	for i := sc.fastPeriod; i < len(bars); i++ {
+		sc.fastEMA.Update(bars[i].Close)
+	}
+
+	if err := sc.slowEMA.WarmUp(bars.ClosePrices()); err != nil {
 		return fmt.Errorf("failed to warm up slow EMA: %w", err)
 	}
 
@@ -102,9 +106,10 @@ func (sc *Scalper) Initialize(bars []*models.Bar) error {
 }
 
 func (sc *Scalper) Update(bar *models.Bar) {
-	fast := sc.fastEMA.Update(bar)
-	slow := sc.slowEMA.Update(bar)
-	diff := fast - slow
+	sc.fastEMA.Update(bar.Close)
+	sc.slowEMA.Update(bar.Close)
+
+	diff := sc.fastEMA.Current() - sc.slowEMA.Current()
 
 	if sc.openPosition == nil {
 		if diff > 0.0 && sc.direction <= 0 {

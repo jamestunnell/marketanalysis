@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type EMA struct {
@@ -18,7 +17,7 @@ type MovingAvgJSON struct {
 	Length int `json:"length"`
 }
 
-func NewEMA(len int) models.Indicator {
+func NewEMA(len int) *EMA {
 	return &EMA{
 		len:     len,
 		warm:    false,
@@ -46,17 +45,17 @@ func (ema *EMA) UnmarshalJSON(d []byte) error {
 	return nil
 }
 
-func (ema *EMA) WarmupPeriod() int {
+func (ema *EMA) Period() int {
 	return ema.len
 }
 
-func (ema *EMA) WarmUp(bars models.Bars) error {
-	if len(bars) != ema.len {
-		return commonerrs.NewErrExactBarCount("warm up", ema.len, len(bars))
+func (ema *EMA) WarmUp(vals []float64) error {
+	if len(vals) != ema.len {
+		return commonerrs.NewErrExactCount("warmup values", ema.len, len(vals))
 	}
 
 	sum := 0.0
-	for _, close := range bars.ClosePrices() {
+	for _, close := range vals {
 		sum += close
 	}
 
@@ -66,14 +65,12 @@ func (ema *EMA) WarmUp(bars models.Bars) error {
 	return nil
 }
 
-func (ema *EMA) Update(bar *models.Bar) float64 {
+func (ema *EMA) Update(val float64) {
 	if !ema.warm {
-		return 0.0
+		return
 	}
 
-	ema.current = (bar.Close * ema.k) + (ema.current * (1.0 - ema.k))
-
-	return ema.current
+	ema.current = (val * ema.k) + (ema.current * (1.0 - ema.k))
 }
 
 func (ema *EMA) Current() float64 {

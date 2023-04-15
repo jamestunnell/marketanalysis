@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
@@ -15,7 +14,7 @@ type SMA struct {
 	current float64
 }
 
-func NewSMA(len int) models.Indicator {
+func NewSMA(len int) *SMA {
 	return &SMA{
 		len:     len,
 		buf:     nil,
@@ -41,31 +40,29 @@ func (sma *SMA) UnmarshalJSON(d []byte) error {
 	return nil
 }
 
-func (sma *SMA) WarmupPeriod() int {
+func (sma *SMA) Period() int {
 	return sma.len
 }
 
-func (sma *SMA) WarmUp(bars models.Bars) error {
-	if len(bars) != sma.len {
-		return commonerrs.NewErrExactBarCount("warm up", sma.len, len(bars))
+func (sma *SMA) WarmUp(vals []float64) error {
+	if len(vals) != sma.len {
+		return commonerrs.NewErrExactCount("warmup vals", sma.len, len(vals))
 	}
 
-	sma.buf = buffer.NewFullCircularBuffer(bars.ClosePrices())
+	sma.buf = buffer.NewFullCircularBuffer(vals)
 	sma.current = sma.buf.Sum()
 
 	return nil
 }
 
-func (sma *SMA) Update(bar *models.Bar) float64 {
+func (sma *SMA) Update(val float64) {
 	if sma.buf == nil {
-		return 0.0
+		return
 	}
 
-	sma.buf.Add(bar.Close)
+	sma.buf.Add(val)
 
 	sma.current = sma.buf.Sum() / float64(sma.len)
-
-	return sma.current
 }
 
 func (sma *SMA) Current() float64 {

@@ -42,7 +42,7 @@ func (zz *Pivots) addPivot(pivot float64) {
 
 func (zz *Pivots) WarmUp(vals []float64) error {
 	if len(vals) != zz.Length {
-		return commonerrs.NewErrExactBarCount("warmup", zz.Length, len(vals))
+		return commonerrs.NewErrExactCount("warmup vals", zz.Length, len(vals))
 	}
 
 	lastIdx := len(vals) - 1

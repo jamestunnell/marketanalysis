@@ -8,12 +8,11 @@ import (
 )
 
 type TrendFollower struct {
-	direction       int
-	params          models.Params
-	fastEMA         models.Indicator
-	slowEMA         models.Indicator
-	closedPositions []models.Position
-	openPosition    models.Position
+	direction        int
+	params           models.Params
+	fastEMA, slowEMA *indicators.EMA
+	closedPositions  []models.Position
+	openPosition     models.Position
 }
 
 const (
@@ -74,29 +73,30 @@ func (tf *TrendFollower) Close(bar *models.Bar) {
 }
 
 func (tf *TrendFollower) WarmupPeriod() int {
-	return tf.slowEMA.WarmupPeriod()
+	return tf.slowEMA.Period()
 }
 
-func (tf *TrendFollower) Initialize(bars []*models.Bar) error {
-	fastWUBars := bars[len(bars)-tf.fastEMA.WarmupPeriod():]
-	if err := tf.fastEMA.WarmUp(fastWUBars); err != nil {
+func (tf *TrendFollower) Initialize(bars models.Bars) error {
+	fastWUBars := bars[:tf.fastEMA.Period()]
+	if err := tf.fastEMA.WarmUp(fastWUBars.ClosePrices()); err != nil {
 		return fmt.Errorf("failed to warm up fast EMA: %w", err)
 	}
 
-	if err := tf.slowEMA.WarmUp(bars); err != nil {
-		return fmt.Errorf("failed to warm up slow EMA: %w", err)
+	for i := tf.fastEMA.Period(); i < len(bars); i++ {
+		tf.fastEMA.Update(bars[i].Close)
 	}
 
-	tf.closedPositions = []models.Position{}
-	tf.openPosition = nil
+	if err := tf.slowEMA.WarmUp(bars.ClosePrices()); err != nil {
+		return fmt.Errorf("failed to warm up slow EMA: %w", err)
+	}
 
 	return nil
 }
 
 func (tf *TrendFollower) Update(bar *models.Bar) {
-	fast := tf.fastEMA.Update(bar)
-	slow := tf.slowEMA.Update(bar)
-	diff := fast - slow
+	tf.fastEMA.Update(bar.Close)
+	tf.slowEMA.Update(bar.Close)
+	diff := tf.fastEMA.Current() - tf.slowEMA.Current()
 
 	if tf.openPosition == nil {
 		if diff > 0.0 {

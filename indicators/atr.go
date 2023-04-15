@@ -26,7 +26,7 @@ func (atr *ATR) WarmupPeriod() int {
 func (atr *ATR) WarmUp(bars []*models.Bar) error {
 	wp := atr.WarmupPeriod()
 	if len(bars) != wp {
-		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
+		return commonerrs.NewErrExactCount("warmup bars", wp, len(bars))
 	}
 
 	sum := 0.0

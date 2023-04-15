@@ -67,7 +67,7 @@ func NewBarPredictor(
 func (bp *BarPredictorCore) WarmUp(bars []*models.Bar) error {
 	wp := bp.TotalWarmupPeriod()
 	if len(bars) != wp {
-		return commonerrs.NewErrExactBarCount("warmup", wp, len(bars))
+		return commonerrs.NewErrExactCount("warmup bars", wp, len(bars))
 	}
 
 	atrWP := bp.ATR.WarmupPeriod()
