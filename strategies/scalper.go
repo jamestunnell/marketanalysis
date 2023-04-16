@@ -13,8 +13,8 @@ type Scalper struct {
 	fastPeriod, slowPeriod int
 	takeProfit             float64
 	fastEMA, slowEMA       *indicators.EMA
-	closedPositions        []models.Position
-	openPosition           models.Position
+	closedPositions        models.Positions
+	openPosition           *models.Position
 }
 
 const (
@@ -47,7 +47,7 @@ func NewScalper(params models.Params) (models.Strategy, error) {
 
 	sc := &Scalper{
 		direction:       0,
-		closedPositions: []models.Position{},
+		closedPositions: models.Positions{},
 		openPosition:    nil,
 		params:          params,
 		fastEMA:         fastEMA,
@@ -68,13 +68,13 @@ func (sc *Scalper) Params() models.Params {
 	return sc.params
 }
 
-func (sc *Scalper) ClosedPositions() []models.Position {
+func (sc *Scalper) ClosedPositions() models.Positions {
 	return sc.closedPositions
 }
 
-func (sc *Scalper) Close(bar *models.Bar) {
+func (sc *Scalper) Close(bar *models.Bar, reason string) {
 	if sc.openPosition != nil {
-		sc.openPosition.Close(bar.Timestamp, bar.Close)
+		sc.openPosition.Close(bar.Timestamp, bar.Close, reason)
 
 		sc.closedPositions = append(sc.closedPositions, sc.openPosition)
 		sc.openPosition = nil
@@ -99,7 +99,7 @@ func (sc *Scalper) Initialize(bars models.Bars) error {
 		return fmt.Errorf("failed to warm up slow EMA: %w", err)
 	}
 
-	sc.closedPositions = []models.Position{}
+	sc.closedPositions = models.Positions{}
 	sc.openPosition = nil
 
 	return nil
@@ -125,16 +125,16 @@ func (sc *Scalper) Update(bar *models.Bar) {
 
 	pl, _ := sc.openPosition.OpenProfitLoss(bar.Close)
 	if pl >= sc.takeProfit {
-		sc.Close(bar)
+		sc.Close(bar, "take profit")
 
 		sc.openPosition = nil
 	} else if diff > 0.0 && sc.direction == -1 {
-		sc.Close(bar)
+		sc.Close(bar, "change direction")
 
 		sc.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
 		sc.direction = 1
 	} else if diff < 0.0 && sc.direction == 1 {
-		sc.Close(bar)
+		sc.Close(bar, "change direction")
 
 		sc.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
 		sc.direction = -1

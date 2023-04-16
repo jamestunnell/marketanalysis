@@ -9,153 +9,79 @@ const (
 	PositionTypeShort = "short"
 )
 
-type Position interface {
-	Type() string
-	Entry() *TimePrice
-	Exit() *TimePrice
-
-	IsOpen() bool
-	Close(t time.Time, price float64)
-
-	OpenProfitLoss(currentPrice float64) (float64, bool)
-	ClosedProfitLoss() (float64, bool)
+type Position struct {
+	Type       string     `json:"type"`
+	Entry      *TimePrice `json:"entry"`
+	Exit       *TimePrice `json:"exit"`
+	ExitReason string     `json:"exitReason"`
+	ClosedPL   float64    `json:"closedPL"`
 }
 
-type LongPosition struct {
-	*PositionBase
-}
-
-type ShortPosition struct {
-	*PositionBase
-}
-
-type PositionBase struct {
-	entry, exit *TimePrice
-}
-
-type PositionsAnalysis struct {
-	Winning, TotalPL float64
-}
-
-func AnalyzePositions(positions []Position) *PositionsAnalysis {
-	totalPL := 0.0
-	nWinning := 0
-
-	for _, pos := range positions {
-		pl, _ := pos.ClosedProfitLoss()
-		if pl > 0.0 {
-			nWinning++
-		}
-
-		totalPL += pl
-	}
-
-	winning := float64(nWinning) / float64(len(positions))
-
-	return &PositionsAnalysis{
-		Winning: winning,
-		TotalPL: totalPL,
-	}
-}
-
-func OpenPositions(ps []Position) []Position {
-	openPs := []Position{}
-
-	for _, p := range ps {
-		if p.IsOpen() {
-			openPs = append(openPs, p)
-		}
-	}
-
-	return openPs
-}
-
-func ClosedPositions(ps []Position) []Position {
-	closedPs := []Position{}
-
-	for _, p := range ps {
-		if !p.IsOpen() {
-			closedPs = append(closedPs, p)
-		}
-	}
-
-	return closedPs
-}
-
-func NewLongPosition(t time.Time, price float64) Position {
+func NewLongPosition(t time.Time, price float64) *Position {
 	entry := &TimePrice{
 		Time:  t,
 		Price: price,
 	}
 
-	return &LongPosition{
-		PositionBase: &PositionBase{entry: entry, exit: nil},
+	return &Position{
+		Type:       PositionTypeLong,
+		Entry:      entry,
+		Exit:       nil,
+		ExitReason: "",
+		ClosedPL:   0.0,
 	}
 }
 
-func NewShortPosition(t time.Time, price float64) Position {
+func NewShortPosition(t time.Time, price float64) *Position {
 	entry := &TimePrice{
 		Time:  t,
 		Price: price,
 	}
 
-	return &ShortPosition{
-		PositionBase: &PositionBase{entry: entry, exit: nil},
+	return &Position{
+		Type:       PositionTypeShort,
+		Entry:      entry,
+		Exit:       nil,
+		ExitReason: "",
+		ClosedPL:   0.0,
 	}
 }
 
-func (p *PositionBase) Entry() *TimePrice {
-	return p.entry
-}
-
-func (p *PositionBase) Exit() *TimePrice {
-	return p.exit
-}
-
-func (p *PositionBase) IsOpen() bool {
-	return p.exit == nil
-}
-
-func (p *PositionBase) Close(t time.Time, price float64) {
-	p.exit = &TimePrice{Time: t, Price: price}
-}
-
-func (p *LongPosition) Type() string {
-	return PositionTypeLong
-}
-
-func (p *LongPosition) ClosedProfitLoss() (float64, bool) {
-	if p.IsOpen() {
-		return 0.0, false
+func (p *Position) Localize() {
+	if p.Entry != nil {
+		p.Entry.Time = p.Entry.Time.Local()
 	}
 
-	return p.exit.Price - p.entry.Price, true
+	if p.Exit != nil {
+		p.Exit.Time = p.Exit.Time.Local()
+	}
 }
 
-func (p *LongPosition) OpenProfitLoss(currentPrice float64) (float64, bool) {
+func (p *Position) IsOpen() bool {
+	return p.Exit == nil
+}
+
+func (p *Position) Close(t time.Time, price float64, reason string) {
+	p.Exit = &TimePrice{Time: t, Price: price}
+	p.ExitReason = reason
+
+	if p.Type == PositionTypeLong {
+		p.ClosedPL = p.Exit.Price - p.Entry.Price
+	} else if p.Type == PositionTypeShort {
+		p.ClosedPL = p.Entry.Price - p.Exit.Price
+	}
+}
+
+func (p *Position) OpenProfitLoss(currentPrice float64) (float64, bool) {
 	if !p.IsOpen() {
 		return 0.0, false
 	}
 
-	return currentPrice - p.entry.Price, true
-}
-
-func (p *ShortPosition) Type() string {
-	return PositionTypeShort
-}
-
-func (p *ShortPosition) ClosedProfitLoss() (float64, bool) {
-	if p.IsOpen() {
-		return 0.0, false
+	if p.Type == PositionTypeLong {
+		return currentPrice - p.Entry.Price, true
+	} else if p.Type == PositionTypeShort {
+		return p.Entry.Price - currentPrice, true
 	}
 
-	return p.entry.Price - p.exit.Price, true
-}
-
-func (p *ShortPosition) OpenProfitLoss(currentPrice float64) (float64, bool) {
-	if !p.IsOpen() {
-		return 0.0, false
-	}
-
-	return p.entry.Price - currentPrice, true
+	return 0.0, false
 }

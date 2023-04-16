@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date/timespan"
@@ -69,14 +70,16 @@ func (bars Bars) Local() Bars {
 	return Bars(localBars)
 }
 
+func (bars Bars) Timestamps() []time.Time {
+	return sliceutils.Map(bars, func(b *Bar) time.Time {
+		return b.Timestamp
+	})
+}
+
 func (bars Bars) ClosePrices() []float64 {
-	closes := make([]float64, len(bars))
-
-	for i, bar := range bars {
-		closes[i] = bar.Close
-	}
-
-	return closes
+	return sliceutils.Map(bars, func(b *Bar) float64 {
+		return b.Close
+	})
 }
 
 func (bars Bars) Timespan() timespan.TimeSpan {

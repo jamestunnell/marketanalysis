@@ -11,8 +11,8 @@ type TrendFollower struct {
 	direction        int
 	params           models.Params
 	fastEMA, slowEMA *indicators.EMA
-	closedPositions  []models.Position
-	openPosition     models.Position
+	closedPositions  models.Positions
+	openPosition     *models.Position
 }
 
 const (
@@ -41,7 +41,7 @@ func NewTrendFollower(params models.Params) (models.Strategy, error) {
 
 	tf := &TrendFollower{
 		direction:       0,
-		closedPositions: []models.Position{},
+		closedPositions: models.Positions{},
 		openPosition:    nil,
 		params:          params,
 		fastEMA:         fastEMA,
@@ -59,13 +59,13 @@ func (tf *TrendFollower) Params() models.Params {
 	return tf.params
 }
 
-func (tf *TrendFollower) ClosedPositions() []models.Position {
+func (tf *TrendFollower) ClosedPositions() models.Positions {
 	return tf.closedPositions
 }
 
-func (tf *TrendFollower) Close(bar *models.Bar) {
+func (tf *TrendFollower) Close(bar *models.Bar, reason string) {
 	if tf.openPosition != nil {
-		tf.openPosition.Close(bar.Timestamp, bar.Close)
+		tf.openPosition.Close(bar.Timestamp, bar.Close, reason)
 
 		tf.closedPositions = append(tf.closedPositions, tf.openPosition)
 		tf.openPosition = nil
@@ -111,12 +111,12 @@ func (tf *TrendFollower) Update(bar *models.Bar) {
 	}
 
 	if diff > 0.0 && tf.direction == -1 {
-		tf.Close(bar)
+		tf.Close(bar, "change direction")
 
 		tf.openPosition = models.NewLongPosition(bar.Timestamp, bar.Close)
 		tf.direction = 1
 	} else if diff < 0.0 && tf.direction == 1 {
-		tf.Close(bar)
+		tf.Close(bar, "change direction")
 
 		tf.openPosition = models.NewShortPosition(bar.Timestamp, bar.Close)
 		tf.direction = -1

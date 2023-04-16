@@ -47,7 +47,7 @@ func (t *DayTrader) RunTest() (*Report, error) {
 
 	report := &Report{
 		Start:     open,
-		Positions: []models.Position{},
+		Positions: models.Positions{},
 	}
 
 	if len(bars) == 0 {

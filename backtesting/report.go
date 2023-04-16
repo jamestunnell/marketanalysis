@@ -8,5 +8,5 @@ import (
 
 type Report struct {
 	Start     time.Time
-	Positions []models.Position
+	Positions models.Positions
 }
