@@ -25,20 +25,24 @@ func (atr *ATR) WarmupPeriod() int {
 
 func (atr *ATR) WarmUp(bars []*models.Bar) error {
 	wp := atr.WarmupPeriod()
-	if len(bars) != wp {
-		return commonerrs.NewErrExactCount("warmup bars", wp, len(bars))
+	if len(bars) < wp {
+		return commonerrs.NewErrMinCount("warmup bars", len(bars), wp)
 	}
 
 	sum := 0.0
 
 	atr.prevBar = bars[0]
 
-	for i := 1; i < len(bars); i++ {
+	for i := 1; i < wp; i++ {
 		sum += TrueRange(bars[i], bars[i-1])
 	}
 
-	atr.prevBar = bars[len(bars)-1]
+	atr.prevBar = bars[wp-1]
 	atr.current = sum / float64(atr.length)
+
+	for i := wp; i < len(bars); i++ {
+		atr.Update(bars[i])
+	}
 
 	return nil
 }

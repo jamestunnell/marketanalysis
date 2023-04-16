@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/montanaflynn/stats"
@@ -22,38 +21,7 @@ type MAOrdering struct {
 	nPeriods       int
 }
 
-const (
-	MinNumPeriods = 2
-
-	ParamMinPeriod  = "minPeriod"
-	ParamMaxPeriod  = "maxPeriod"
-	ParamNumPeriods = "numPeriods"
-	ParamSignalLen  = "signalLen"
-)
-
-func NewMAOrderingFromParams(params models.Params) (*MAOrdering, error) {
-	periodMin, err := params.GetInt(ParamMinPeriod)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get period min param: %w", err)
-	}
-
-	periodMax, err := params.GetInt(ParamMaxPeriod)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get period max param: %w", err)
-	}
-
-	nPeriods, err := params.GetInt(ParamNumPeriods)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get num periods param: %w", err)
-	}
-
-	signalLen, err := params.GetInt(ParamSignalLen)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get signal len param: %w", err)
-	}
-
-	return NewMAOrdering(periodMin, periodMax, nPeriods, signalLen)
-}
+const MinNumPeriods = 2
 
 func NewMAOrdering(
 	periodMin, periodMax, nPeriods, signalLen int) (*MAOrdering, error) {
@@ -95,21 +63,17 @@ func (mao *MAOrdering) WarmupPeriod() int {
 }
 
 func (mao *MAOrdering) WarmUp(vals []float64) error {
-	if len(vals) != mao.warmupPeriod {
-		return commonerrs.NewErrExactCount("warmup values", mao.warmupPeriod, len(vals))
+	if len(vals) < mao.warmupPeriod {
+		return commonerrs.NewErrMinCount("warmup values", len(vals), mao.warmupPeriod)
 	}
 
 	// warm up the MAs
 	lastMAPeriod := sliceutils.Last(mao.MAs).Period()
+	maWUVals := vals[:lastMAPeriod]
 	for _, ma := range mao.MAs {
-		err := ma.WarmUp(vals[:ma.Period()])
+		err := ma.WarmUp(maWUVals)
 		if err != nil {
 			return fmt.Errorf("failed to warm up MA(%d): %w", ma.Period(), err)
-		}
-
-		// Run update with leftover MA warmup vals
-		for i := ma.Period(); i < lastMAPeriod; i++ {
-			ma.Update(vals[i])
 		}
 	}
 
@@ -127,6 +91,11 @@ func (mao *MAOrdering) WarmUp(vals []float64) error {
 
 	if err := mao.signal.WarmUp(signalWUVals); err != nil {
 		return fmt.Errorf("failed to warm up signal: %w", err)
+	}
+
+	// handle any remaining warmup vals
+	for i := mao.warmupPeriod; i < len(vals); i++ {
+		mao.Update(vals[i])
 	}
 
 	return nil

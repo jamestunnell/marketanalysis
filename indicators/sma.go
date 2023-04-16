@@ -45,11 +45,13 @@ func (sma *SMA) Period() int {
 }
 
 func (sma *SMA) WarmUp(vals []float64) error {
-	if len(vals) != sma.len {
-		return commonerrs.NewErrExactCount("warmup vals", sma.len, len(vals))
+	if len(vals) < sma.len {
+		return commonerrs.NewErrMinCount("warmup vals", len(vals), sma.len)
 	}
 
-	sma.buf = buffer.NewFullCircularBuffer(vals)
+	wuVals := vals[len(vals)-sma.len:]
+
+	sma.buf = buffer.NewFullCircularBuffer(wuVals)
 	sma.current = sma.buf.Sum()
 
 	return nil

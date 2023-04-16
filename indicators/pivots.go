@@ -83,11 +83,11 @@ func (zz *Pivots) WarmupPeriod() int {
 
 func (zz *Pivots) WarmUp(times []time.Time, vals []float64) error {
 	if len(vals) != zz.Length {
-		return commonerrs.NewErrExactCount("warmup vals", zz.Length, len(vals))
+		return commonerrs.NewErrMinCount("warmup vals", len(vals), zz.Length)
 	}
 
 	if len(times) != zz.Length {
-		return commonerrs.NewErrExactCount("warmup times", zz.Length, len(times))
+		return commonerrs.NewErrMinCount("warmup times", len(times), zz.Length)
 	}
 
 	zz.Pivots = buffer.NewCircularBuffer[*Pivot](zz.NPivots)
@@ -117,7 +117,7 @@ func (zz *Pivots) WarmUp(times []time.Time, vals []float64) error {
 		startUpdates = minIdx + 1
 	}
 
-	// this should take care of remaining warmup values
+	// this should take care of all remaining warmup values
 	for i := startUpdates; i < zz.Length; i++ {
 		_ = zz.Update(times[i], vals[i])
 	}

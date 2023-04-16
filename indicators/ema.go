@@ -50,17 +50,21 @@ func (ema *EMA) Period() int {
 }
 
 func (ema *EMA) WarmUp(vals []float64) error {
-	if len(vals) != ema.len {
-		return commonerrs.NewErrExactCount("warmup values", ema.len, len(vals))
+	if len(vals) < ema.len {
+		return commonerrs.NewErrMinCount("warmup values", len(vals), ema.len)
 	}
 
 	sum := 0.0
-	for _, close := range vals {
-		sum += close
+	for i := 0; i < ema.len; i++ {
+		sum += vals[i]
 	}
 
 	ema.current = sum / float64(ema.len)
 	ema.warm = true
+
+	for i := ema.len; i < len(vals); i++ {
+		ema.Update(vals[i])
+	}
 
 	return nil
 }

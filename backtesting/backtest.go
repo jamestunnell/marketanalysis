@@ -9,7 +9,7 @@ import (
 
 func Backtest(s models.Strategy, bars models.Bars) error {
 	if len(bars) <= s.WarmupPeriod() {
-		return commonerrs.NewErrLessThanMin("warmup+backtest bars", s.WarmupPeriod()+1, len(bars))
+		return commonerrs.NewErrMinCount("bars", len(bars), s.WarmupPeriod()+1)
 	}
 
 	wuBars := bars[:s.WarmupPeriod()]

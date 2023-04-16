@@ -1,4 +1,4 @@
-package strategies
+package predictors
 
 import (
 	"bufio"
@@ -12,12 +12,12 @@ import (
 	"github.com/jamestunnell/marketanalysis/params"
 )
 
-type StrategyJSON struct {
+type PredictorJSON struct {
 	Type   string                     `json:"type"`
 	Params map[string]json.RawMessage `json:"params"`
 }
 
-func LoadStrategyFromFile(fpath string) (models.Strategy, error) {
+func LoadPredictorFromFile(fpath string) (models.Predictor, error) {
 	f, err := os.Open(fpath)
 	if err != nil {
 		err = fmt.Errorf("failed to open file %s: %w", fpath, err)
@@ -27,19 +27,19 @@ func LoadStrategyFromFile(fpath string) (models.Strategy, error) {
 
 	defer f.Close()
 
-	return LoadStrategy(f)
+	return LoadPredictor(f)
 }
 
-func LoadStrategy(r io.Reader) (models.Strategy, error) {
+func LoadPredictor(r io.Reader) (models.Predictor, error) {
 	d, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read data: %w", err)
 	}
 
-	var stratJSON StrategyJSON
+	var stratJSON PredictorJSON
 
 	if err = json.Unmarshal(d, &stratJSON); err != nil {
-		err = fmt.Errorf("failed to unmarshal strategy JSON: %w", err)
+		err = fmt.Errorf("failed to unmarshal Predictor JSON: %w", err)
 
 		return nil, err
 	}
@@ -54,22 +54,22 @@ func LoadStrategy(r io.Reader) (models.Strategy, error) {
 		ps[name] = p
 	}
 
-	var newStrategy func(models.Params) (models.Strategy, error)
+	var newPredictor func(models.Params) (models.Predictor, error)
 
 	switch stratJSON.Type {
-	case TypeTrendFollower:
-		newStrategy = NewTrendFollower
-	case TypeScalper:
-		newStrategy = NewScalper
+	case TypeMACross:
+		newPredictor = NewMACross
+	case TypePivot:
+		newPredictor = NewPivot
 	}
 
-	if newStrategy == nil {
-		return nil, fmt.Errorf("unknown strategy type '%s'", stratJSON.Type)
+	if newPredictor == nil {
+		return nil, fmt.Errorf("unknown Predictor type '%s'", stratJSON.Type)
 	}
 
-	strat, err := newStrategy(ps)
+	strat, err := newPredictor(ps)
 	if err != nil {
-		err = fmt.Errorf("failed to make %s strategy: %w", stratJSON.Type, err)
+		err = fmt.Errorf("failed to make %s Predictor: %w", stratJSON.Type, err)
 
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func LoadStrategy(r io.Reader) (models.Strategy, error) {
 	return strat, nil
 }
 
-func StoreStrategyToFile(s models.Strategy, fpath string) error {
+func StorePredictorToFile(s models.Predictor, fpath string) error {
 	f, err := os.Create(fpath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", fpath, err)
@@ -87,7 +87,7 @@ func StoreStrategyToFile(s models.Strategy, fpath string) error {
 
 	w := bufio.NewWriter(f)
 
-	err = StoreStrategy(s, w)
+	err = StorePredictor(s, w)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func StoreStrategyToFile(s models.Strategy, fpath string) error {
 	return nil
 }
 
-func StoreStrategy(s models.Strategy, w io.Writer) error {
+func StorePredictor(s models.Predictor, w io.Writer) error {
 	ps := map[string]json.RawMessage{}
 	for name, param := range s.Params() {
 		var buf bytes.Buffer
@@ -108,14 +108,14 @@ func StoreStrategy(s models.Strategy, w io.Writer) error {
 		ps[name] = buf.Bytes()
 	}
 
-	stratJSON := &StrategyJSON{
+	stratJSON := &PredictorJSON{
 		Type:   s.Type(),
 		Params: ps,
 	}
 
 	d, err := json.Marshal(stratJSON)
 	if err != nil {
-		return fmt.Errorf("failed to marshal strategy JSON: %w", err)
+		return fmt.Errorf("failed to marshal Predictor JSON: %w", err)
 	}
 
 	_, err = w.Write(d)

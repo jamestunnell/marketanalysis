@@ -108,7 +108,7 @@ func (bp *BarPredictor) Train(bars []*models.Bar, nIter int) error {
 
 	wp := trainingCore.TotalWarmupPeriod()
 	if len(bars) < (wp + 1) {
-		return commonerrs.NewErrLessThanMin("warmup+training bars", len(bars), wp+1)
+		return commonerrs.NewErrMinCount("warmup+training bars", len(bars), wp+1)
 	}
 
 	warmupBars := bars[:wp]
