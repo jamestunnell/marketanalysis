@@ -210,7 +210,7 @@ func makeFit(f PartsToStrategyFunc, c collection.Collection) optimization.Compos
 }
 
 func evaluate(tester backtesting.Tester) (float64, error) {
-	positions := []models.Position{}
+	positions := models.Positions{}
 
 	for tester.AnyLeft() {
 
@@ -224,7 +224,7 @@ func evaluate(tester backtesting.Tester) (float64, error) {
 		tester.Advance()
 	}
 
-	analysis := models.AnalyzePositions(positions)
+	analysis := positions.Analyze()
 	fitness := 1.0 - analysis.Winning
 
 	return fitness, nil

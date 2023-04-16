@@ -44,7 +44,7 @@ func main() {
 
 	dc := backtesting.NewSequentialDates(c.Timespan().DateRangeIn(time.Local))
 	dt := backtesting.NewDayTrader(c, strat, dc)
-	positions := []models.Position{}
+	positions := models.Positions{}
 
 	fmt.Println("Running backtests")
 	for dt.AnyLeft() {
@@ -62,7 +62,7 @@ func main() {
 
 	fmt.Printf("\n\n# Trades: %d\n", len(positions))
 
-	analysis := models.AnalyzePositions(positions)
+	analysis := positions.Analyze()
 
 	fmt.Printf("Winning trades: %f%%\n", analysis.Winning*100.0)
 	fmt.Printf("Total P/L: %f\n", analysis.TotalPL)
