@@ -78,6 +78,12 @@ func (cb *CircularBuffer[T]) Each(f func(T)) {
 	}
 }
 
+func (cb *CircularBuffer[T]) EachWithIndex(f func(int, T)) {
+	for i := cb.tail; i < (cb.tail + cb.Len()); i++ {
+		f(i, cb.elems[i%cb.cap])
+	}
+}
+
 func (cb *CircularBuffer[T]) incrHead() {
 	cb.head++
 

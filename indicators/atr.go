@@ -23,7 +23,7 @@ func (atr *ATR) WarmupPeriod() int {
 	return atr.length + 1
 }
 
-func (atr *ATR) WarmUp(bars []*models.Bar) error {
+func (atr *ATR) WarmUp(bars models.Bars) error {
 	wp := atr.WarmupPeriod()
 	if len(bars) < wp {
 		return commonerrs.NewErrMinCount("warmup bars", len(bars), wp)
@@ -51,12 +51,10 @@ func (atr *ATR) Current() float64 {
 	return atr.current
 }
 
-func (atr *ATR) Update(bar *models.Bar) float64 {
+func (atr *ATR) Update(bar *models.Bar) {
 	tr := TrueRange(bar, atr.prevBar)
 	n := float64(atr.length)
 
 	atr.current = (atr.current*(n-1) + tr) / n
 	atr.prevBar = bar
-
-	return atr.current
 }

@@ -85,7 +85,7 @@ func (bp *BarPredictorCore) WarmUp(bars []*models.Bar) error {
 
 		bp.prev = append(bp.prev, m)
 
-		_ = bp.ATR.Update(bar)
+		bp.ATR.Update(bar)
 	}
 
 	bp.warm = true
@@ -123,8 +123,10 @@ func (bp *BarPredictor) Train(bars []*models.Bar, nIter int) error {
 
 	for i := 1; i < len(trainingBars); i++ {
 		ins := combine(trainingCore.prev, cur)
-		atr := trainingCore.ATR.Update(trainingBars[i])
-		pred := NewBarMeasure(trainingBars[i], atr)
+
+		trainingCore.ATR.Update(trainingBars[i])
+
+		pred := NewBarMeasure(trainingBars[i], trainingCore.ATR.Current())
 
 		example := training.Example{
 			Input:    ins,
@@ -164,10 +166,11 @@ func (bp *BarPredictor) Predict(curBar *models.Bar) (*models.Bar, error) {
 		Bottom: outs[2],
 	}
 
-	atr = bp.ATR.Update(curBar)
+	bp.ATR.Update(curBar)
 
 	tNext := curBar.Timestamp.Add(bp.barDur)
-	predBar := models.NewBarFromOHLC(tNext, predM.ToOHLC(atr, curBar.Close))
+	ohlc := predM.ToOHLC(bp.ATR.Current(), curBar.Close)
+	predBar := models.NewBarFromOHLC(tNext, ohlc)
 
 	// shift prev
 	for i := 0; i < (bp.nPrevBars - 1); i++ {

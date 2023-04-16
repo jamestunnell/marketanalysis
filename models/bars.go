@@ -62,6 +62,10 @@ func LoadBars(r io.Reader) (Bars, error) {
 	return bars, nil
 }
 
+func (bars Bars) LastN(n int) Bars {
+	return sliceutils.LastN(bars, n)
+}
+
 func (bars Bars) Local() Bars {
 	localBars := sliceutils.Map(bars, func(b *Bar) *Bar {
 		return b.Local()
