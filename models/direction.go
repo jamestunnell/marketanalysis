@@ -1,4 +1,4 @@
-package indicators
+package models
 
 type Direction int
 

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
@@ -124,19 +125,19 @@ func (zz *Pivots) WarmUp(times []time.Time, vals []float64) error {
 	return nil
 }
 
-func (zz *Pivots) Direction() Direction {
+func (zz *Pivots) Direction() models.Direction {
 	if zz.primaryCandidate == nil {
-		return DirNone
+		return models.DirNone
 	}
 
 	switch zz.primaryCandidate.Type {
 	case PivotHigh:
-		return DirUp
+		return models.DirUp
 	case PivotLow:
-		return DirDown
+		return models.DirDown
 	}
 
-	return DirNone
+	return models.DirNone
 }
 
 func (zz *Pivots) Update(t time.Time, val float64) bool {
@@ -149,7 +150,7 @@ func (zz *Pivots) Update(t time.Time, val float64) bool {
 	prev, _ := zz.Pivots.Newest()
 
 	switch dir {
-	case DirNone:
+	case models.DirNone:
 		if val > prev.Value {
 			zz.Pivots.Add(NewPivotNeutral(t.Add(-zz.tDelta), prev.Value))
 			zz.primaryCandidate = NewPivotHigh(t, val)
@@ -157,7 +158,7 @@ func (zz *Pivots) Update(t time.Time, val float64) bool {
 			zz.Pivots.Add(NewPivotNeutral(t.Add(-zz.tDelta), prev.Value))
 			zz.primaryCandidate = NewPivotLow(t, val)
 		}
-	case DirUp:
+	case models.DirUp:
 		if val >= zz.primaryCandidate.Value {
 			zz.primaryCandidate.Value = val
 			zz.primaryCandidate.Time = t
@@ -174,7 +175,7 @@ func (zz *Pivots) Update(t time.Time, val float64) bool {
 				zz.secondaryCandidate.Value = val
 			}
 		}
-	case DirDown:
+	case models.DirDown:
 		if val <= zz.primaryCandidate.Value {
 			zz.primaryCandidate.Value = val
 			zz.primaryCandidate.Time = t
