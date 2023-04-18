@@ -2,14 +2,12 @@ package predictors
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/params"
 )
 
 type PredictorJSON struct {
@@ -105,12 +103,12 @@ func StorePredictorToFile(s models.Predictor, fpath string) error {
 func StorePredictor(s models.Predictor, w io.Writer) error {
 	ps := map[string]json.RawMessage{}
 	for name, param := range s.Params() {
-		var buf bytes.Buffer
-		if err := params.StoreParam(param, &buf); err != nil {
+		d, err := param.StoreVal()
+		if err != nil {
 			return fmt.Errorf("failed to store param '%s': %w", name, err)
 		}
 
-		ps[name] = buf.Bytes()
+		ps[name] = d
 	}
 
 	predJSON := &PredictorJSON{
