@@ -3,45 +3,43 @@ package predictors
 import (
 	"fmt"
 
+	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type Pivot struct {
 	direction models.Direction
-	params    models.Params
+	length    *models.TypedParam[int]
+	nPivots   *models.TypedParam[int]
 	pivots    *indicators.Pivots
 }
 
 const (
-	ParamPeriod  = "length"
+	ParamLength  = "length"
 	ParamNPivots = "nPivots"
 	TypePivot    = "Pivot"
+
+	MinPivotLen  = 2
+	MinNumPivots = 1
 )
 
-func NewPivot(params models.Params) (models.Predictor, error) {
-	length, err := params.GetInt(ParamPeriod)
+func NewPivot() models.Predictor {
+	return &Pivot{
+		length:  models.NewParam[int](constraints.NewMin(MinPivotLen)),
+		nPivots: models.NewParam[int](constraints.NewMin(MinNumPivots)),
+	}
+}
+
+func (p *Pivot) Initialize() error {
+	pivots, err := indicators.NewPivots(p.length.Value, p.nPivots.Value)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get length param: %w", err)
+		return fmt.Errorf("failed to make pivots indicator: %w", err)
 	}
 
-	nPivots, err := params.GetInt(ParamNPivots)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get nPivots param: %w", err)
-	}
+	p.pivots = pivots
 
-	pivots, err := indicators.NewPivots(length, nPivots)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make pivots indicator: %w", err)
-	}
-
-	piv := &Pivot{
-		direction: models.DirNone,
-		params:    params,
-		pivots:    pivots,
-	}
-
-	return piv, nil
+	return nil
 }
 
 func (piv *Pivot) Type() string {
@@ -49,7 +47,10 @@ func (piv *Pivot) Type() string {
 }
 
 func (piv *Pivot) Params() models.Params {
-	return piv.params
+	return models.Params{
+		ParamLength:  piv.length,
+		ParamNPivots: piv.nPivots,
+	}
 }
 
 func (piv *Pivot) WarmupPeriod() int {

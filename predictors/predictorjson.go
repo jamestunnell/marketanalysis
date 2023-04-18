@@ -36,45 +36,50 @@ func LoadPredictor(r io.Reader) (models.Predictor, error) {
 		return nil, fmt.Errorf("failed to read data: %w", err)
 	}
 
-	var stratJSON PredictorJSON
+	var predJSON PredictorJSON
 
-	if err = json.Unmarshal(d, &stratJSON); err != nil {
+	if err = json.Unmarshal(d, &predJSON); err != nil {
 		err = fmt.Errorf("failed to unmarshal Predictor JSON: %w", err)
 
 		return nil, err
 	}
 
-	ps := models.Params{}
-	for name, rawMsg := range stratJSON.Params {
-		p, err := params.LoadParam(bytes.NewReader(rawMsg))
-		if err != nil {
-			return nil, fmt.Errorf("failed to load param '%s': %w", name, err)
-		}
+	var newPredictor func() models.Predictor
 
-		ps[name] = p
-	}
-
-	var newPredictor func(models.Params) (models.Predictor, error)
-
-	switch stratJSON.Type {
+	switch predJSON.Type {
 	case TypeMACross:
 		newPredictor = NewMACross
+	case TypeMAOrdering:
+		newPredictor = NewMAOrdering
 	case TypePivot:
 		newPredictor = NewPivot
 	}
 
 	if newPredictor == nil {
-		return nil, fmt.Errorf("unknown Predictor type '%s'", stratJSON.Type)
+		return nil, fmt.Errorf("unknown Predictor type '%s'", predJSON.Type)
 	}
 
-	strat, err := newPredictor(ps)
-	if err != nil {
-		err = fmt.Errorf("failed to make %s Predictor: %w", stratJSON.Type, err)
+	pred := newPredictor()
+
+	for name, p := range pred.Params() {
+		rawMsg, found := predJSON.Params[name]
+		if !found {
+			return nil, &ErrMissingParam{Name: name}
+		}
+
+		err := p.LoadVal(rawMsg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load value for param '%s': %w", name, err)
+		}
+	}
+
+	if err := pred.Initialize(); err != nil {
+		err = fmt.Errorf("failed to nit %s Predictor: %w", predJSON.Type, err)
 
 		return nil, err
 	}
 
-	return strat, nil
+	return pred, nil
 }
 
 func StorePredictorToFile(s models.Predictor, fpath string) error {
@@ -108,12 +113,12 @@ func StorePredictor(s models.Predictor, w io.Writer) error {
 		ps[name] = buf.Bytes()
 	}
 
-	stratJSON := &PredictorJSON{
+	predJSON := &PredictorJSON{
 		Type:   s.Type(),
 		Params: ps,
 	}
 
-	d, err := json.Marshal(stratJSON)
+	d, err := json.Marshal(predJSON)
 	if err != nil {
 		return fmt.Errorf("failed to marshal Predictor JSON: %w", err)
 	}
