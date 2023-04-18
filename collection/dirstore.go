@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/zerolog/log"
 )
 
 type DirStore struct {
@@ -17,7 +19,7 @@ func NewDirStore(root string) (Store, error) {
 	}
 
 	if !rootInfo.IsDir() {
-		return nil, &ErrNotDir{DirPath: root}
+		return nil, &ErrNotDir{Path: root}
 	}
 
 	store := &DirStore{root: root}
@@ -25,41 +27,62 @@ func NewDirStore(root string) (Store, error) {
 	return store, nil
 }
 
-func (store *DirStore) ItemNames() ([]string, error) {
+func (store *DirStore) MakeSubstore(name string) error {
+	path := filepath.Join(store.root, name)
+
+	if err := os.Mkdir(path, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to make substore '%s': %w", name, err)
+	}
+
+	return nil
+}
+
+func (store *DirStore) SubstoreNames() []string {
 	entries, err := os.ReadDir(store.root)
 	if err != nil {
-		err = fmt.Errorf("failed to read root dir '%s': %w", store.root, err)
+		log.Error().Err(err).Str("dir", store.root).Msg("failed to read store dir")
 
-		return []string{}, err
+		return []string{}
 	}
 
 	names := []string{}
 
 	for _, entry := range entries {
-		names = append(names, entry.Name())
+		if entry.IsDir() {
+			names = append(names, entry.Name())
+		}
 	}
 
-	return names, nil
+	return names
 }
 
-func (store *DirStore) LoadItem(name string) ([]byte, error) {
-	fpath := filepath.Join(store.root, name)
-
-	d, err := os.ReadFile(fpath)
+func (store *DirStore) ItemNames() []string {
+	entries, err := os.ReadDir(store.root)
 	if err != nil {
-		err = fmt.Errorf("failed to read item '%s': %w", name, err)
-		return []byte{}, err
+		log.Error().Err(err).Str("dir", store.root).Msg("failed to read store dir")
+
+		return []string{}
 	}
 
-	return d, nil
+	names := []string{}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			names = append(names, entry.Name())
+		}
+	}
+
+	return names
 }
 
-func (store *DirStore) StoreItem(name string, data []byte) error {
+func (store *DirStore) Item(name string) (Item, error) {
 	fpath := filepath.Join(store.root, name)
 
-	if err := os.WriteFile(fpath, data, 0644); err != nil {
-		return fmt.Errorf("failed to read item '%s': %w", name, err)
-	}
+	return NewFileItem(fpath)
+}
 
-	return nil
+func (store *DirStore) Substore(name string) (Store, error) {
+	sub := filepath.Join(store.root, name)
+
+	return NewDirStore(sub)
 }

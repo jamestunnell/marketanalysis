@@ -66,12 +66,10 @@ func (bars Bars) LastN(n int) Bars {
 	return sliceutils.LastN(bars, n)
 }
 
-func (bars Bars) Local() Bars {
-	localBars := sliceutils.Map(bars, func(b *Bar) *Bar {
-		return b.Local()
-	})
-
-	return Bars(localBars)
+func (bars Bars) Localize() {
+	for _, b := range bars {
+		b.Localize()
+	}
 }
 
 func (bars Bars) Timestamps() []time.Time {

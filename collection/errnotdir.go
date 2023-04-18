@@ -3,9 +3,9 @@ package collection
 import "fmt"
 
 type ErrNotDir struct {
-	DirPath string
+	Path string
 }
 
 func (err *ErrNotDir) Error() string {
-	return fmt.Sprintf("'%s' is not a dir", err.DirPath)
+	return fmt.Sprintf("'%s' is not a dir", err.Path)
 }

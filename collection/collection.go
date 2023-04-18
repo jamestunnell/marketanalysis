@@ -6,50 +6,55 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
 )
 
 type Collection interface {
 	Info() *Info
-	Timespan() timespan.TimeSpan
-	GetBars(ts timespan.TimeSpan) models.Bars
+	Dates() []date.Date
+	GetBars(date.Date) models.Bars
 	AddBars(models.Bars) int
-
-	Store(s Store) error
+	Store() error
 }
 
 type collection struct {
-	bars  models.Bars
-	info  *Info
-	store Store
+	info     *Info
+	index    *DateIndex
+	store    Store
+	barStore Store
 }
 
 const (
-	BarsItemName = "bars.jsonl"
-	InfoItemName = "info.json"
+	BarsStoreName = "bars"
+	InfoItemName  = "info.json"
 )
 
-func Exists(store Store) (bool, error) {
-	names, err := store.ItemNames()
-	if err != nil {
-		err = fmt.Errorf("failed to get store item names: %w", err)
-
-		return false, err
+func Exists(store Store) bool {
+	if !slices.Contains(store.ItemNames(), InfoItemName) {
+		return false
 	}
 
-	reqdItems := []string{InfoItemName, BarsItemName}
-	for _, reqdName := range reqdItems {
-		if !slices.Contains(names, reqdName) {
-			return false, nil
-		}
+	if !slices.Contains(store.SubstoreNames(), BarsStoreName) {
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
 func Load(store Store) (Collection, error) {
-	d, err := store.LoadItem(InfoItemName)
+	infoItem, err := store.Item(InfoItemName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get info item: %w", err)
+	}
+
+	barStore, err := store.Substore(BarsStoreName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bars substore: %w", err)
+	}
+
+	d, err := infoItem.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed load info item: %w", err)
 	}
@@ -59,28 +64,37 @@ func Load(store Store) (Collection, error) {
 		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
 	}
 
-	d, err = store.LoadItem(BarsItemName)
-	if err != nil {
-		return nil, fmt.Errorf("failed load bars item: %w", err)
-	}
-
-	bars, err := models.LoadBars(bytes.NewReader(d))
-	if err != nil {
-		return nil, fmt.Errorf("failed process bars data: %w", err)
-	}
+	idx := NewDateIndex(barStore)
 
 	c := &collection{
-		info: &info,
-		bars: bars,
+		info:     &info,
+		store:    store,
+		barStore: barStore,
+		index:    idx,
 	}
 
 	return c, nil
 }
 
-func New(info *Info, bars models.Bars) (Collection, error) {
+func New(info *Info, store Store) (Collection, error) {
+	if !slices.Contains(store.SubstoreNames(), BarsStoreName) {
+		if err := store.MakeSubstore(BarsStoreName); err != nil {
+			return nil, fmt.Errorf("failed to make bars substore: %w", err)
+		}
+	}
+
+	barsStore, err := store.Substore(BarsStoreName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bars substore: %w", err)
+	}
+
+	idx := NewDateIndex(barsStore)
+
 	c := &collection{
-		info: info,
-		bars: bars,
+		info:     info,
+		barStore: barsStore,
+		store:    store,
+		index:    idx,
 	}
 
 	return c, nil
@@ -90,8 +104,8 @@ func (c *collection) Info() *Info {
 	return c.info
 }
 
-func (c *collection) Timespan() timespan.TimeSpan {
-	return c.bars.Timespan()
+func (c *collection) Dates() []date.Date {
+	return c.index.Dates()
 }
 
 func (c *collection) GetBars(ts timespan.TimeSpan) models.Bars {
