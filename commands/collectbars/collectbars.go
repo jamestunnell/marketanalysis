@@ -89,14 +89,9 @@ func (cmd *Command) Run() error {
 		bars[i] = models.NewBarFromAlpaca(alpacaBar)
 	}
 
-	exists, err := collection.Exists(cmd.Store)
-	if err != nil {
-		return fmt.Errorf("failed to check if collection exists: %w", err)
-	}
-
 	var c collection.Collection
 
-	if exists {
+	if collection.Exists(cmd.Store) {
 		c, err = collection.Load(cmd.Store)
 		if err != nil {
 			return fmt.Errorf("failed to load collection: %w", err)
@@ -110,13 +105,11 @@ func (cmd *Command) Run() error {
 			return err
 		}
 
-		added := c.AddBars(bars)
-
-		fmt.Printf("added %d bars to existing collection", added)
+		fmt.Println("collection exists")
 	} else {
 		info := collection.NewInfo(cmd.Symbol, collection.Resolution1Min)
 
-		c, err = collection.New(info, bars)
+		c, err = collection.New(info, cmd.Store)
 		if err != nil {
 			return fmt.Errorf("failed to create new collection: %w", err)
 		}
@@ -124,9 +117,11 @@ func (cmd *Command) Run() error {
 		fmt.Println("created new collection")
 	}
 
-	if err = c.Store(cmd.Store); err != nil {
-		return fmt.Errorf("failed to store collection: %w", err)
+	if err = c.StoreBars(bars); err != nil {
+		return fmt.Errorf("failed to store bars: %w", err)
 	}
+
+	fmt.Println("stored bars")
 
 	return nil
 }
