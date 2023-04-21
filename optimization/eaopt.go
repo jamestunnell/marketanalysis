@@ -6,13 +6,18 @@ import (
 	"time"
 
 	"github.com/MaxHalford/eaopt"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rs/zerolog/log"
 )
 
 type NewGenomeFunc func(rng *rand.Rand) eaopt.Genome
+type GenomeToPredictorFunc func(eaopt.Genome) (models.Predictor, error)
 
 // EAOpt uses evolutionary algorithms to optimize
-func EAOpt(newGenome NewGenomeFunc, config eaopt.GAConfig) (eaopt.Individuals, error) {
+func EAOpt(
+	newGenome NewGenomeFunc,
+	toPredictor GenomeToPredictorFunc,
+	config eaopt.GAConfig) (eaopt.Individuals, error) {
 	var ga, err = config.NewGA()
 	if err != nil {
 		err = fmt.Errorf("failed to make GA: %w", err)
@@ -35,10 +40,21 @@ func EAOpt(newGenome NewGenomeFunc, config eaopt.GAConfig) (eaopt.Individuals, e
 
 		best = newBest
 
+		var paramsStr string
+
+		pred, err := toPredictor(best[0].Genome)
+		if err == nil {
+			paramsStr = pred.Params().String()
+		} else {
+			paramsStr = err.Error()
+		}
+
 		log.Info().
+			Str("params", paramsStr).
 			Float64("best fitness", best[0].Fitness).
 			Msgf("completed gen %d/%d", currentGen, config.NGenerations)
 
+		currentGen++
 	}
 
 	// Run the GA
