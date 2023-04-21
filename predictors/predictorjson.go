@@ -42,18 +42,8 @@ func LoadPredictor(r io.Reader) (models.Predictor, error) {
 		return nil, err
 	}
 
-	var newPredictor func() models.Predictor
-
-	switch predJSON.Type {
-	case TypeMACross:
-		newPredictor = NewMACross
-	case TypeMAOrdering:
-		newPredictor = NewMAOrdering
-	case TypePivot:
-		newPredictor = NewPivot
-	}
-
-	if newPredictor == nil {
+	newPredictor, found := GetNewPredictorFunc(predJSON.Type)
+	if !found {
 		return nil, fmt.Errorf("unknown Predictor type '%s'", predJSON.Type)
 	}
 

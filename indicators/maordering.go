@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/util"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/montanaflynn/stats"
 	"golang.org/x/exp/slices"
@@ -23,19 +22,9 @@ type MAOrdering struct {
 
 const MinNumPeriods = 2
 
-func NewMAOrdering(
-	periodMin, periodMax, nPeriods, signalLen int) (*MAOrdering, error) {
-	if periodMin >= periodMax {
-		return nil, fmt.Errorf("period min %d is not less than period max %d", periodMin, periodMax)
-	}
-
-	if nPeriods < MinNumPeriods {
-		return nil, fmt.Errorf("n periods %d is less than %d", nPeriods, MinNumPeriods)
-	}
-
-	periods := util.LinSpaceInts(periodMin, periodMax, nPeriods)
-	mas := make([]*EMA, nPeriods)
-	uptrendIndices := make([]float64, nPeriods)
+func NewMAOrdering(periods []int, signalLen int) (*MAOrdering, error) {
+	mas := make([]*EMA, len(periods))
+	uptrendIndices := make([]float64, len(periods))
 
 	for i, period := range periods {
 		mas[i] = NewEMA(period)
@@ -46,13 +35,12 @@ func NewMAOrdering(
 	wuPeriod := signalSMA.Period() + sliceutils.Last(mas).Period()
 
 	mao := &MAOrdering{
-		// params:         params,
 		signal:         signalSMA,
 		MAs:            mas,
 		warmupPeriod:   wuPeriod,
 		uptrendIndices: uptrendIndices,
 		correlation:    0.0,
-		nPeriods:       nPeriods,
+		nPeriods:       len(periods),
 	}
 
 	return mao, nil
@@ -108,7 +96,11 @@ func (mao *MAOrdering) Update(val float64) {
 
 	mao.updateCorrelation()
 
-	mao.signal.Update(val)
+	mao.signal.Update(mao.correlation)
+}
+
+func (mao *MAOrdering) Signal() float64 {
+	return mao.signal.Current()
 }
 
 func (mao *MAOrdering) Correlation() float64 {

@@ -8,11 +8,9 @@ import (
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 )
 
-type Params map[string]Param
-
 type Param interface {
 	Type() string
-	Constraint() Constraint
+	Constraints() []Constraint
 	LoadVal([]byte) error
 	StoreVal() ([]byte, error)
 	GetVal() any
@@ -20,16 +18,16 @@ type Param interface {
 }
 
 type TypedParam[T any] struct {
-	Value  T
-	Constr Constraint
+	Value T
+	cs    []Constraint
 }
 
-func NewParam[T any](c Constraint) *TypedParam[T] {
+func NewParam[T any](cs ...Constraint) *TypedParam[T] {
 	var t T
 
 	return &TypedParam[T]{
-		Value:  t,
-		Constr: c,
+		Value: t,
+		cs:    cs,
 	}
 }
 
@@ -37,8 +35,8 @@ func (p *TypedParam[T]) Type() string {
 	return reflect.TypeOf(p.Value).String()
 }
 
-func (p *TypedParam[T]) Constraint() Constraint {
-	return p.Constr
+func (p *TypedParam[T]) Constraints() []Constraint {
+	return p.cs
 }
 
 func (p *TypedParam[T]) LoadVal(d []byte) error {
@@ -67,8 +65,8 @@ func (p *TypedParam[T]) GetVal() any {
 }
 
 func (p *TypedParam[T]) SetVal(val any) error {
-	if p.Constr != nil {
-		if err := p.Constr.Check(val); err != nil {
+	for _, c := range p.cs {
+		if err := c.Check(val); err != nil {
 			return fmt.Errorf("constraint failed on value %v: %w", val, err)
 		}
 	}

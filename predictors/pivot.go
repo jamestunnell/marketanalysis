@@ -16,18 +16,34 @@ type Pivot struct {
 }
 
 const (
-	ParamLength  = "length"
-	ParamNPivots = "nPivots"
-	TypePivot    = "Pivot"
+	NumPivotsName       = "numPivots"
+	NumPivotsMaxDefault = 10
+	NumPivotsMin        = 2
 
-	MinPivotLen  = 2
-	MinNumPivots = 1
+	PivotLenName       = "pivotLen"
+	PivotLenMaxDefault = 100
+	PivotLenMin        = 2
+
+	TypePivot = "Pivot"
 )
 
+var (
+	numPivotsMax = NewParamLimit(NumPivotsMaxDefault)
+	pivotLenMax  = NewParamLimit(PivotLenMaxDefault)
+)
+
+func init() {
+	upperLimits[PivotLenName] = pivotLenMax
+	upperLimits[NumPivotsName] = numPivotsMax
+}
+
 func NewPivot() models.Predictor {
+	numPivotsRange := constraints.NewValRange(NumPivotsMin, numPivotsMax.Value)
+	pivotLenRange := constraints.NewValRange(PivotLenMin, pivotLenMax.Value)
+
 	return &Pivot{
-		length:  models.NewParam[int](constraints.NewMin(MinPivotLen)),
-		nPivots: models.NewParam[int](constraints.NewMin(MinNumPivots)),
+		length:  models.NewParam[int](pivotLenRange),
+		nPivots: models.NewParam[int](numPivotsRange),
 	}
 }
 
@@ -48,8 +64,8 @@ func (piv *Pivot) Type() string {
 
 func (piv *Pivot) Params() models.Params {
 	return models.Params{
-		ParamLength:  piv.length,
-		ParamNPivots: piv.nPivots,
+		PivotLenName:  piv.length,
+		NumPivotsName: piv.nPivots,
 	}
 }
 

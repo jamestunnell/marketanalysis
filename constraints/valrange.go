@@ -8,21 +8,21 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-const TypeRange = "Range"
+const TypeValRange = "ValRange"
 
-type TypedRange[T constraints.Ordered] struct {
+type TypedValRange[T constraints.Ordered] struct {
 	Min, Max T
 }
 
-func NewRange[T constraints.Ordered](min, max T) models.Constraint {
-	return &TypedRange[T]{Min: min, Max: max}
+func NewValRange[T constraints.Ordered](min, max T) models.Constraint {
+	return &TypedValRange[T]{Min: min, Max: max}
 }
 
-func (m *TypedRange[T]) Type() string {
-	return TypeRange
+func (m *TypedValRange[T]) Type() string {
+	return TypeValRange
 }
 
-func (m *TypedRange[T]) Check(val any) error {
+func (m *TypedValRange[T]) Check(val any) error {
 	tVal, ok := val.(T)
 	if !ok {
 		actual := reflect.TypeOf(val).String()
@@ -42,6 +42,6 @@ func (m *TypedRange[T]) Check(val any) error {
 	return nil
 }
 
-func (m *TypedRange[T]) Bounds() []any {
+func (m *TypedValRange[T]) ValueBounds() []any {
 	return []any{m.Min, m.Max}
 }

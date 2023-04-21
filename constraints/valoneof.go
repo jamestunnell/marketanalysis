@@ -9,23 +9,23 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-const TypeOneOf = "OneOf"
+const TypeValOneOf = "ValOneOf"
 
-type TypedOneOf[T constraints.Ordered] struct {
+type TypedValOneOf[T constraints.Ordered] struct {
 	Allowed []T
 }
 
-func NewOneOf[T constraints.Ordered](first T, more ...T) models.Constraint {
+func NewValOneOf[T constraints.Ordered](first T, more ...T) models.Constraint {
 	allowed := append([]T{first}, more...)
 
-	return &TypedOneOf[T]{Allowed: allowed}
+	return &TypedValOneOf[T]{Allowed: allowed}
 }
 
-func (m *TypedOneOf[T]) Type() string {
-	return TypeOneOf
+func (m *TypedValOneOf[T]) Type() string {
+	return TypeValOneOf
 }
 
-func (m *TypedOneOf[T]) Check(val any) error {
+func (m *TypedValOneOf[T]) Check(val any) error {
 	tVal, ok := val.(T)
 	if !ok {
 		actual := reflect.TypeOf(val).String()
@@ -43,7 +43,7 @@ func (m *TypedOneOf[T]) Check(val any) error {
 	return commonerrs.NewErrNotOneOf("value", tVal, m.Allowed)
 }
 
-func (m *TypedOneOf[T]) Bounds() []any {
+func (m *TypedValOneOf[T]) ValueBounds() []any {
 	return sliceutils.Map(m.Allowed, func(val T) any {
 		return val
 	})

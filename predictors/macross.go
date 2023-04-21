@@ -2,6 +2,7 @@ package predictors
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/constraints"
@@ -11,32 +12,54 @@ import (
 
 type MACross struct {
 	direction        models.Direction
-	fastPeriod       *models.TypedParam[int]
-	slowPeriod       *models.TypedParam[int]
+	period1          *models.TypedParam[int]
+	period2          *models.TypedParam[int]
 	signalLen        *models.TypedParam[int]
 	fastEMA, slowEMA *indicators.EMA
 	signalSMA        *indicators.SMA
 }
 
 const (
-	ParamFastPeriod = "fastPeriod"
-	ParamSlowPeriod = "slowPeriod"
-	TypeMACross     = "MACross"
+	Period1Name       = "period1"
+	Period1MaxDefault = 200
+	Period1Min        = 1
 
-	MinPeriod = 1
+	Period2Name       = "period2"
+	Period2MaxDefault = 200
+	Period2Min        = 1
+
+	SignalLenName       = "signalLen"
+	SignalLenMaxDefault = 20
+	SignalLenMin        = 1
+
+	TypeMACross = "MACross"
 )
 
+var (
+	period1Max   = NewParamLimit(Period1MaxDefault)
+	period2Max   = NewParamLimit(Period2MaxDefault)
+	signalLenMax = NewParamLimit(SignalLenMaxDefault)
+)
+
+func init() {
+	upperLimits[Period1Name] = period1Max
+	upperLimits[Period2Name] = period2Max
+	upperLimits[SignalLenName] = signalLenMax
+}
+
 func NewMACross() models.Predictor {
-	minPeriod := constraints.NewMin(MinPeriod)
+	period1Range := constraints.NewValRange(Period1Min, period1Max.Value)
+	period2Range := constraints.NewValRange(Period2Min, period2Max.Value)
+	signalLenRange := constraints.NewValRange(SignalLenMin, period2Max.Value)
 
 	return &MACross{
-		direction:  models.DirNone,
-		fastPeriod: models.NewParam[int](minPeriod),
-		slowPeriod: models.NewParam[int](minPeriod),
-		signalLen:  models.NewParam[int](minPeriod),
-		fastEMA:    nil,
-		slowEMA:    nil,
-		signalSMA:  nil,
+		direction: models.DirNone,
+		period1:   models.NewParam[int](period1Range),
+		period2:   models.NewParam[int](period2Range),
+		signalLen: models.NewParam[int](signalLenRange),
+		fastEMA:   nil,
+		slowEMA:   nil,
+		signalSMA: nil,
 	}
 }
 
@@ -46,22 +69,21 @@ func (mac *MACross) Type() string {
 
 func (mac *MACross) Params() models.Params {
 	return models.Params{
-		ParamFastPeriod: mac.fastPeriod,
-		ParamSlowPeriod: mac.slowPeriod,
-		ParamSignalLen:  mac.signalLen,
+		Period1Name:   mac.period1,
+		Period2Name:   mac.period2,
+		SignalLenName: mac.signalLen,
 	}
 }
 
 func (mac *MACross) Initialize() error {
-	fastPeriod := mac.fastPeriod.Value
-	slowPeriod := mac.slowPeriod.Value
+	periods := []int{
+		mac.period1.Value,
+		mac.period2.Value}
 
-	if fastPeriod >= slowPeriod {
-		return fmt.Errorf("fast period %d is not less than slow period %d", fastPeriod, slowPeriod)
-	}
+	sort.Ints(periods)
 
-	mac.fastEMA = indicators.NewEMA(fastPeriod)
-	mac.slowEMA = indicators.NewEMA(slowPeriod)
+	mac.fastEMA = indicators.NewEMA(periods[0])
+	mac.slowEMA = indicators.NewEMA(periods[1])
 	mac.signalSMA = indicators.NewSMA(mac.signalLen.Value)
 
 	return nil

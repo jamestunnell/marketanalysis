@@ -6,46 +6,73 @@ import (
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/util"
 )
 
 type MAOrdering struct {
-	direction  models.Direction
-	periodMin  *models.TypedParam[int]
-	periodMax  *models.TypedParam[int]
-	nPeriods   *models.TypedParam[int]
-	signalLen  *models.TypedParam[int]
-	threshold  *models.TypedParam[float64]
-	maOrdering *indicators.MAOrdering
+	direction   models.Direction
+	numPeriods  *models.TypedParam[int]
+	periodStart *models.TypedParam[int]
+	periodSpan  *models.TypedParam[int]
+	signalLen   *models.TypedParam[int]
+	threshold   *models.TypedParam[float64]
+	maOrdering  *indicators.MAOrdering
 }
 
 const (
-	ParamMinPeriod  = "minPeriod"
-	ParamMaxPeriod  = "maxPeriod"
-	ParamNumPeriods = "numPeriods"
-	ParamSignalLen  = "signalLen"
-	ParamThreshold  = "threshold"
+	NumPeriodsName       = "numPeriods"
+	NumPeriodsMin        = 3
+	NumPeriodsMaxDefault = 20
+
+	PeriodStartName       = "periodStart"
+	PeriodStartMin        = 1
+	PeriodStartMaxDefault = 80
+
+	PeriodSpanName       = "periodSpan"
+	PeriodSpanMin        = 3
+	PeriodSpanMaxDefault = 120
+
+	ThresholdName = "threshold"
 
 	TypeMAOrdering = "MAOrdering"
 )
 
+var (
+	numPeriodsMax  = NewParamLimit(NumPeriodsMaxDefault)
+	periodStartMax = NewParamLimit(PeriodStartMaxDefault)
+	periodSpanMax  = NewParamLimit(PeriodSpanMaxDefault)
+)
+
+func init() {
+	upperLimits[NumPeriodsName] = numPeriodsMax
+	upperLimits[PeriodStartName] = periodStartMax
+	upperLimits[PeriodSpanName] = periodSpanMax
+}
+
 func NewMAOrdering() models.Predictor {
-	minPeriod := constraints.NewMin(MinPeriod)
-	threshRange := constraints.NewRange(0.0, 1.0)
+	numPeriodsRange := constraints.NewValRange(NumPeriodsMin, numPeriodsMax.Value)
+	periodStartRange := constraints.NewValRange(PeriodStartMin, periodStartMax.Value)
+	periodSpanRange := constraints.NewValRange(PeriodSpanMin, periodSpanMax.Value)
+	signalLenRange := constraints.NewValRange(SignalLenMin, signalLenMax.Value)
+	threshRange := constraints.NewValRange(0.0, 1.0)
 
 	return &MAOrdering{
-		direction:  models.DirNone,
-		periodMin:  models.NewParam[int](minPeriod),
-		periodMax:  models.NewParam[int](minPeriod),
-		nPeriods:   models.NewParam[int](constraints.NewMin(2)),
-		signalLen:  models.NewParam[int](minPeriod),
-		threshold:  models.NewParam[float64](threshRange),
-		maOrdering: nil,
+		direction:   models.DirNone,
+		numPeriods:  models.NewParam[int](numPeriodsRange),
+		periodStart: models.NewParam[int](periodStartRange),
+		periodSpan:  models.NewParam[int](periodSpanRange),
+		signalLen:   models.NewParam[int](signalLenRange),
+		threshold:   models.NewParam[float64](threshRange),
+		maOrdering:  nil,
 	}
 }
 
 func (mao *MAOrdering) Initialize() error {
-	maOrdering, err := indicators.NewMAOrdering(
-		mao.periodMin.Value, mao.periodMax.Value, mao.nPeriods.Value, mao.signalLen.Value)
+	start := mao.periodStart.Value
+	span := mao.periodSpan.Value
+	periods := util.LinSpaceInts(start, start+span, mao.numPeriods.Value)
+
+	maOrdering, err := indicators.NewMAOrdering(periods, mao.signalLen.Value)
 	if err != nil {
 		return fmt.Errorf("failed to make MA ordering indicator: %w", err)
 	}
@@ -61,11 +88,11 @@ func (mao *MAOrdering) Type() string {
 
 func (mao *MAOrdering) Params() models.Params {
 	return models.Params{
-		ParamMinPeriod:  mao.periodMin,
-		ParamMaxPeriod:  mao.periodMax,
-		ParamNumPeriods: mao.nPeriods,
-		ParamSignalLen:  mao.signalLen,
-		ParamThreshold:  mao.threshold,
+		NumPeriodsName:  mao.numPeriods,
+		PeriodStartName: mao.periodStart,
+		PeriodSpanName:  mao.periodSpan,
+		SignalLenName:   mao.signalLen,
+		ThresholdName:   mao.threshold,
 	}
 }
 
@@ -84,10 +111,12 @@ func (mao *MAOrdering) WarmUp(bars models.Bars) error {
 func (mao *MAOrdering) Update(bar *models.Bar) {
 	mao.maOrdering.Update(bar.Close)
 
-	corr := mao.maOrdering.Correlation()
-	if corr > mao.threshold.Value {
+	sig := mao.maOrdering.Signal()
+	thresh := mao.threshold.Value
+
+	if sig >= thresh {
 		mao.direction = models.DirUp
-	} else if corr < -mao.threshold.Value {
+	} else if sig <= -thresh {
 		mao.direction = models.DirDown
 	} else {
 		mao.direction = models.DirNone
