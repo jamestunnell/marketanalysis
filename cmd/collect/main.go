@@ -1,50 +1,48 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"time"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/jamestunnell/marketanalysis/commands/collectbars"
+	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 )
 
 var (
 	app = kingpin.New("collect", "Collect historical 1-minute bar data.`")
 
-	start = app.Flag("start", "Start date-time formatted according to RFC3339.").Required().String()
-	end   = app.Flag("end", "End date-time formatted according to RFC3339.").String()
-	dir   = app.Flag("dir", "Collection dir path.").Required().String()
-	sym   = app.Flag("sym", "The stock symbol.").Required().String()
+	startStr = app.Flag("start", "Start date formatted according to RFC3339.").Required().String()
+	endStr   = app.Flag("end", "End date formatted according to RFC3339.").String()
+	dir      = app.Flag("dir", "Collection dir path.").Required().String()
+	sym      = app.Flag("sym", "The stock symbol.").Required().String()
 )
 
 func main() {
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	tStart, err := time.Parse(time.RFC3339, *start)
+	startDate, err := date.Parse(date.RFC3339, *startStr)
 	if err != nil {
-		err = fmt.Errorf("failed to parse start datetime '%s' using RFC3339: %w", *start, err)
-
-		log.Fatal().Err(err).Msg("failed to parse start time")
+		log.Fatal().Err(err).Msg("failed to parse start date")
 	}
 
-	var tEnd time.Time
+	startTime := startDate.UTC()
 
-	if *end == "" {
-		tEnd = time.Now().Add(-15 * time.Minute)
+	var endDate date.Date
+
+	if *endStr == "" {
+		endDate = date.Today()
 	} else {
-		tEnd, err = time.Parse(time.RFC3339, *end)
+		endDate, err = date.Parse(date.RFC3339, *endStr)
 		if err != nil {
-			err = fmt.Errorf("failed to parse end datetime '%s' using RFC3339: %w", *end, err)
-
-			log.Fatal().Err(err).Msg("failed to parse end time")
+			log.Fatal().Err(err).Msg("failed to parse end date")
 		}
 	}
 
+	endTime := endDate.UTC()
 	params := &collectbars.Params{
-		Start:         tStart,
-		End:           tEnd,
+		Start:         startTime,
+		End:           endTime,
 		CollectionDir: *dir,
 		Symbol:        *sym,
 	}
