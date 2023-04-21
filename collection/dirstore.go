@@ -27,14 +27,14 @@ func NewDirStore(root string) (Store, error) {
 	return store, nil
 }
 
-func (store *DirStore) MakeSubstore(name string) error {
+func (store *DirStore) MakeSubstore(name string) (Store, error) {
 	path := filepath.Join(store.root, name)
 
 	if err := os.Mkdir(path, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to make substore '%s': %w", name, err)
+		return nil, fmt.Errorf("failed to make substore '%s': %w", name, err)
 	}
 
-	return nil
+	return NewDirStore(path)
 }
 
 func (store *DirStore) SubstoreNames() []string {
@@ -56,6 +56,12 @@ func (store *DirStore) SubstoreNames() []string {
 	return names
 }
 
+func (store *DirStore) Substore(name string) (Store, error) {
+	sub := filepath.Join(store.root, name)
+
+	return NewDirStore(sub)
+}
+
 func (store *DirStore) ItemNames() []string {
 	entries, err := os.ReadDir(store.root)
 	if err != nil {
@@ -75,14 +81,25 @@ func (store *DirStore) ItemNames() []string {
 	return names
 }
 
-func (store *DirStore) Item(name string) (Item, error) {
+func (store *DirStore) LoadItem(name string) ([]byte, error) {
 	fpath := filepath.Join(store.root, name)
 
-	return NewFileItem(fpath)
+	d, err := os.ReadFile(fpath)
+	if err != nil {
+		err = fmt.Errorf("failed to read file '%s': %w", fpath, err)
+
+		return []byte{}, err
+	}
+
+	return d, nil
 }
 
-func (store *DirStore) Substore(name string) (Store, error) {
-	sub := filepath.Join(store.root, name)
+func (store *DirStore) StoreItem(name string, data []byte) error {
+	fpath := filepath.Join(store.root, name)
 
-	return NewDirStore(sub)
+	if err := os.WriteFile(fpath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file '%s': %w", fpath, err)
+	}
+
+	return nil
 }

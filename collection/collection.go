@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
@@ -13,10 +14,9 @@ import (
 
 type Collection interface {
 	Info() *Info
-	Dates() []date.Date
-	GetBars(date.Date) models.Bars
-	AddBars(models.Bars) int
-	Store() error
+	TimeSpan() timespan.TimeSpan
+	LoadBars(timespan.TimeSpan) (models.Bars, error)
+	StoreBars(models.Bars) error
 }
 
 type collection struct {
@@ -44,24 +44,19 @@ func Exists(store Store) bool {
 }
 
 func Load(store Store) (Collection, error) {
-	infoItem, err := store.Item(InfoItemName)
+	d, err := store.LoadItem(InfoItemName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get info item: %w", err)
-	}
-
-	barStore, err := store.Substore(BarsStoreName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bars substore: %w", err)
-	}
-
-	d, err := infoItem.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed load info item: %w", err)
+		return nil, fmt.Errorf("failed to load info item: %w", err)
 	}
 
 	var info Info
 	if err = json.Unmarshal(d, &info); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
+	}
+
+	barStore, err := store.Substore(BarsStoreName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bars substore: %w", err)
 	}
 
 	idx := NewDateIndex(barStore)
@@ -77,22 +72,38 @@ func Load(store Store) (Collection, error) {
 }
 
 func New(info *Info, store Store) (Collection, error) {
-	if !slices.Contains(store.SubstoreNames(), BarsStoreName) {
-		if err := store.MakeSubstore(BarsStoreName); err != nil {
-			return nil, fmt.Errorf("failed to make bars substore: %w", err)
+	if !slices.Contains(store.ItemNames(), InfoItemName) {
+		d, err := json.Marshal(info)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal info: %w", err)
+		}
+
+		if err := store.StoreItem(InfoItemName, d); err != nil {
+			return nil, fmt.Errorf("failed to store info item: %w", err)
 		}
 	}
 
-	barsStore, err := store.Substore(BarsStoreName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bars substore: %w", err)
+	var barStore Store
+
+	var err error
+
+	if !slices.Contains(store.SubstoreNames(), BarsStoreName) {
+		barStore, err = store.MakeSubstore(BarsStoreName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make bars substore: %w", err)
+		}
+	} else {
+		barStore, err = store.Substore(BarsStoreName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get bars substore: %w", err)
+		}
 	}
 
-	idx := NewDateIndex(barsStore)
+	idx := NewDateIndex(barStore)
 
 	c := &collection{
 		info:     info,
-		barStore: barsStore,
+		barStore: barStore,
 		store:    store,
 		index:    idx,
 	}
@@ -104,74 +115,94 @@ func (c *collection) Info() *Info {
 	return c.info
 }
 
-func (c *collection) Dates() []date.Date {
-	return c.index.Dates()
+func (c *collection) TimeSpan() timespan.TimeSpan {
+	return c.index.TimeSpan()
 }
 
-func (c *collection) GetBars(ts timespan.TimeSpan) models.Bars {
+func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
+	itemName, found := c.index.FindItem(d)
+	if !found {
+		return models.Bars{}, nil
+	}
+
+	barsData, err := c.barStore.LoadItem(itemName)
+	if err != nil {
+		err = fmt.Errorf("failed to load bars item '%s': %w", itemName, err)
+
+		return models.Bars{}, err
+	}
+
+	bars, err := models.LoadBars(bytes.NewReader(barsData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load bars from data: %w", err)
+	}
+
+	return bars, nil
+}
+
+func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
 	bars := models.Bars{}
 
-	for _, bar := range c.bars {
-		if ts.Contains(bar.Timestamp) {
-			bars = append(bars, bar)
+	for cur := ts.Start(); cur.Before(ts.End()); cur = cur.AddDate(0, 0, 1) {
+		d := date.NewAt(cur)
+
+		dayBars, err := c.loadBarsForDate(d)
+		if err != nil {
+			dStr := d.Format(date.RFC3339)
+			err = fmt.Errorf("failed to laod bars on date %s: %w", dStr, err)
+
+			return models.Bars{}, err
 		}
+
+		if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
+		} else {
+			dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
+				return ts.Contains(b.Timestamp)
+			})
+		}
+
+		bars = append(bars, dayBars...)
 	}
 
-	return bars
+	return bars, nil
 }
 
-func (c *collection) AddBars(bars models.Bars) int {
-	added := 0
+func BarsItemName(sym string, d date.Date) string {
+	const fmtStr = "%s_%s.jsonl"
 
-	for _, bar := range bars {
-		found := false
-		for _, existingBar := range c.bars {
-			if existingBar.Timestamp.Equal(bar.Timestamp) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			c.bars = append(c.bars, bar)
-
-			added++
-		}
-	}
-
-	return added
+	return fmt.Sprintf(fmtStr, sym, d.Format(date.RFC3339))
 }
 
-func (c *collection) Store(s Store) error {
-	d, err := json.Marshal(c.info)
-	if err != nil {
-		return fmt.Errorf("failed to marshal info: %w", err)
+func (c *collection) StoreBars(bars models.Bars) error {
+	// separate by date
+	byDate := map[date.Date]models.Bars{}
+	for _, b := range bars {
+		d := b.Date()
+
+		if dateBars, found := byDate[d]; found {
+			byDate[d] = append(dateBars, b)
+		} else {
+			byDate[d] = models.Bars{b}
+		}
 	}
 
-	err = s.StoreItem(InfoItemName, d)
-	if err != nil {
-		return fmt.Errorf("failed store info item: %w", err)
-	}
+	//store each set of bars in an item
+	for d, bars := range byDate {
+		slices.SortFunc(bars, func(a, b *models.Bar) bool {
+			return a.Timestamp.Before(b.Timestamp)
+		})
 
-	var b bytes.Buffer
+		var buf bytes.Buffer
 
-	c.SortBars()
+		if err := bars.Store(&buf); err != nil {
+			return fmt.Errorf("failed to make bar data: %w", err)
+		}
 
-	err = c.bars.Store(&b)
-	if err != nil {
-		return fmt.Errorf("failed make bars data: %w", err)
-	}
-
-	err = s.StoreItem(BarsItemName, b.Bytes())
-	if err != nil {
-		return fmt.Errorf("failed store bars item: %w", err)
+		name := BarsItemName(c.info.Symbol, d)
+		if err := c.barStore.StoreItem(name, buf.Bytes()); err != nil {
+			return fmt.Errorf("failed to store bar date: %w", err)
+		}
 	}
 
 	return nil
-}
-
-func (c *collection) SortBars() {
-	slices.SortFunc(c.bars, func(a, b *models.Bar) bool {
-		return a.Timestamp.Before(b.Timestamp)
-	})
 }

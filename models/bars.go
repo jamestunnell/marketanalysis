@@ -62,6 +62,10 @@ func LoadBars(r io.Reader) (Bars, error) {
 	return bars, nil
 }
 
+func (bars Bars) Last() *Bar {
+	return sliceutils.Last(bars)
+}
+
 func (bars Bars) LastN(n int) Bars {
 	return sliceutils.LastN(bars, n)
 }
@@ -84,7 +88,7 @@ func (bars Bars) ClosePrices() []float64 {
 	})
 }
 
-func (bars Bars) Timespan() timespan.TimeSpan {
+func (bars Bars) TimeSpan() timespan.TimeSpan {
 	if len(bars) == 0 {
 		return timespan.TimeSpan{}
 	}

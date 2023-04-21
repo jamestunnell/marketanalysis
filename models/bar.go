@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
+	"github.com/rickb777/date"
 )
 
 type Bar struct {
@@ -42,6 +43,12 @@ func NewBarFromAlpaca(alpacaBar marketdata.Bar) *Bar {
 
 func (b *Bar) Localize() {
 	b.Timestamp = b.Timestamp.Local()
+}
+
+func (b *Bar) Date() date.Date {
+	yyyy, mm, dd := b.Timestamp.Date()
+
+	return date.New(yyyy, mm, dd)
 }
 
 func (b *Bar) HeikinAshi(prev *Bar) *OHLC {

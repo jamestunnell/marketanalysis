@@ -1,9 +1,11 @@
 package collection
 
 type Store interface {
-	MakeSubstore(name string) error
+	MakeSubstore(name string) (Store, error)
 	SubstoreNames() []string
-	ItemNames() []string
 	Substore(name string) (Store, error)
-	Item(name string) (Item, error)
+
+	ItemNames() []string
+	LoadItem(name string) ([]byte, error)
+	StoreItem(name string, data []byte) error
 }
