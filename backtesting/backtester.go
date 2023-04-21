@@ -1,7 +1,7 @@
 package backtesting
 
 type Tester interface {
-	RunTest() (*Report, error)
+	RunTest() error
 	Advance()
 	AnyLeft() bool
 }

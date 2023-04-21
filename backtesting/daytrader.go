@@ -13,8 +13,9 @@ import (
 
 type DayTrader struct {
 	Collection     collection.Collection
-	Strategy       models.Strategy
+	Predictor      models.Predictor
 	DateController DateController
+	Eval           EvalFunc
 }
 
 type DateController interface {
@@ -30,38 +31,37 @@ const (
 
 func NewDayTrader(
 	c collection.Collection,
-	s models.Strategy,
-	dc DateController) *DayTrader {
+	p models.Predictor,
+	dc DateController,
+	eval EvalFunc) *DayTrader {
 	return &DayTrader{
 		Collection:     c,
-		Strategy:       s,
+		Predictor:      p,
 		DateController: dc,
+		Eval:           eval,
 	}
 }
 
-func (t *DayTrader) RunTest() (*Report, error) {
+func (t *DayTrader) RunTest() error {
 	open := t.DateController.Current().Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
 	close := t.DateController.Current().Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
 	ts := timespan.NewTimeSpan(open, close)
-	bars := t.Collection.GetBars(ts)
 
-	report := &Report{
-		Start:     open,
-		Positions: models.Positions{},
+	bars, err := t.Collection.LoadBars(ts)
+	if err != nil {
+		return fmt.Errorf("failed to load bars: %w", err)
 	}
 
 	if len(bars) == 0 {
-		return report, nil
+		return nil
 	}
 
-	err := Backtest(t.Strategy, bars)
+	err = EvaluatePredictor(t.Predictor, bars, t.Eval)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run backtest: %w", err)
+		return fmt.Errorf("failed to evaluate predictor: %w", err)
 	}
 
-	report.Positions = t.Strategy.ClosedPositions()
-
-	return report, nil
+	return nil
 }
 
 func (t *DayTrader) Advance() {
