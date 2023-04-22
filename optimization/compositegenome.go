@@ -6,10 +6,10 @@ import (
 	"github.com/MaxHalford/eaopt"
 )
 
-type CompositeFitFunc func([]PartialGenome) (float64, error)
+type FitFunc func(eaopt.Genome) (float64, error)
 
 type CompositeGenome struct {
-	Fit   CompositeFitFunc
+	Fit   FitFunc
 	Parts []PartialGenome
 }
 
@@ -17,9 +17,10 @@ type PartialGenome interface {
 	Mutate(rng *rand.Rand)
 	Crossover(genome PartialGenome, rng *rand.Rand)
 	Clone() PartialGenome
+	Value() any
 }
 
-func NewCompositeGenome(fit CompositeFitFunc, parts ...PartialGenome) eaopt.Genome {
+func NewCompositeGenome(fit FitFunc, parts ...PartialGenome) eaopt.Genome {
 	return &CompositeGenome{
 		Fit:   fit,
 		Parts: parts,
@@ -27,7 +28,7 @@ func NewCompositeGenome(fit CompositeFitFunc, parts ...PartialGenome) eaopt.Geno
 }
 
 func (g *CompositeGenome) Evaluate() (float64, error) {
-	return g.Fit(g.Parts)
+	return g.Fit(g)
 }
 
 func (g *CompositeGenome) Mutate(rng *rand.Rand) {
