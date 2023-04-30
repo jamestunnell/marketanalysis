@@ -27,7 +27,9 @@ func (ema *EMA) Type() string {
 }
 
 func (ema *EMA) Params() models.Params {
-	return models.Params{}
+	return models.Params{
+		PeriodName: ema.period,
+	}
 }
 
 func (ema *EMA) Initialize() error {

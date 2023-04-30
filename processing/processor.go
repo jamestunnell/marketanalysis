@@ -25,6 +25,11 @@ func init() {
 	)
 
 	processorRegistry.Add(
+		processors.TypeMADiff,
+		func() Processor { return processors.NewMADiff() },
+	)
+
+	processorRegistry.Add(
 		processors.TypeSMA,
 		func() Processor { return processors.NewSMA() },
 	)

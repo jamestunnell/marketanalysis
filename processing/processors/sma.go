@@ -8,46 +8,52 @@ import (
 
 type SMA struct {
 	period *models.TypedParam[int]
-	ema    *indicators.SMA
+	sma    *indicators.SMA
 }
 
-const TypeSMA = "SMA"
+const (
+	PeriodName = "period"
+
+	TypeSMA = "SMA"
+)
 
 func NewSMA() *SMA {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &SMA{
 		period: models.NewParam[int](periodRange),
-		ema:    nil,
+		sma:    nil,
 	}
 }
 
-func (ema *SMA) Type() string {
+func (sma *SMA) Type() string {
 	return TypeSMA
 }
 
-func (ema *SMA) Params() models.Params {
-	return models.Params{}
+func (sma *SMA) Params() models.Params {
+	return models.Params{
+		PeriodName: sma.period,
+	}
 }
 
-func (ema *SMA) Initialize() error {
-	ema.ema = indicators.NewSMA(ema.period.Value)
+func (sma *SMA) Initialize() error {
+	sma.sma = indicators.NewSMA(sma.period.Value)
 
 	return nil
 }
 
-func (ema *SMA) WarmupPeriod() int {
-	return ema.ema.Period()
+func (sma *SMA) WarmupPeriod() int {
+	return sma.sma.Period()
 }
 
-func (ema *SMA) Output() float64 {
-	return ema.ema.Current()
+func (sma *SMA) Output() float64 {
+	return sma.sma.Current()
 }
 
-func (ema *SMA) WarmUp(vals []float64) {
-	_ = ema.ema.WarmUp(vals)
+func (sma *SMA) WarmUp(vals []float64) {
+	_ = sma.sma.WarmUp(vals)
 }
 
-func (ema *SMA) Update(val float64) {
-	ema.Update(val)
+func (sma *SMA) Update(val float64) {
+	sma.Update(val)
 }
