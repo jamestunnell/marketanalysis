@@ -15,9 +15,7 @@ type TypedValOneOf[T constraints.Ordered] struct {
 	Allowed []T
 }
 
-func NewValOneOf[T constraints.Ordered](first T, more ...T) models.Constraint {
-	allowed := append([]T{first}, more...)
-
+func NewValOneOf[T constraints.Ordered](allowed []T) models.Constraint {
 	return &TypedValOneOf[T]{Allowed: allowed}
 }
 

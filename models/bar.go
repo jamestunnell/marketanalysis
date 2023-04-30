@@ -51,7 +51,7 @@ func (b *Bar) Date() date.Date {
 	return date.New(yyyy, mm, dd)
 }
 
-func (b *Bar) HeikinAshi(prev *Bar) *OHLC {
+func (b *Bar) HeikinAshi(prev *OHLC) *OHLC {
 	return &OHLC{
 		Open:  0.5 * (prev.Open + prev.Close),
 		Close: 0.25 * (b.Open + b.High + b.Low + b.Close),
