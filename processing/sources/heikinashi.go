@@ -33,15 +33,15 @@ func (ha *HeikinAshi) Params() models.Params {
 	}
 }
 
-func (ha *HeikinAshi) WarmupPeriod() int {
-	return 2
-}
-
 func (ha *HeikinAshi) Initialize() error {
 	ha.output = 0.0
 	ha.prevOHLC = nil
 
 	return nil
+}
+
+func (ha *HeikinAshi) WarmupPeriod() int {
+	return 2
 }
 
 func (ha *HeikinAshi) Output() float64 {

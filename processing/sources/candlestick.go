@@ -31,14 +31,14 @@ func (ha *Candlestick) Params() models.Params {
 	}
 }
 
-func (ha *Candlestick) WarmupPeriod() int {
-	return 1
-}
-
 func (ha *Candlestick) Initialize() error {
 	ha.output = 0.0
 
 	return nil
+}
+
+func (ha *Candlestick) WarmupPeriod() int {
+	return 1
 }
 
 func (ha *Candlestick) Output() float64 {

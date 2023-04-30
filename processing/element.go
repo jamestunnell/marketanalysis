@@ -10,8 +10,8 @@ import (
 type Element interface {
 	Type() string
 	Params() models.Params
-	WarmupPeriod() int
 	Initialize() error
+	WarmupPeriod() int
 	Output() float64
 }
 
