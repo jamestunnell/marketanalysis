@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -48,10 +49,16 @@ func (ha *HeikinAshi) Output() float64 {
 	return ha.output
 }
 
-func (ha *HeikinAshi) WarmUp(bars models.Bars) {
+func (ha *HeikinAshi) WarmUp(bars models.Bars) error {
+	if len(bars) != 2 {
+		return commonerrs.NewErrExactLen("warmup bars", len(bars), 2)
+	}
+
 	ha.prevOHLC = bars[0].OHLC
 
 	ha.Update(bars[1])
+
+	return nil
 }
 
 func (ha *HeikinAshi) Update(bar *models.Bar) {

@@ -50,10 +50,10 @@ func (sma *SMA) Output() float64 {
 	return sma.sma.Current()
 }
 
-func (sma *SMA) WarmUp(vals []float64) {
-	_ = sma.sma.WarmUp(vals)
+func (sma *SMA) WarmUp(vals []float64) error {
+	return sma.sma.WarmUp(vals)
 }
 
 func (sma *SMA) Update(val float64) {
-	sma.Update(val)
+	sma.sma.Update(val)
 }

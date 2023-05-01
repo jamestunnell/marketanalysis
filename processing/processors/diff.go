@@ -1,6 +1,9 @@
 package processors
 
-import "github.com/jamestunnell/marketanalysis/models"
+import (
+	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/models"
+)
 
 type Diff struct {
 	output, prev float64
@@ -35,7 +38,11 @@ func (d *Diff) Output() float64 {
 	return d.output
 }
 
-func (d *Diff) WarmUp(vals []float64) {
+func (d *Diff) WarmUp(vals []float64) error {
+	if len(vals) != 2 {
+		return commonerrs.NewErrExactLen("warmup vals", len(vals), 2)
+	}
+
 	d.prev = vals[0]
 
 	d.Update(vals[1])

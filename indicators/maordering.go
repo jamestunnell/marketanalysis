@@ -11,9 +11,7 @@ import (
 )
 
 type MAOrdering struct {
-	// params         models.Params
 	MAs            []*EMA
-	signal         *SMA
 	warmupPeriod   int
 	uptrendIndices []float64
 	correlation    float64
@@ -22,7 +20,7 @@ type MAOrdering struct {
 
 const MinNumPeriods = 2
 
-func NewMAOrdering(periods []int, signalLen int) (*MAOrdering, error) {
+func NewMAOrdering(periods []int) *MAOrdering {
 	mas := make([]*EMA, len(periods))
 	uptrendIndices := make([]float64, len(periods))
 
@@ -31,11 +29,9 @@ func NewMAOrdering(periods []int, signalLen int) (*MAOrdering, error) {
 		uptrendIndices[i] = float64(i)
 	}
 
-	signalSMA := NewSMA(signalLen)
-	wuPeriod := signalSMA.Period() + sliceutils.Last(mas).Period()
+	wuPeriod := sliceutils.Last(mas).Period()
 
 	mao := &MAOrdering{
-		signal:         signalSMA,
 		MAs:            mas,
 		warmupPeriod:   wuPeriod,
 		uptrendIndices: uptrendIndices,
@@ -43,7 +39,7 @@ func NewMAOrdering(periods []int, signalLen int) (*MAOrdering, error) {
 		nPeriods:       len(periods),
 	}
 
-	return mao, nil
+	return mao
 }
 
 func (mao *MAOrdering) WarmupPeriod() int {
@@ -55,35 +51,11 @@ func (mao *MAOrdering) WarmUp(vals []float64) error {
 		return commonerrs.NewErrMinCount("warmup values", len(vals), mao.warmupPeriod)
 	}
 
-	// warm up the MAs
-	lastMAPeriod := sliceutils.Last(mao.MAs).Period()
-	maWUVals := vals[:lastMAPeriod]
 	for _, ma := range mao.MAs {
-		err := ma.WarmUp(maWUVals)
+		err := ma.WarmUp(vals)
 		if err != nil {
 			return fmt.Errorf("failed to warm up MA(%d): %w", ma.Period(), err)
 		}
-	}
-
-	signalWUVals := make([]float64, mao.signal.Period())
-	for i := 0; i < mao.signal.Period(); i++ {
-		val := vals[i+lastMAPeriod]
-		for _, ma := range mao.MAs {
-			ma.Update(val)
-		}
-
-		mao.updateCorrelation()
-
-		signalWUVals[i] = mao.correlation
-	}
-
-	if err := mao.signal.WarmUp(signalWUVals); err != nil {
-		return fmt.Errorf("failed to warm up signal: %w", err)
-	}
-
-	// handle any remaining warmup vals
-	for i := mao.warmupPeriod; i < len(vals); i++ {
-		mao.Update(vals[i])
 	}
 
 	return nil
@@ -95,12 +67,6 @@ func (mao *MAOrdering) Update(val float64) {
 	}
 
 	mao.updateCorrelation()
-
-	mao.signal.Update(mao.correlation)
-}
-
-func (mao *MAOrdering) Signal() float64 {
-	return mao.signal.Current()
 }
 
 func (mao *MAOrdering) Correlation() float64 {

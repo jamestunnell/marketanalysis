@@ -46,10 +46,10 @@ func (ema *EMA) Output() float64 {
 	return ema.ema.Current()
 }
 
-func (ema *EMA) WarmUp(vals []float64) {
-	_ = ema.ema.WarmUp(vals)
+func (ema *EMA) WarmUp(vals []float64) error {
+	return ema.ema.WarmUp(vals)
 }
 
 func (ema *EMA) Update(val float64) {
-	ema.Update(val)
+	ema.ema.Update(val)
 }

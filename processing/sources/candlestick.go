@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -45,8 +46,14 @@ func (ha *Candlestick) Output() float64 {
 	return ha.output
 }
 
-func (ha *Candlestick) WarmUp(bars models.Bars) {
+func (ha *Candlestick) WarmUp(bars models.Bars) error {
+	if len(bars) != 1 {
+		return commonerrs.NewErrExactLen("warmup bars", len(bars), 1)
+	}
+
 	ha.Update(bars[0])
+
+	return nil
 }
 
 func (ha *Candlestick) Update(bar *models.Bar) {

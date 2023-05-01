@@ -8,7 +8,7 @@ import (
 type Source interface {
 	Element
 
-	WarmUp(bars models.Bars)
+	WarmUp(bars models.Bars) error
 	Update(bar *models.Bar)
 }
 
