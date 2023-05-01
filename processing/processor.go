@@ -30,6 +30,11 @@ func init() {
 	)
 
 	processorRegistry.Add(
+		processors.TypeMAOrder,
+		func() Processor { return processors.NewMAOrder() },
+	)
+
+	processorRegistry.Add(
 		processors.TypeSMA,
 		func() Processor { return processors.NewSMA() },
 	)
