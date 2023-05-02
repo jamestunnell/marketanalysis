@@ -106,7 +106,7 @@ func (c *Chain) Initialize() error {
 		wuPeriod += proc.WarmupPeriod()
 	}
 
-	c.warmupPeriod = c.warmupPeriod
+	c.warmupPeriod = wuPeriod
 	c.warm = false
 	c.output = 0.0
 
