@@ -6,10 +6,10 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func TrueRange(cur, prev *models.Bar) float64 {
+func TrueRange(cur, prev *models.OHLC) float64 {
 	a := cur.High - cur.Low
-	b := math.Abs(cur.High - prev.Close)
-	c := math.Abs(cur.Low - prev.Close)
+	b := cur.High - prev.Close
+	c := prev.Close - cur.Low
 
 	return math.Max(math.Max(a, b), c)
 }

@@ -22,40 +22,40 @@ func NewCandlestick() *Candlestick {
 	}
 }
 
-func (ha *Candlestick) Type() string {
+func (c *Candlestick) Type() string {
 	return TypeCandlestick
 }
 
-func (ha *Candlestick) Params() models.Params {
+func (c *Candlestick) Params() models.Params {
 	return models.Params{
-		BarValueName: ha.barValueType,
+		BarValueName: c.barValueType,
 	}
 }
 
-func (ha *Candlestick) Initialize() error {
-	ha.output = 0.0
+func (c *Candlestick) Initialize() error {
+	c.output = 0.0
 
 	return nil
 }
 
-func (ha *Candlestick) WarmupPeriod() int {
+func (c *Candlestick) WarmupPeriod() int {
 	return 1
 }
 
-func (ha *Candlestick) Output() float64 {
-	return ha.output
+func (c *Candlestick) Output() float64 {
+	return c.output
 }
 
-func (ha *Candlestick) WarmUp(bars models.Bars) error {
+func (c *Candlestick) WarmUp(bars models.Bars) error {
 	if len(bars) != 1 {
 		return commonerrs.NewErrExactLen("warmup bars", len(bars), 1)
 	}
 
-	ha.Update(bars[0])
+	c.Update(bars[0])
 
 	return nil
 }
 
-func (ha *Candlestick) Update(bar *models.Bar) {
-	ha.output = BarValue(ha.barValueType.Value, bar.OHLC)
+func (c *Candlestick) Update(bar *models.Bar) {
+	c.output = BarValue(c.barValueType.Value, bar.OHLC)
 }

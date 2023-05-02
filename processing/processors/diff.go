@@ -46,6 +46,8 @@ func (d *Diff) WarmUp(vals []float64) error {
 	d.prev = vals[0]
 
 	d.Update(vals[1])
+
+	return nil
 }
 
 func (d *Diff) Update(val float64) {
