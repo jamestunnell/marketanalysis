@@ -15,6 +15,11 @@ var processorRegistry = NewElementRegistry[Processor]()
 
 func init() {
 	processorRegistry.Add(
+		processors.TypeAroonOsc,
+		func() Processor { return processors.NewAroonOsc() },
+	)
+
+	processorRegistry.Add(
 		processors.TypeDiff,
 		func() Processor { return processors.NewDiff() },
 	)
@@ -32,6 +37,11 @@ func init() {
 	processorRegistry.Add(
 		processors.TypeMAOrder,
 		func() Processor { return processors.NewMAOrder() },
+	)
+
+	processorRegistry.Add(
+		processors.TypeSlope,
+		func() Processor { return processors.NewSlope() },
 	)
 
 	processorRegistry.Add(

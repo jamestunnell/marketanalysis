@@ -7,6 +7,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
+// DMI is a Directional Movement Index indicator.
 type DMI struct {
 	period                int
 	prevOHLC              *models.OHLC
@@ -34,7 +35,7 @@ func (dmi *DMI) WarmupPeriod() int {
 func (dmi *DMI) WarmUp(bars models.Bars) error {
 	n := len(bars)
 	if n < dmi.WarmupPeriod() {
-		return commonerrs.ErrExactLen("warmup bars", n, dmi.WarmupPeriod())
+		return commonerrs.NewErrMinCount("warmup bars", n, dmi.WarmupPeriod())
 	}
 
 	prev := bars[0].OHLC

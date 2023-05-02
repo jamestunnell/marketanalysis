@@ -42,6 +42,12 @@ func (cb *CircularBuffer[T]) Full() bool {
 	return cb.full
 }
 
+func (cb *CircularBuffer[T]) AddN(ts ...T) {
+	for _, t := range ts {
+		cb.Add(t)
+	}
+}
+
 func (cb *CircularBuffer[T]) Add(t T) {
 	if cb.full {
 		cb.elems[cb.head] = t

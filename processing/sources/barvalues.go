@@ -3,7 +3,7 @@ package sources
 import "github.com/jamestunnell/marketanalysis/models"
 
 const (
-	BarValueName = "BarValue"
+	BarValueName = "barValue"
 
 	BarValueClose = "close"
 	BarValueOpen  = "open"

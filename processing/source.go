@@ -21,9 +21,25 @@ func init() {
 	)
 
 	sourceRegistry.Add(
+		sources.TypeDMI,
+		func() Source { return sources.NewDMI() },
+	)
+
+	sourceRegistry.Add(
+		sources.TypeEMV,
+		func() Source { return sources.NewEMV() },
+	)
+
+	sourceRegistry.Add(
 		sources.TypeHeikinAshi,
 		func() Source { return sources.NewHeikinAshi() },
 	)
+
+	sourceRegistry.Add(
+		sources.TypeTrueRange,
+		func() Source { return sources.NewTrueRange() },
+	)
+
 }
 
 func MarshalSource(s Source) ([]byte, error) {
