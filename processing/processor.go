@@ -7,7 +7,6 @@ import (
 type Processor interface {
 	Element
 
-	WarmUp(vals []float64) error
 	Update(val float64)
 }
 

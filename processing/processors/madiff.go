@@ -1,7 +1,6 @@
 package processors
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/jamestunnell/marketanalysis/constraints"
@@ -67,27 +66,15 @@ func (mad *MADiff) Output() float64 {
 	return mad.output
 }
 
-func (mad *MADiff) WarmUp(vals []float64) error {
-	if err := mad.slowEMA.WarmUp(vals); err != nil {
-		return fmt.Errorf("failed to warm up EMA(%d): %w", mad.slowEMA.Period(), err)
-	}
-
-	if err := mad.fastEMA.WarmUp(vals[:mad.fastEMA.Period()]); err != nil {
-		return fmt.Errorf("failed to warm up EMA(%d): %w", mad.fastEMA.Period(), err)
-	}
-
-	for i := mad.fastEMA.Period(); i < len(vals); i++ {
-		mad.fastEMA.Update(vals[i])
-	}
-
-	mad.output = mad.fastEMA.Current() - mad.slowEMA.Current()
-
-	return nil
+func (mad *MADiff) Warm() bool {
+	return mad.slowEMA.Warm()
 }
 
 func (mad *MADiff) Update(val float64) {
 	mad.slowEMA.Update(val)
 	mad.fastEMA.Update(val)
 
-	mad.output = mad.fastEMA.Current() - mad.slowEMA.Current()
+	if mad.slowEMA.Warm() {
+		mad.output = mad.fastEMA.Current() - mad.slowEMA.Current()
+	}
 }

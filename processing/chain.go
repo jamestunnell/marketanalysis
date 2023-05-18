@@ -4,26 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type Chain struct {
-	source       Source
-	procs        []Processor
-	warm         bool
-	warmupPeriod int
-	output       float64
+	source                    Source
+	procs                     []Processor
+	outputProcs, outputSource float64
 }
 
 func NewChain(source Source, procs ...Processor) *Chain {
 	return &Chain{
 		source:       source,
 		procs:        procs,
-		warm:         false,
-		warmupPeriod: 0,
-		output:       0.0,
+		outputProcs:  0.0,
+		outputSource: 0.0,
 	}
 }
 
@@ -87,6 +83,8 @@ func (c *Chain) UnmarshalJSON(d []byte) error {
 
 	c.source = source
 	c.procs = procs
+	c.outputProcs = 0.0
+	c.outputSource = 0.0
 
 	return nil
 }
@@ -106,81 +104,46 @@ func (c *Chain) Initialize() error {
 		wuPeriod += proc.WarmupPeriod()
 	}
 
-	c.warmupPeriod = wuPeriod
-	c.warm = false
-	c.output = 0.0
+	c.outputSource = 0.0
+	c.outputProcs = 0.0
 
 	return nil
 }
 
-func (c *Chain) Warm() bool {
-	return c.warm
+func (c *Chain) SourceWarm() bool {
+	return c.source.Warm()
 }
 
-func (c *Chain) WarmupPeriod() int {
-	return c.warmupPeriod
+func (c *Chain) ProcsWarm() bool {
+	return sliceutils.Last(c.procs).Warm()
 }
 
-func (c *Chain) WarmUp(bars models.Bars) error {
-	if len(bars) < c.warmupPeriod {
-		return commonerrs.NewErrMinCount("warmup bars", len(bars), c.warmupPeriod)
-	}
+func (c *Chain) SourceOutput() float64 {
+	return c.source.Output()
+}
 
-	err := c.source.WarmUp(bars[:c.source.WarmupPeriod()])
-	if err != nil {
-		return fmt.Errorf("failed to warm up source: %w", err)
-	}
-
-	if len(c.procs) == 0 {
-		c.warm = true
-		c.output = c.source.Output()
-
-		return nil
-	}
-
-	wuStart := c.source.WarmupPeriod()
-
-	for i, p := range c.procs {
-		wuCount := p.WarmupPeriod()
-		wuVals := make([]float64, wuCount)
-		prevProcs := c.procs[:i]
-
-		for j := 0; j < wuCount; j++ {
-			b := bars[wuStart+j]
-
-			wuVals[i] = updateChain(b, c.source, prevProcs)
-		}
-
-		err := p.WarmUp(wuVals)
-		if err != nil {
-			return fmt.Errorf("failed to warm up processor: %w", err)
-		}
-	}
-
-	c.warm = true
-	c.output = sliceutils.Last(c.procs).Output()
-
-	return nil
+func (c *Chain) ProcsOutput() float64 {
+	return sliceutils.Last(c.procs).Output()
 }
 
 func (c *Chain) Update(bar *models.Bar) {
-	c.output = updateChain(bar, c.source, c.procs)
-}
-
-func (c *Chain) Output() float64 {
-	return c.output
-}
-
-func updateChain(b *models.Bar, src Source, procs []Processor) float64 {
-	src.Update(b)
-
-	val := src.Output()
-
-	for _, p := range procs {
-		p.Update(val)
-
-		val = p.Output()
+	c.source.Update(bar)
+	if !c.source.Warm() {
+		return
 	}
 
-	return val
+	c.outputSource = c.source.Output()
+
+	input := c.source.Output()
+
+	for _, proc := range c.procs {
+		proc.Update(input)
+
+		if !proc.Warm() {
+			break
+		}
+
+		input = proc.Output()
+	}
+
 }

@@ -1,8 +1,6 @@
 package processors
 
 import (
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
@@ -55,12 +53,8 @@ func (s *Slope) Output() float64 {
 	return s.linregr.Slope()
 }
 
-func (s *Slope) WarmUp(vals []float64) error {
-	if err := s.linregr.WarmUp(vals); err != nil {
-		return fmt.Errorf("failed to warm up linear regression indicator: %w", err)
-	}
-
-	return nil
+func (s *Slope) Warm() bool {
+	return s.linregr.Warm()
 }
 
 func (s *Slope) Update(val float64) {

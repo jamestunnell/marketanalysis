@@ -46,8 +46,8 @@ func (ema *EMA) Output() float64 {
 	return ema.ema.Current()
 }
 
-func (ema *EMA) WarmUp(vals []float64) error {
-	return ema.ema.WarmUp(vals)
+func (ema *EMA) Warm() bool {
+	return ema.ema.Warm()
 }
 
 func (ema *EMA) Update(val float64) {

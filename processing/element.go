@@ -12,6 +12,7 @@ type Element interface {
 	Params() models.Params
 	Initialize() error
 	WarmupPeriod() int
+	Warm() bool
 	Output() float64
 }
 

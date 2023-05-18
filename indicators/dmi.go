@@ -3,7 +3,6 @@ package indicators
 import (
 	"math"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -13,6 +12,7 @@ type DMI struct {
 	prevOHLC              *models.OHLC
 	mdmEMA, pdmEMA, trEMA *EMA
 	pdi, mdi, dx          float64
+	warm                  bool
 }
 
 func NewDMI(period int) *DMI {
@@ -25,6 +25,7 @@ func NewDMI(period int) *DMI {
 		pdi:      0.0,
 		mdi:      0.0,
 		dx:       0.0,
+		warm:     false,
 	}
 }
 
@@ -32,43 +33,17 @@ func (dmi *DMI) WarmupPeriod() int {
 	return 1 + dmi.period
 }
 
-func (dmi *DMI) WarmUp(bars models.Bars) error {
-	n := len(bars)
-	if n < dmi.WarmupPeriod() {
-		return commonerrs.NewErrMinCount("warmup bars", n, dmi.WarmupPeriod())
-	}
-
-	prev := bars[0].OHLC
-	mdmVals := make([]float64, dmi.period)
-	pdmVals := make([]float64, dmi.period)
-	trVals := make([]float64, dmi.period)
-
-	for i := 0; i < dmi.period; i++ {
-		cur := bars[1+i].OHLC
-		pdm, mdm := pdmAndMDM(cur, prev)
-
-		pdmVals[i] = pdm
-		mdmVals[i] = mdm
-		trVals[i] = TrueRange(cur, prev)
-
-		prev = cur
-	}
-
-	dmi.prevOHLC = prev
-
-	dmi.mdmEMA.WarmUp(mdmVals)
-	dmi.pdmEMA.WarmUp(pdmVals)
-	dmi.trEMA.WarmUp(trVals)
-	dmi.updateOutputs()
-
-	for i := dmi.WarmupPeriod(); i < n; i++ {
-		dmi.Update(bars[i])
-	}
-
-	return nil
+func (dmi *DMI) Warm() bool {
+	return dmi.warm
 }
 
 func (dmi *DMI) Update(b *models.Bar) {
+	if dmi.prevOHLC == nil {
+		dmi.prevOHLC = b.OHLC
+
+		return
+	}
+
 	cur := b.OHLC
 	pdm, mdm := pdmAndMDM(cur, dmi.prevOHLC)
 	tr := TrueRange(cur, dmi.prevOHLC)
@@ -77,8 +52,13 @@ func (dmi *DMI) Update(b *models.Bar) {
 	dmi.pdmEMA.Update(pdm)
 	dmi.trEMA.Update(tr)
 
+	if !dmi.mdmEMA.Warm() {
+		return
+	}
+
 	dmi.updateOutputs()
 
+	dmi.warm = true
 	dmi.prevOHLC = cur
 }
 

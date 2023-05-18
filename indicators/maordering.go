@@ -1,10 +1,8 @@
 package indicators
 
 import (
-	"fmt"
 	"sort"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/montanaflynn/stats"
 	"golang.org/x/exp/slices"
@@ -12,10 +10,10 @@ import (
 
 type MAOrdering struct {
 	MAs            []*EMA
-	warmupPeriod   int
 	uptrendIndices []float64
 	correlation    float64
 	nPeriods       int
+	lastMA         *EMA
 }
 
 const MinNumPeriods = 2
@@ -29,36 +27,23 @@ func NewMAOrdering(periods []int) *MAOrdering {
 		uptrendIndices[i] = float64(i)
 	}
 
-	wuPeriod := sliceutils.Last(mas).Period()
-
 	mao := &MAOrdering{
 		MAs:            mas,
-		warmupPeriod:   wuPeriod,
 		uptrendIndices: uptrendIndices,
 		correlation:    0.0,
 		nPeriods:       len(periods),
+		lastMA:         sliceutils.Last(mas),
 	}
 
 	return mao
 }
 
 func (mao *MAOrdering) WarmupPeriod() int {
-	return mao.warmupPeriod
+	return mao.lastMA.Period()
 }
 
-func (mao *MAOrdering) WarmUp(vals []float64) error {
-	if len(vals) < mao.warmupPeriod {
-		return commonerrs.NewErrMinCount("warmup values", len(vals), mao.warmupPeriod)
-	}
-
-	for _, ma := range mao.MAs {
-		err := ma.WarmUp(vals)
-		if err != nil {
-			return fmt.Errorf("failed to warm up MA(%d): %w", ma.Period(), err)
-		}
-	}
-
-	return nil
+func (mao *MAOrdering) Warm() bool {
+	return mao.lastMA.Warm()
 }
 
 func (mao *MAOrdering) Update(val float64) {
@@ -66,7 +51,9 @@ func (mao *MAOrdering) Update(val float64) {
 		ma.Update(val)
 	}
 
-	mao.updateCorrelation()
+	if mao.Warm() {
+		mao.updateCorrelation()
+	}
 }
 
 func (mao *MAOrdering) Correlation() float64 {

@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
 type EMA struct {
-	len        int
-	warm       bool
 	current, k float64
+	len        int
+	startBuf   *buffer.CircularBuffer[float64]
+	warm       bool
 }
 
 type MovingAvgJSON struct {
@@ -19,10 +20,11 @@ type MovingAvgJSON struct {
 
 func NewEMA(len int) *EMA {
 	return &EMA{
-		len:     len,
-		warm:    false,
-		current: 0.0,
-		k:       2.0 / (float64(len) + 1),
+		current:  0.0,
+		k:        EMAWeightingMultiplier(len),
+		len:      len,
+		startBuf: buffer.NewCircularBuffer[float64](len),
+		warm:     false,
 	}
 }
 
@@ -37,10 +39,11 @@ func (ema *EMA) UnmarshalJSON(d []byte) error {
 		return fmt.Errorf("failed to unmarshal EMM JSON: %w", err)
 	}
 
-	ema.len = maj.Length
-	ema.warm = false
 	ema.current = 0.0
-	ema.k = 2.0 / (float64(maj.Length) + 1)
+	ema.k = EMAWeightingMultiplier(maj.Length)
+	ema.len = maj.Length
+	ema.startBuf = buffer.NewCircularBuffer[float64](maj.Length)
+	ema.warm = false
 
 	return nil
 }
@@ -49,38 +52,34 @@ func (ema *EMA) Period() int {
 	return ema.len
 }
 
-func (ema *EMA) WarmUp(vals []float64) error {
-	if len(vals) < ema.len {
-		return commonerrs.NewErrMinCount("warmup values", len(vals), ema.len)
-	}
-
-	sum := 0.0
-	for i := 0; i < ema.len; i++ {
-		sum += vals[i]
-	}
-
-	ema.current = sum / float64(ema.len)
-	ema.warm = true
-
-	for i := ema.len; i < len(vals); i++ {
-		ema.Update(vals[i])
-	}
-
-	return nil
+func (ema *EMA) Warm() bool {
+	return ema.warm
 }
 
 func (ema *EMA) Update(val float64) {
-	if !ema.warm {
+	if ema.warm {
+		ema.current = (val * ema.k) + (ema.current * (1.0 - ema.k))
+
 		return
 	}
 
-	ema.current = (val * ema.k) + (ema.current * (1.0 - ema.k))
+	ema.startBuf.Add(val)
+
+	if ema.startBuf.Full() {
+		sum := 0.0
+		ema.startBuf.Each(func(val float64) {
+			sum += val
+		})
+
+		ema.current = sum / float64(ema.len)
+		ema.warm = true
+	}
 }
 
 func (ema *EMA) Current() float64 {
-	if !ema.warm {
-		return 0.0
-	}
-
 	return ema.current
+}
+
+func EMAWeightingMultiplier(len int) float64 {
+	return 2.0 / (float64(len) + 1)
 }

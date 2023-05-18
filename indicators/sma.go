@@ -4,20 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
 type SMA struct {
 	len     int
-	buf     *buffer.FullCircularBuffer
+	buf     *buffer.CircularBuffer[float64]
 	current float64
 }
 
 func NewSMA(len int) *SMA {
 	return &SMA{
 		len:     len,
-		buf:     nil,
+		buf:     buffer.NewCircularBuffer[float64](len),
 		current: 0.0,
 	}
 }
@@ -34,7 +33,7 @@ func (sma *SMA) UnmarshalJSON(d []byte) error {
 	}
 
 	sma.len = maj.Length
-	sma.buf = nil
+	sma.buf = buffer.NewCircularBuffer[float64](maj.Length)
 	sma.current = 0.0
 
 	return nil
@@ -44,33 +43,23 @@ func (sma *SMA) Period() int {
 	return sma.len
 }
 
-func (sma *SMA) WarmUp(vals []float64) error {
-	if len(vals) < sma.len {
-		return commonerrs.NewErrMinCount("warmup vals", len(vals), sma.len)
-	}
-
-	wuVals := vals[len(vals)-sma.len:]
-
-	sma.buf = buffer.NewFullCircularBuffer(wuVals)
-	sma.current = sma.buf.Sum()
-
-	return nil
+func (sma *SMA) Warm() bool {
+	return sma.buf.Full()
 }
 
 func (sma *SMA) Update(val float64) {
-	if sma.buf == nil {
-		return
-	}
-
 	sma.buf.Add(val)
 
-	sma.current = sma.buf.Sum() / float64(sma.len)
+	if sma.buf.Full() {
+		sum := 0.0
+		sma.buf.Each(func(val float64) {
+			sum += val
+		})
+
+		sma.current = sum / float64(sma.len)
+	}
 }
 
 func (sma *SMA) Current() float64 {
-	if sma.buf == nil {
-		return 0.0
-	}
-
 	return sma.current
 }

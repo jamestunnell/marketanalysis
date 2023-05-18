@@ -1,8 +1,6 @@
 package processors
 
 import (
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
@@ -62,18 +60,16 @@ func (osc *AroonOsc) WarmupPeriod() int {
 	return osc.osc.WarmupPeriod()
 }
 
-func (osc *AroonOsc) WarmUp(vals []float64) error {
-	if err := osc.osc.WarmUp(vals); err != nil {
-		return fmt.Errorf("failed to warm up Aroon osc indicator: %w", err)
-	}
-
-	return nil
+func (osc *AroonOsc) Warm() bool {
+	return osc.osc.Warm()
 }
 
 func (osc *AroonOsc) Update(val float64) {
 	osc.osc.Update(val)
 
-	osc.updateOutput()
+	if osc.osc.Warm() {
+		osc.updateOutput()
+	}
 }
 
 func (osc *AroonOsc) Output() float64 {

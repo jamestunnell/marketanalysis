@@ -1,8 +1,6 @@
 package sources
 
 import (
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
@@ -68,29 +66,21 @@ func (dmi *DMI) Output() float64 {
 	return dmi.output
 }
 
-func (dmi *DMI) WarmUp(bars models.Bars) error {
-	if err := dmi.dmi.WarmUp(bars); err != nil {
-		return fmt.Errorf("failed to warm up DMI indicator: %w", err)
-	}
-
-	dmi.updateOutput()
-
-	return nil
+func (dmi *DMI) Warm() bool {
+	return dmi.dmi.Warm()
 }
 
 func (dmi *DMI) Update(bar *models.Bar) {
 	dmi.dmi.Update(bar)
 
-	dmi.updateOutput()
-}
-
-func (dmi *DMI) updateOutput() {
-	switch dmi.dmiValueType.Value {
-	case DMIValueDX:
-		dmi.output = dmi.dmi.DX()
-	case DMIValueMDI:
-		dmi.output = dmi.dmi.MDI()
-	case DMIValuePDI:
-		dmi.output = dmi.dmi.PDI()
+	if dmi.Warm() {
+		switch dmi.dmiValueType.Value {
+		case DMIValueDX:
+			dmi.output = dmi.dmi.DX()
+		case DMIValueMDI:
+			dmi.output = dmi.dmi.MDI()
+		case DMIValuePDI:
+			dmi.output = dmi.dmi.PDI()
+		}
 	}
 }

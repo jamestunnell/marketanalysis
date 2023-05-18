@@ -1,8 +1,6 @@
 package sources
 
 import (
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -43,12 +41,8 @@ func (emv *EMV) Output() float64 {
 	return emv.emv.EMV()
 }
 
-func (emv *EMV) WarmUp(bars models.Bars) error {
-	if err := emv.emv.WarmUp(bars); err != nil {
-		return fmt.Errorf("failed to warm up EMV indicator: %w", err)
-	}
-
-	return nil
+func (emv *EMV) Warm() bool {
+	return emv.emv.Warm()
 }
 
 func (emv *EMV) Update(bar *models.Bar) {

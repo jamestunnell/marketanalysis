@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -10,6 +9,7 @@ type HeikinAshi struct {
 	barValueType *models.TypedParam[string]
 	output       float64
 	prevOHLC     *models.OHLC
+	warm         bool
 }
 
 const TypeHeikinAshi = "HeikinAshi"
@@ -21,6 +21,7 @@ func NewHeikinAshi() *HeikinAshi {
 		barValueType: models.NewParam[string](barValueTypesEnum),
 		output:       0.0,
 		prevOHLC:     nil,
+		warm:         false,
 	}
 }
 
@@ -37,6 +38,7 @@ func (ha *HeikinAshi) Params() models.Params {
 func (ha *HeikinAshi) Initialize() error {
 	ha.output = 0.0
 	ha.prevOHLC = nil
+	ha.warm = false
 
 	return nil
 }
@@ -49,21 +51,20 @@ func (ha *HeikinAshi) Output() float64 {
 	return ha.output
 }
 
-func (ha *HeikinAshi) WarmUp(bars models.Bars) error {
-	if len(bars) != 2 {
-		return commonerrs.NewErrExactLen("warmup bars", len(bars), 2)
-	}
-
-	ha.prevOHLC = bars[0].OHLC
-
-	ha.Update(bars[1])
-
-	return nil
+func (ha *HeikinAshi) Warm() bool {
+	return ha.warm
 }
 
 func (ha *HeikinAshi) Update(bar *models.Bar) {
-	ohlc := bar.HeikinAshi(bar.OHLC)
+	if ha.prevOHLC == nil {
+		ha.prevOHLC = bar.OHLC
 
-	ha.output = BarValue(ha.barValueType.Value, ohlc)
-	ha.prevOHLC = ohlc
+		return
+	}
+
+	haOHLC := bar.HeikinAshi(ha.prevOHLC)
+
+	ha.output = BarValue(ha.barValueType.Value, haOHLC)
+	ha.prevOHLC = bar.OHLC
+	ha.warm = true
 }

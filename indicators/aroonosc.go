@@ -11,6 +11,7 @@ type AroonOsc struct {
 	prev            *buffer.CircularBuffer[float64]
 	highAge, lowAge int
 	up, down, diff  float64
+	warm            bool
 }
 
 func NewAroonOsc(period int) *AroonOsc {
@@ -22,6 +23,7 @@ func NewAroonOsc(period int) *AroonOsc {
 		up:      0.0,
 		down:    0.0,
 		diff:    0.0,
+		warm:    false,
 	}
 }
 
@@ -29,18 +31,16 @@ func (osc *AroonOsc) WarmupPeriod() int {
 	return osc.period
 }
 
-func (osc *AroonOsc) WarmUp(vals []float64) error {
-	osc.prev.AddN(vals[:osc.WarmupPeriod()-1]...)
-
-	for i := osc.WarmupPeriod() - 1; i < len(vals); i++ {
-		osc.Update(vals[i])
-	}
-
-	return nil
+func (osc *AroonOsc) Warm() bool {
+	return osc.warm
 }
 
 func (osc *AroonOsc) Update(val float64) {
 	osc.prev.Add(val)
+
+	if !osc.prev.Full() {
+		return
+	}
 
 	min := math.MaxFloat64
 	max := -math.MaxFloat64
@@ -62,6 +62,7 @@ func (osc *AroonOsc) Update(val float64) {
 
 	n := float64(osc.period)
 
+	osc.warm = true
 	osc.up = (n - float64(highAge)) / n
 	osc.down = (n - float64(lowAge)) / n
 	osc.diff = osc.up - osc.down

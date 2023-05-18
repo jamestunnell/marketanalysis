@@ -67,8 +67,8 @@ func (mao *MAOrder) Output() float64 {
 	return mao.maOrdering.Correlation()
 }
 
-func (mao *MAOrder) WarmUp(vals []float64) error {
-	return mao.maOrdering.WarmUp(vals)
+func (mao *MAOrder) Warm() bool {
+	return mao.maOrdering.Warm()
 }
 
 func (mao *MAOrder) Update(val float64) {

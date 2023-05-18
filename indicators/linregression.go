@@ -1,18 +1,17 @@
 package indicators
 
 import (
-	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/util/buffer"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/montanaflynn/stats"
 	"github.com/rs/zerolog/log"
 )
 
 type LinRegression struct {
-	length           int
-	prevVals         *buffer.CircularBuffer[float64]
-	slope, intercept float64
-	coords           []stats.Coordinate
+	coords    []stats.Coordinate
+	intercept float64
+	length    int
+	prevVals  *buffer.CircularBuffer[float64]
+	slope     float64
 }
 
 func NewLinRegression(length int) *LinRegression {
@@ -22,63 +21,54 @@ func NewLinRegression(length int) *LinRegression {
 	}
 
 	return &LinRegression{
-		length:   length,
-		prevVals: buffer.NewCircularBuffer[float64](length),
-		coords:   coords,
-		slope:    0.0,
+		coords:    coords,
+		intercept: 0.0,
+		length:    length,
+		prevVals:  buffer.NewCircularBuffer[float64](length),
+		slope:     0.0,
 	}
 }
 
-func (trs *LinRegression) WarmupPeriod() int {
-	return trs.length
+func (lr *LinRegression) WarmupPeriod() int {
+	return lr.length
 }
 
-func (trs *LinRegression) WarmUp(vals []float64) error {
-	wp := trs.WarmupPeriod()
-	if len(vals) < wp {
-		return commonerrs.NewErrMinCount("warmup values", len(vals), wp)
-	}
-
-	vals = sliceutils.LastN(vals, wp) // no benefit from having more
-
-	for i := 0; i < wp; i++ {
-		trs.prevVals.Add(vals[i])
-	}
-
-	trs.updateSlope()
-
-	return nil
+func (lr *LinRegression) Warm() bool {
+	return lr.prevVals.Full()
 }
 
-func (trs *LinRegression) Slope() float64 {
-	return trs.slope
+func (lr *LinRegression) Slope() float64 {
+	return lr.slope
 }
 
-func (trs *LinRegression) Intercept() float64 {
-	return trs.intercept
+func (lr *LinRegression) Intercept() float64 {
+	return lr.intercept
 }
 
-func (trs *LinRegression) updateSlope() {
-	trs.prevVals.EachWithIndex(func(i int, f float64) {
-		trs.coords[i].Y = f
+func (lr *LinRegression) updateSlopeIntercept() {
+	lr.prevVals.EachWithIndex(func(i int, f float64) {
+		lr.coords[i].Y = f
 	})
 
-	reg, err := stats.LinearRegression(trs.coords)
+	reg, err := stats.LinearRegression(lr.coords)
 	if err != nil {
 		log.Warn().Err(err).Msg("linear regression failed")
 
 		return
 	}
 
-	dY := (reg[trs.length-1].Y - reg[0].Y)
-	dX := float64(trs.length)
+	dY := (reg[lr.length-1].Y - reg[0].Y)
+	dX := float64(lr.length)
 
-	trs.slope = dY / dX
-	trs.intercept = reg[0].Y - (reg[0].X * trs.slope)
+	lr.slope = dY / dX
+	lr.intercept = reg[0].Y - (reg[0].X * lr.slope)
 }
 
-func (trs *LinRegression) Update(val float64) {
-	trs.prevVals.Add(val)
+func (lr *LinRegression) Update(val float64) {
+	lr.prevVals.Add(val)
+	if !lr.prevVals.Full() {
+		return
+	}
 
-	trs.updateSlope()
+	lr.updateSlopeIntercept()
 }
