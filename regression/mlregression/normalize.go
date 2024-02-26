@@ -1,4 +1,4 @@
-package linregression
+package mlregression
 
 import (
 	"errors"

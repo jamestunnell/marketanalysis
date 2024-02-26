@@ -1,5 +1,5 @@
-package linregression
+package mlregression
 
 type Learner interface {
-	Learn(src DataSource, alpha float64, numIter int) (Predictor, error)
+	Learn(src Data, alpha float64, numIter int) (Predictor, error)
 }

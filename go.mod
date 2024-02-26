@@ -1,6 +1,6 @@
 module github.com/jamestunnell/marketanalysis
 
-go 1.20
+go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.3.1
@@ -14,6 +14,7 @@ require (
 	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5
 	github.com/rickb777/date v1.20.1
 	github.com/rs/zerolog v1.29.0
+	github.com/sajari/regression v1.0.1
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	gonum.org/v1/gonum v0.12.0

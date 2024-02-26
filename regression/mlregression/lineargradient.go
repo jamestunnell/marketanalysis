@@ -1,6 +1,5 @@
-package linregression
+package mlregression
 
-//Linear Gradient using slices
 func LinearGradient(data [][]float64, y []float64, theta []float64, alpha float64, num_iters int, printCostFunction bool) ([]float64, error) {
 	for i := 0; i < num_iters; i++ {
 		//Number of training examples
@@ -25,7 +24,7 @@ func LinearGradient(data [][]float64, y []float64, theta []float64, alpha float6
 	return theta, nil
 }
 
-//Multiply by xi only if not theta0
+// Multiply by xi only if not theta0
 func computeSumRowI(x []float64, hi float64, yi float64) []float64 {
 	theta := make([]float64, len(x)+1)
 	theta[0] = hi - yi

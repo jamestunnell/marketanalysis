@@ -78,6 +78,16 @@ func (cb *CircularBuffer[T]) Newest() (T, bool) {
 	return cb.elems[(cb.tail+cb.Len()-1)%cb.cap], true
 }
 
+func (cb *CircularBuffer[T]) Array() []T {
+	ts := []T{}
+
+	cb.Each(func(t T) {
+		ts = append(ts, t)
+	})
+
+	return ts
+}
+
 func (cb *CircularBuffer[T]) Each(f func(T)) {
 	for i := cb.tail; i < (cb.tail + cb.Len()); i++ {
 		f(cb.elems[i%cb.cap])

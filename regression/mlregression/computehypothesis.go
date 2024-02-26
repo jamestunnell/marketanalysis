@@ -1,4 +1,4 @@
-package linregression
+package mlregression
 
 import "gonum.org/v1/gonum/mat"
 

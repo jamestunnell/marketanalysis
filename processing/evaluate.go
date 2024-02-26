@@ -7,24 +7,29 @@ import (
 	"github.com/jamestunnell/marketanalysis/provision"
 )
 
-type EvalStepFunc func(bar *models.Bar, sourceOut, procsOut float64)
+type EvalStepFunc func(bar *models.Bar, sourceOut, procsOut float64) error
 
 func Evaluate(chain *Chain, bars provision.BarSequence, step EvalStepFunc) error {
 	if err := chain.Initialize(); err != nil {
 		return fmt.Errorf("failed to init chain: %w", err)
 	}
 
-	if err := bars.Initialize(); err != nil {
-		return fmt.Errorf("failed to init bar sequence: %w", err)
-	}
-
-	bars.EachBar(func(bar *models.Bar) {
+	eachBar := func(bar *models.Bar) error {
 		chain.Update(bar)
 
 		if chain.SourceWarm() && chain.ProcsWarm() {
-			step(bar, chain.SourceOutput(), chain.ProcsOutput())
+			err := step(bar, chain.SourceOutput(), chain.ProcsOutput())
+			if err != nil {
+				return fmt.Errorf("eval step failed: %w", err)
+			}
 		}
-	})
+
+		return nil
+	}
+
+	if err := bars.EachBar(eachBar); err != nil {
+		return fmt.Errorf("each bar failed: %w", err)
+	}
 
 	return nil
 }

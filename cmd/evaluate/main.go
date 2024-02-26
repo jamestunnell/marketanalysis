@@ -1,23 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"math/rand"
 	"os"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
+	"github.com/aybabtme/uniplot/histogram"
+	"github.com/montanaflynn/stats"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/evaluation"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/processing"
-	"github.com/jamestunnell/marketanalysis/regression/linregression"
-	"github.com/jamestunnell/marketanalysis/regression/mlregression"
-	"github.com/jamestunnell/marketanalysis/util/dateutils"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type mlrData struct {
@@ -26,18 +26,19 @@ type mlrData struct {
 }
 
 const (
-	DayTradeMarketOpenLocalMin  = 390
-	DayTradeMarketCloseLocalMin = 780
-
-	DefaultSplit = 0.5
+	DefaultHorizon      = 15
+	DefaultTrainingDays = 90
 )
 
 var (
-	app       = kingpin.New("backtest", "Backtest trading strategy.")
-	debug     = app.Flag("debug", "Enable debug mode.").Bool()
-	dataDir   = app.Flag("datadir", "Collection dir path.").Required().String()
-	chainFile = app.Flag("chainfile", "Processing chain JSON file.").Required().String()
-	split     = app.Flag("split", "Training/testing split (0.0 to 1.0). Default is 0.5").Float64()
+	app          = kingpin.New("backtest", "Backtest trading strategy.")
+	debug        = app.Flag("debug", "Enable debug mode.").Bool()
+	dataDir      = app.Flag("datadir", "Collection dir path.").Required().String()
+	chainFile    = app.Flag("chainfile", "Processing chain JSON file.").Required().String()
+	trainingDays = app.Flag("trainingDays", "Training days (Default is 90).").Int()
+	inHor        = app.Flag("inhorizon", "Input horizon. Default is 15.").Int()
+	outHor       = app.Flag("outhorizon", "Output horizon. Default is 15.").Int()
+	futureHor    = app.Flag("futurehorizon", "Future horizon. Default is 15.").Int()
 
 	seed = time.Now().Unix()
 )
@@ -53,8 +54,20 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	if *split == 0.0 {
-		*split = DefaultSplit
+	if *trainingDays == 0 {
+		*trainingDays = DefaultTrainingDays
+	}
+
+	if *inHor == 0 {
+		*inHor = DefaultHorizon
+	}
+
+	if *outHor == 0 {
+		*outHor = DefaultHorizon
+	}
+
+	if *futureHor == 0 {
+		*futureHor = DefaultHorizon
 	}
 
 	s, err := collection.NewDirStore(*dataDir)
@@ -67,101 +80,53 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load collection")
 	}
 
-	chain, err := processing.LoadChainFromFile(*chainFile)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load predictor")
-	}
-
-	log.Info().Msg("loaded chain")
-
+	chain := loadChain()
 	randSource := rand.NewSource(seed)
-	dateRange := coll.TimeSpan().DateRangeIn(time.Local)
-	numTrain := int(*split * float64(dateRange.Days()))
-	dateCtrl := dateutils.NewRandomDates(dateRange, numTrain, randSource)
-	inSlopes := []float64{}
-	inIntercepts := []float64{}
-	outSlopes := []float64{}
+	testingDays := int(math.Round(float64(coll.TimeSpan().Duration().Hours()/24.0) - float64(*trainingDays)))
+	split := float64(*trainingDays) / (float64(coll.TimeSpan().Duration().Hours()) / 24.0)
 
-	for dateCtrl.AnyLeft() {
-		open := dateCtrl.Current().Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
-		close := dateCtrl.Current().Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
-		ts := timespan.NewTimeSpan(open, close)
-
-		bars, err := coll.LoadBars(ts)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to load bars")
-		}
-
-		if len(bars) != 0 {
-			log.Debug().
-				Str("date", dateCtrl.Current().Format(date.RFC3339)).
-				Int("num bars", len(bars)).
-				Msg("training")
-
-			err = evaluation.ExtractSlopes(
-				chain, bars, 15, 15, func(inLine, outLine *linregression.Line) {
-					inSlopes = append(inSlopes, inLine.Slope)
-					inIntercepts = append(inIntercepts, inLine.Intercept)
-					outSlopes = append(outSlopes, outLine.Slope)
-				})
-
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to train on bars")
-			}
-		}
-
-		dateCtrl.Advance()
-	}
-
-	l := mlregression.NewSliceLearner()
-	d := &mlrData{Ins: [][]float64{inSlopes, inIntercepts}, Out: outSlopes}
-
-	pred, err := l.Learn(d, 0.01, 100)
+	trainingBars, testingBars, err := evaluation.SplitCollectionRandomly(coll, split, randSource)
 	if err != nil {
-		log.Fatal().Err(err).Msg("ML regression failed")
+		log.Fatal().Err(err).Msg("failed to split collection data")
 	}
 
-	dateCtrl = dateutils.NewRandomDates(dateRange, int(dateRange.Days())-numTrain, randSource)
+	pred := evaluation.NewSlopePredictor(*inHor, *outHor, *futureHor)
 
-	sumAbsErrs := 0.0
-	numAbsErrs := 0
-
-	for dateCtrl.AnyLeft() {
-		open := dateCtrl.Current().Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
-		close := dateCtrl.Current().Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
-		ts := timespan.NewTimeSpan(open, close)
-
-		bars, err := coll.LoadBars(ts)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to load bars")
-		}
-
-		if len(bars) != 0 {
-			log.Debug().
-				Str("date", dateCtrl.Current().Format(date.RFC3339)).
-				Int("num bars", len(bars)).
-				Msg("testing")
-
-			err = evaluation.ExtractSlopes(
-				chain, bars, 15, 15, func(inLine, outLine *linregression.Line) {
-					predIns := []float64{inLine.Slope, inLine.Intercept}
-					predOut := pred.PredictOne(predIns)
-
-					sumAbsErrs += math.Abs(outLine.Slope - predOut)
-					numAbsErrs++
-				})
-
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to train on bars")
-			}
-		}
-
-		dateCtrl.Advance()
+	err = pred.Train(chain, trainingBars)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to train predictor")
 	}
 
-	avgAbsErr := sumAbsErrs / float64(numAbsErrs)
+	positions, err := pred.Test(chain, testingBars)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to test predictor")
+	}
 
-	log.Info().Float64("avg abs err", avgAbsErr).Msg("evaluation complete")
+	profitLosses := sliceutils.Map(positions, func(pos *models.Position) float64 {
+		return pos.ClosedPL
+	})
+
+	hist := histogram.Hist(20, profitLosses)
+	_ = histogram.Fprint(os.Stdout, hist, histogram.Linear(30))
+
+	q, err := stats.Quartile(profitLosses)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to get quartiles")
+	}
+
+	analysis := positions.Analyze()
+
+	log.Info().
+		Float64("Q1", q.Q1).
+		Float64("Q2", q.Q2).
+		Float64("Q3", q.Q3).
+		Int("training days", *trainingDays).
+		Int("test days", testingDays).
+		Float64("winning%", analysis.Winning*100.0).
+		Float64("total profit/loss", analysis.TotalPL).
+		Int("positions", len(positions)).
+		Float64("avg position profit/loss", analysis.TotalPL/float64(len(positions))).
+		Msg("evaluation complete")
 }
 
 func (d *mlrData) Inputs() [][]float64 {
@@ -170,4 +135,21 @@ func (d *mlrData) Inputs() [][]float64 {
 
 func (d *mlrData) Output() []float64 {
 	return d.Out
+}
+
+func loadChain() *processing.Chain {
+	chainJSON, err := os.ReadFile(*chainFile)
+	if err != nil {
+		log.Fatal().Err(err).Str("fpath", *chainFile).Msg("failed to read chain JSON file")
+	}
+
+	var chain processing.Chain
+
+	if err = json.Unmarshal(chainJSON, &chain); err != nil {
+		log.Fatal().Err(err).Msg("failed to unmarshal chain JSON")
+	}
+
+	log.Info().Str("json", string(chainJSON)).Msg("loaded chain")
+
+	return &chain
 }

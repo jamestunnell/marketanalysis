@@ -1,12 +1,16 @@
 package prediction
 
 import (
+	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/processing"
 	"github.com/patrikeh/go-deep"
 	"github.com/patrikeh/go-deep/training"
 )
 
 type DeepPredictor struct {
 	inCount, outCount int
+	examples          training.Examples
+	nIter             int
 	deepNeuralNet     *deep.Neural
 }
 
@@ -26,7 +30,8 @@ func (dp *DeepPredictor) OutputCount() int {
 	return dp.outCount
 }
 
-func (dp *DeepPredictor) Train(examples training.Examples, nIter int) error {
+func (dp *DeepPredictor) Train(chain *processing.Chain,
+	provider provision.BarProvider) error {
 	// params: learning rate, momentum, alpha decay, nesterov
 	optimizer := training.NewSGD(0.05, 0.1, 1e-6, true)
 	// params: optimizer, verbosity (print stats at every 50th iteration)
@@ -36,6 +41,10 @@ func (dp *DeepPredictor) Train(examples training.Examples, nIter int) error {
 	trainer.Train(dp.deepNeuralNet, training, heldout, nIter) // training, validation, iterations
 
 	return nil
+}
+
+func (dp *DeepPredictor) Test(chain *processing.Chain,
+	provider provision.BarProvider) (models.Positions, error) {
 }
 
 func (dp *DeepPredictor) Predict(ins []float64) ([]float64, error) {

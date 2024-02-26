@@ -1,6 +1,11 @@
 package linregression
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
+)
 
 type Line struct {
 	Slope, Intercept float64
@@ -10,6 +15,19 @@ var (
 	errLenMismatch = errors.New("input len mismatch")
 	errNoInput     = errors.New("no inputs")
 )
+
+func Slope(ys []float64) (float64, error) {
+	xs := sliceutils.New(len(ys), func(idx int) float64 {
+		return float64(idx)
+	})
+
+	line, err := LinearRegression(xs, ys)
+	if err != nil {
+		return 0.0, fmt.Errorf("linear regression failed: %w", err)
+	}
+
+	return line.Slope, nil
+}
 
 func LinearRegression(xs, ys []float64) (*Line, error) {
 	n := len(xs)

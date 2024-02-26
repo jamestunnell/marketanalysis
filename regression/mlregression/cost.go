@@ -1,4 +1,4 @@
-package linregression
+package mlregression
 
 func ComputeCost(data [][]float64, y []float64, theta []float64) (float64, error) {
 	m := len(y)

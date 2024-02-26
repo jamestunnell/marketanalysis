@@ -10,23 +10,31 @@ import (
 	"github.com/rickb777/date/timespan"
 )
 
-type DailyBars struct {
+type DailyBarSeq struct {
 	Collection collection.Collection
 	Date       date.Date
-	bars       models.Bars
-	index      int
 }
 
-func NewDailyBarSet(c collection.Collection, d date.Date) *DailyBars {
-	return &DailyBars{
+type DailyBarSeqs struct {
+	Collection collection.Collection
+	Dates      []date.Date
+}
+
+func NewDailyBarSeq(c collection.Collection, d date.Date) *DailyBarSeq {
+	return &DailyBarSeq{
 		Collection: c,
 		Date:       d,
-		bars:       models.Bars{},
-		index:      0,
 	}
 }
 
-func (db *DailyBars) Initialize() error {
+func NewDailyBarSeqs(c collection.Collection, dates ...date.Date) *DailyBarSeqs {
+	return &DailyBarSeqs{
+		Collection: c,
+		Dates:      dates,
+	}
+}
+
+func (db *DailyBarSeq) EachBar(each func(bar *models.Bar) error) error {
 	dayStart := db.Date.Local()
 	dayEnd := dayStart.Add(time.Hour * 24)
 	ts := timespan.NewTimeSpan(dayStart, dayEnd)
@@ -36,14 +44,23 @@ func (db *DailyBars) Initialize() error {
 		return fmt.Errorf("failed to load bars: %w", err)
 	}
 
-	db.bars = bars
-	db.index = 0
+	for _, bar := range bars {
+		if err = each(bar); err != nil {
+			return fmt.Errorf("bar handler failed: %w", err)
+		}
+	}
 
 	return nil
 }
 
-func (db *DailyBars) EachBar(each func(bar *models.Bar)) {
-	for _, bar := range db.bars {
-		each(bar)
+func (db *DailyBarSeqs) EachSequence(each func(seq BarSequence) error) error {
+	for _, d := range db.Dates {
+		seq := NewDailyBarSeq(db.Collection, d)
+
+		if err := each(seq); err != nil {
+			return fmt.Errorf("seq handler failed: %w", err)
+		}
 	}
+
+	return nil
 }

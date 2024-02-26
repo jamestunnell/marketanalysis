@@ -3,11 +3,9 @@ package provision
 import "github.com/jamestunnell/marketanalysis/models"
 
 type BarSequence interface {
-	Initialize() error
-	EachBar(func(bar *models.Bar))
+	EachBar(func(bar *models.Bar) error) error
 }
 
 type BarSequences interface {
-	Initialize() error
-	EachSequence(func(seq BarSequence))
+	EachSequence(func(seq BarSequence) error) error
 }

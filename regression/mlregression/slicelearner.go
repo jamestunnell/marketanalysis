@@ -1,4 +1,4 @@
-package linregression
+package mlregression
 
 import (
 	"fmt"
@@ -11,14 +11,9 @@ func NewSliceLearner() Learner {
 	return &SliceLearner{}
 }
 
-// Init Slices with csv file input
-func (l *SliceLearner) Learn(src DataSource, alpha float64, numIter int) (Predictor, error) {
-
-	inputs, y, err := src.GetData()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get data: %w", err)
-	}
-
+func (l *SliceLearner) Learn(src Data, alpha float64, numIter int) (Predictor, error) {
+	inputs := src.Inputs()
+	y := src.Output()
 	theta := make([]float64, len(inputs[0])+1)
 
 	// Normalize all the elements to keep an identical scale between different data

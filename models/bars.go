@@ -70,6 +70,20 @@ func (bars Bars) LastN(n int) Bars {
 	return sliceutils.LastN(bars, n)
 }
 
+func (bars Bars) NextN(index, n int) Bars {
+	if index < 0 || index >= len(bars) {
+		return Bars{}
+	}
+
+	a := index + 1
+	b := a + n
+	if b > len(bars) {
+		b = len(bars)
+	}
+
+	return bars[a:b]
+}
+
 func (bars Bars) Localize() {
 	for _, b := range bars {
 		b.Localize()

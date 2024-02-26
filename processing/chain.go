@@ -3,6 +3,8 @@ package processing
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
@@ -26,6 +28,40 @@ func NewChain(source Source, procs ...Processor) *Chain {
 type ChainJSON struct {
 	Source     json.RawMessage   `json:"source"`
 	Processors []json.RawMessage `json:"processors"`
+}
+
+func LoadChainFromFile(fpath string) (*Chain, error) {
+	d, err := os.ReadFile(fpath)
+	if err != nil {
+		err = fmt.Errorf("failed to read file %s: %w", fpath, err)
+
+		return nil, err
+	}
+
+	var chain Chain
+
+	if err = json.Unmarshal(d, &chain); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	return &chain, nil
+}
+
+func LoadChain(r io.Reader) (*Chain, error) {
+	d, err := io.ReadAll(r)
+	if err != nil {
+		err = fmt.Errorf("io.ReadAll failed: %w", err)
+
+		return nil, err
+	}
+
+	var chain Chain
+
+	if err = json.Unmarshal(d, &chain); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	return &chain, nil
 }
 
 func (c *Chain) MarshalJSON() ([]byte, error) {
@@ -115,6 +151,10 @@ func (c *Chain) SourceWarm() bool {
 }
 
 func (c *Chain) ProcsWarm() bool {
+	if len(c.procs) == 0 {
+		return true
+	}
+
 	return sliceutils.Last(c.procs).Warm()
 }
 
@@ -123,6 +163,10 @@ func (c *Chain) SourceOutput() float64 {
 }
 
 func (c *Chain) ProcsOutput() float64 {
+	if len(c.procs) == 0 {
+		return c.SourceOutput()
+	}
+
 	return sliceutils.Last(c.procs).Output()
 }
 

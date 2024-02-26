@@ -34,7 +34,7 @@ func (emv *EMV) Initialize() error {
 }
 
 func (emv *EMV) WarmupPeriod() int {
-	return emv.WarmupPeriod()
+	return emv.emv.WarmupPeriod()
 }
 
 func (emv *EMV) Output() float64 {

@@ -154,6 +154,10 @@ func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
 			return models.Bars{}, err
 		}
 
+		if len(dayBars) == 0 {
+			continue
+		}
+
 		if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
 		} else {
 			dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
