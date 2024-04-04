@@ -1,7 +1,7 @@
 package models
 
 type Block interface {
-	Typed
+	Type() string
 
 	Params() Params
 	Inputs() Inputs
@@ -11,18 +11,3 @@ type Block interface {
 	Init() error
 	Step()
 }
-
-type Input interface {
-	Typed
-}
-
-type Output interface {
-	Typed
-}
-
-type Typed interface {
-	Type() string
-}
-
-type Inputs map[string]Input
-type Outputs map[string]Output
