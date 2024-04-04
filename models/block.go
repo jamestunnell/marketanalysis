@@ -1,13 +1,14 @@
 package models
 
 type Block interface {
-	Type() string
+	GetType() string
+	GetDescription() string
+	GetParams() Params
+	GetInputs() Inputs
+	GetOutputs() Outputs
 
-	Params() Params
-	Inputs() Inputs
-	Outputs() Outputs
+	IsWarm() bool
 
-	Warm() bool
 	Init() error
 	Step()
 }
