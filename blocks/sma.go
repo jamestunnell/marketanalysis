@@ -66,7 +66,11 @@ func (sma *SMA) IsWarm() bool {
 }
 
 func (sma *SMA) Step() {
-	sma.sma.Update(sma.in.Out.Value)
+	if !sma.in.IsSet() {
+		return
+	}
 
-	sma.out.Value = sma.sma.Current()
+	sma.sma.Update(sma.in.Get())
+
+	sma.out.Set(sma.sma.Current())
 }
