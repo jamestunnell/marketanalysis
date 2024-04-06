@@ -6,71 +6,71 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-type SMA struct {
+type EMA struct {
 	period *models.TypedParam[int]
-	sma    *indicators.SMA
+	ema    *indicators.EMA
 	in     *models.TypedInput[float64]
 	out    *models.TypedOutput[float64]
 }
 
 const (
-	DescrSMA = "Simple moving average"
-	TypeSMA  = "SMA"
+	DescrEMA = "Exponential moving average"
+	TypeEMA = "EMA"
 )
 
-func NewSMA() models.Block {
+func NewEMA() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
-	return &SMA{
+	return &EMA{
 		period: models.NewParam[int](periodRange),
-		sma:    nil,
+		ema:    nil,
 		in:     models.NewTypedInput[float64](),
 		out:    models.NewTypedOutput[float64](),
 	}
 }
 
-func (ma *SMA) GetType() string {
-	return TypeSMA
+func (ma *EMA) GetType() string {
+	return TypeEMA
 }
 
-func (ma *SMA) GetDescription() string {
-	return DescrSMA
+func (ma *EMA) GetDescription() string {
+	return DescrEMA
 }
 
-func (ma *SMA) GetParams() models.Params {
+func (ma *EMA) GetParams() models.Params {
 	return models.Params{
 		NamePeriod: ma.period,
 	}
 }
 
-func (ma *SMA) GetInputs() models.Inputs {
+func (ma *EMA) GetInputs() models.Inputs {
 	return models.Inputs{
 		NameIn: ma.in,
 	}
 }
 
-func (ma *SMA) GetOutputs() models.Outputs {
+func (ma *EMA) GetOutputs() models.Outputs {
 	return models.Outputs{
 		NameOut: ma.out,
 	}
 }
 
-func (ma *SMA) IsWarm() bool {
-	return ma.sma.Warm()
+func (ma *EMA) IsWarm() bool {
+	return ma.ema.Warm()
 }
 
-func (ma *SMA) Init() error {
-	ma.sma = indicators.NewSMA(ma.period.Value)
+func (ma *EMA) Init() error {
+	ma.ema = indicators.NewEMA(ma.period.Value)
 
 	return nil
 }
 
-func (ma *SMA) Step() {
+func (ma *EMA) Step() {
 	if !ma.in.IsSet() {
 		return
 	}
 
-	ma.sma.Update(ma.in.Get())
+	ma.ema.Update(ma.in.Get())
 
-	ma.out.Set(ma.sma.Current())
+	ma.out.Set(ma.ema.Current())
 }
