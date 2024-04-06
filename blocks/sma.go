@@ -65,7 +65,7 @@ func (ma *SMA) Init() error {
 	return nil
 }
 
-func (ma *SMA) Step() {
+func (ma *SMA) Update() {
 	if !ma.in.IsSet() {
 		return
 	}

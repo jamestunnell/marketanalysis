@@ -12,6 +12,7 @@ import (
 func TestJSONHappyPath(t *testing.T) {
 	testJSONHappyPath(t, blocks.TypeSMA)
 	testJSONHappyPath(t, blocks.TypeEMA)
+	testJSONHappyPath(t, blocks.TypeAroon)
 }
 
 func testJSONHappyPath(t *testing.T, typ string) {

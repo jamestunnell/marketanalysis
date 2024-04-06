@@ -10,5 +10,5 @@ type Block interface {
 	IsWarm() bool
 
 	Init() error
-	Step()
+	Update()
 }
