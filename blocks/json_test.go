@@ -10,25 +10,27 @@ import (
 )
 
 func TestJSONHappyPath(t *testing.T) {
-	testJSONHappyPath(t, blocks.TypeSMA)
-	testJSONHappyPath(t, blocks.TypeEMA)
-	testJSONHappyPath(t, blocks.TypeAroon)
+	for _, typ := range blocks.Registry().Types() {
+		testJSONHappyPath(t, typ)
+	}
 }
 
 func testJSONHappyPath(t *testing.T, typ string) {
-	newFunc, found := blocks.Registry().Get(typ)
+	t.Run(typ, func(t *testing.T){
+		newFunc, found := blocks.Registry().Get(typ)
 
-	require.True(t, found)
-
-	blk := newFunc()
-
-	d, err := blocks.MarshalJSON(blk)
-
-	require.NoError(t, err)
-
-	blk2, err := blocks.UnmarshalJSON(d)
-
-	require.NoError(t, err)
-
-	assert.Equal(t, blk.GetType(), blk2.GetType())
+		require.True(t, found)
+	
+		blk := newFunc()
+	
+		d, err := blocks.MarshalJSON(blk)
+	
+		require.NoError(t, err)
+	
+		blk2, err := blocks.UnmarshalJSON(d)
+	
+		require.NoError(t, err)
+	
+		assert.Equal(t, blk.GetType(), blk2.GetType())	
+	})
 }

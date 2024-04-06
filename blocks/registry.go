@@ -1,6 +1,10 @@
 package blocks
 
-import "github.com/jamestunnell/marketanalysis/models"
+import (
+	"golang.org/x/exp/maps"
+	
+	"github.com/jamestunnell/marketanalysis/models"
+)
 
 type BlockRegistry struct {
 	registered map[string]NewBlockFunc
@@ -18,6 +22,10 @@ func NewBlockRegistry() *BlockRegistry {
 	return &BlockRegistry{
 		registered: map[string]NewBlockFunc{},
 	}
+}
+
+func (r *BlockRegistry) Types() []string {
+	return maps.Keys(r.registered)
 }
 
 func (r *BlockRegistry) Add(typ string, newBlock NewBlockFunc) {
