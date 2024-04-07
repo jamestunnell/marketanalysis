@@ -1,10 +1,10 @@
 package blocks
 
 func init() {
-	registry.Add(TypeAroon, NewAroon)
-	registry.Add(TypeATR, NewATR)
-	registry.Add(TypeDMI, NewDMI)
-	registry.Add(TypeEMA, NewEMA)
-	registry.Add(TypeEMV, NewEMV)
-	registry.Add(TypeSMA, NewSMA)
+	reg.Add(TypeAroon, NewAroon)
+	reg.Add(TypeATR, NewATR)
+	reg.Add(TypeDMI, NewDMI)
+	reg.Add(TypeEMA, NewEMA)
+	reg.Add(TypeEMV, NewEMV)
+	reg.Add(TypeSMA, NewSMA)
 }
