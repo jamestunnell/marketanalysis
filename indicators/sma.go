@@ -1,9 +1,6 @@
 package indicators
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
@@ -19,24 +16,6 @@ func NewSMA(len int) *SMA {
 		buf:     buffer.NewCircularBuffer[float64](len),
 		current: 0.0,
 	}
-}
-
-func (sma *SMA) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&MovingAvgJSON{Length: sma.len})
-}
-
-func (sma *SMA) UnmarshalJSON(d []byte) error {
-	var maj MovingAvgJSON
-
-	if err := json.Unmarshal(d, &maj); err != nil {
-		return fmt.Errorf("failed to unmarshal EMM JSON: %w", err)
-	}
-
-	sma.len = maj.Length
-	sma.buf = buffer.NewCircularBuffer[float64](maj.Length)
-	sma.current = 0.0
-
-	return nil
 }
 
 func (sma *SMA) Period() int {
