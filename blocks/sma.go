@@ -14,7 +14,7 @@ type SMA struct {
 }
 
 const (
-	DescrSMA = "Simple moving average"
+	DescrSMA = "Simple Moving Average"
 	TypeSMA  = "SMA"
 )
 
@@ -29,48 +29,48 @@ func NewSMA() models.Block {
 	}
 }
 
-func (ma *SMA) GetType() string {
+func (blk *SMA) GetType() string {
 	return TypeSMA
 }
 
-func (ma *SMA) GetDescription() string {
+func (blk *SMA) GetDescription() string {
 	return DescrSMA
 }
 
-func (ma *SMA) GetParams() models.Params {
+func (blk *SMA) GetParams() models.Params {
 	return models.Params{
-		NamePeriod: ma.period,
+		NamePeriod: blk.period,
 	}
 }
 
-func (ma *SMA) GetInputs() models.Inputs {
+func (blk *SMA) GetInputs() models.Inputs {
 	return models.Inputs{
-		NameIn: ma.in,
+		NameIn: blk.in,
 	}
 }
 
-func (ma *SMA) GetOutputs() models.Outputs {
+func (blk *SMA) GetOutputs() models.Outputs {
 	return models.Outputs{
-		NameOut: ma.out,
+		NameOut: blk.out,
 	}
 }
 
-func (ma *SMA) IsWarm() bool {
-	return ma.sma.Warm()
+func (blk *SMA) IsWarm() bool {
+	return blk.sma.Warm()
 }
 
-func (ma *SMA) Init() error {
-	ma.sma = indicators.NewSMA(ma.period.Value)
+func (blk *SMA) Init() error {
+	blk.sma = indicators.NewSMA(blk.period.Value)
 
 	return nil
 }
 
-func (ma *SMA) Update() {
-	if !ma.in.IsSet() {
+func (blk *SMA) Update() {
+	if !blk.in.IsSet() {
 		return
 	}
 
-	ma.sma.Update(ma.in.Get())
+	blk.sma.Update(blk.in.Get())
 
-	ma.out.Set(ma.sma.Current())
+	blk.out.Set(blk.sma.Current())
 }

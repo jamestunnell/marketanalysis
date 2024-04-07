@@ -14,8 +14,8 @@ type EMA struct {
 }
 
 const (
-	DescrEMA = "Exponential moving average"
-	TypeEMA = "EMA"
+	DescrEMA = "Exponential Moving Average"
+	TypeEMA  = "EMA"
 )
 
 func NewEMA() models.Block {
@@ -29,48 +29,48 @@ func NewEMA() models.Block {
 	}
 }
 
-func (ma *EMA) GetType() string {
+func (blk *EMA) GetType() string {
 	return TypeEMA
 }
 
-func (ma *EMA) GetDescription() string {
+func (blk *EMA) GetDescription() string {
 	return DescrEMA
 }
 
-func (ma *EMA) GetParams() models.Params {
+func (blk *EMA) GetParams() models.Params {
 	return models.Params{
-		NamePeriod: ma.period,
+		NamePeriod: blk.period,
 	}
 }
 
-func (ma *EMA) GetInputs() models.Inputs {
+func (blk *EMA) GetInputs() models.Inputs {
 	return models.Inputs{
-		NameIn: ma.in,
+		NameIn: blk.in,
 	}
 }
 
-func (ma *EMA) GetOutputs() models.Outputs {
+func (blk *EMA) GetOutputs() models.Outputs {
 	return models.Outputs{
-		NameOut: ma.out,
+		NameOut: blk.out,
 	}
 }
 
-func (ma *EMA) IsWarm() bool {
-	return ma.ema.Warm()
+func (blk *EMA) IsWarm() bool {
+	return blk.ema.Warm()
 }
 
-func (ma *EMA) Init() error {
-	ma.ema = indicators.NewEMA(ma.period.Value)
+func (blk *EMA) Init() error {
+	blk.ema = indicators.NewEMA(blk.period.Value)
 
 	return nil
 }
 
-func (ma *EMA) Update() {
-	if !ma.in.IsSet() {
+func (blk *EMA) Update() {
+	if !blk.in.IsSet() {
 		return
 	}
 
-	ma.ema.Update(ma.in.Get())
+	blk.ema.Update(blk.in.Get())
 
-	ma.out.Set(ma.ema.Current())
+	blk.out.Set(blk.ema.Current())
 }
