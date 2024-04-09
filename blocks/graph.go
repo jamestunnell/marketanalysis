@@ -50,27 +50,25 @@ func (g *Graph) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j)
 }
 
-func UnmarshalGraphJSON(d []byte) (*Graph, error) {
+func (g *Graph) UnmarshalJSON(d []byte) error {
 	var j GraphJSON
 
 	if err := json.Unmarshal(d, &j); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal as graph: %w", err)
+		return fmt.Errorf("failed to unmarshal as graph: %w", err)
 	}
 
 	blocks := models.Blocks{}
 	for name, blockData := range j.Blocks {
 		b, err := UnmarshalBlockJSON(blockData)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal block %s: %w", name, err)
+			return fmt.Errorf("failed to unmarshal block %s: %w", name, err)
 		}
 
 		blocks[name] = b
 	}
 
-	g := &Graph{
-		Blocks:      blocks,
-		Connections: j.Connections,
-	}
+	g.Blocks = blocks
+	g.Connections = j.Connections
 
-	return g, nil
+	return nil
 }
