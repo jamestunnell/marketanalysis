@@ -22,7 +22,7 @@ func NewEMA() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &EMA{
-		period: models.NewParam[int](periodRange),
+		period: models.NewParam[int](1, periodRange),
 		ema:    nil,
 		in:     models.NewTypedInput[float64](),
 		out:    models.NewTypedOutput[float64](),

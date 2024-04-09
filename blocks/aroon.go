@@ -23,7 +23,7 @@ func NewAroon() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &Aroon{
-		period: models.NewParam[int](periodRange),
+		period: models.NewParam[int](1, periodRange),
 		aroon:  nil,
 		in:     models.NewTypedInput[float64](),
 		up:     models.NewTypedOutput[float64](),

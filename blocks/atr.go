@@ -22,7 +22,7 @@ func NewATR() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &ATR{
-		period: models.NewParam[int](periodRange),
+		period: models.NewParam[int](1, periodRange),
 		atr:    nil,
 		in:     models.NewTypedInput[*models.OHLC](),
 		out:    models.NewTypedOutput[float64](),

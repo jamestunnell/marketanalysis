@@ -22,7 +22,7 @@ func NewSMA() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &SMA{
-		period: models.NewParam[int](periodRange),
+		period: models.NewParam[int](1, periodRange),
 		sma:    nil,
 		in:     models.NewTypedInput[float64](),
 		out:    models.NewTypedOutput[float64](),

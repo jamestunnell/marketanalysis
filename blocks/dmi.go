@@ -15,22 +15,22 @@ type DMI struct {
 
 const (
 	DescrDMI = "Directional Movement Index"
-	NamePDI = "pdi"
-	NameNDI = "ndi"
-	NameDX = "dx"
-	TypeDMI = "DMI"
+	NamePDI  = "pdi"
+	NameNDI  = "ndi"
+	NameDX   = "dx"
+	TypeDMI  = "DMI"
 )
 
 func NewDMI() models.Block {
 	periodRange := constraints.NewValRange(1, 200)
 
 	return &DMI{
-		period: models.NewParam[int](periodRange),
+		period: models.NewParam[int](1, periodRange),
 		dmi:    nil,
 		in:     models.NewTypedInput[*models.Bar](),
-		pdi: models.NewTypedOutput[float64](),
-		ndi: models.NewTypedOutput[float64](),
-		dx: models.NewTypedOutput[float64](),
+		pdi:    models.NewTypedOutput[float64](),
+		ndi:    models.NewTypedOutput[float64](),
+		dx:     models.NewTypedOutput[float64](),
 	}
 }
 
@@ -56,7 +56,7 @@ func (blk *DMI) GetInputs() models.Inputs {
 
 func (blk *DMI) GetOutputs() models.Outputs {
 	return models.Outputs{
-		NameDX: blk.dx,
+		NameDX:  blk.dx,
 		NameNDI: blk.ndi,
 		NamePDI: blk.pdi,
 	}
