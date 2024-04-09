@@ -9,4 +9,5 @@ func init() {
 	reg.Add(TypeEMV, NewEMV)
 	reg.Add(TypeMAOrder, NewMAOrder)
 	reg.Add(TypeSMA, NewSMA)
+	reg.Add(TypeSupertrend, NewSupertrend)
 }
