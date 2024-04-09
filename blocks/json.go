@@ -16,7 +16,7 @@ type errMissingParam struct {
 	Name string
 }
 
-func MarshalJSON(blk models.Block) ([]byte, error) {
+func MarshalBlockJSON(blk models.Block) ([]byte, error) {
 	ps := map[string]json.RawMessage{}
 	for name, param := range blk.GetParams() {
 		d, err := param.StoreVal()
@@ -35,7 +35,7 @@ func MarshalJSON(blk models.Block) ([]byte, error) {
 	return json.Marshal(blkJSON)
 }
 
-func UnmarshalJSON(d []byte) (models.Block, error) {
+func UnmarshalBlockJSON(d []byte) (models.Block, error) {
 	var blk models.Block
 	var blkJSON BlockJSON
 

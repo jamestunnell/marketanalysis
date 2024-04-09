@@ -16,21 +16,21 @@ func TestJSONHappyPath(t *testing.T) {
 }
 
 func testJSONHappyPath(t *testing.T, typ string) {
-	t.Run(typ, func(t *testing.T){
+	t.Run(typ, func(t *testing.T) {
 		newFunc, found := blocks.Registry().Get(typ)
 
 		require.True(t, found)
-	
+
 		blk := newFunc()
-	
-		d, err := blocks.MarshalJSON(blk)
-	
+
+		d, err := blocks.MarshalBlockJSON(blk)
+
 		require.NoError(t, err)
-	
-		blk2, err := blocks.UnmarshalJSON(d)
-	
+
+		blk2, err := blocks.UnmarshalBlockJSON(d)
+
 		require.NoError(t, err)
-	
-		assert.Equal(t, blk.GetType(), blk2.GetType())	
+
+		assert.Equal(t, blk.GetType(), blk2.GetType())
 	})
 }

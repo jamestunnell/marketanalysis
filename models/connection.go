@@ -11,6 +11,8 @@ type Connection struct {
 	Dest   *Address `json:"dest"`
 }
 
+type Connections []*Connection
+
 type Address struct {
 	Block string
 	Port  string
