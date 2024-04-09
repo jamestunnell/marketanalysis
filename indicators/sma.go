@@ -29,14 +29,16 @@ func (sma *SMA) Warm() bool {
 func (sma *SMA) Update(val float64) {
 	sma.buf.Add(val)
 
-	if sma.buf.Full() {
-		sum := 0.0
-		sma.buf.Each(func(val float64) {
-			sum += val
-		})
-
-		sma.current = sum / float64(sma.len)
+	if !sma.buf.Full() {
+		return
 	}
+
+	sum := 0.0
+	sma.buf.Each(func(val float64) {
+		sum += val
+	})
+
+	sma.current = sum / float64(sma.len)
 }
 
 func (sma *SMA) Current() float64 {

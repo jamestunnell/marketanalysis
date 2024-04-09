@@ -1,63 +1,49 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-type Connection struct {
-	Source *Address `json:"source"`
-	Dest   *Address `json:"dest"`
-}
-
-type Connections []*Connection
+type Connections map[string][]string
 
 type Address struct {
 	Block string
 	Port  string
 }
 
-func NewAddress(block, port string) *Address {
-	return &Address{
-		Block: block,
-		Port:  port,
-	}
-}
-
-func NewConnection(src, dest *Address) *Connection {
-	return &Connection{
-		Source: src,
-		Dest:   dest,
-	}
-}
-
-func (addr *Address) String() string {
-	return addr.Block + "." + addr.Port
-}
-
-func (addr *Address) MarshalJSON() ([]byte, error) {
-	return json.Marshal(addr.String())
-}
-
-func (addr *Address) UnmarshalJSON(data []byte) error {
-	var str string
-
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("failed to unmarshal address JSON as string: %w", err)
-	}
-
-	return addr.Parse(str)
-}
-
-func (addr *Address) Parse(s string) error {
+func ParseAddress(s string) (*Address, error) {
 	substrings := strings.Split(s, ".")
 	if len(substrings) != 2 {
-		return fmt.Errorf("string '%s' not formated as <block>.<port>", s)
+		return nil, fmt.Errorf("'%s' not formated as <block>.<port>", s)
 	}
 
-	addr.Block = substrings[0]
-	addr.Port = substrings[1]
+	addr := &Address{
+		Block: substrings[0],
+		Port:  substrings[1],
+	}
+
+	return addr, nil
+}
+
+func (conns Connections) EachPair(each func(src, tgt *Address) error) error {
+	for src, tgts := range conns {
+		a, err := ParseAddress(src)
+		if err != nil {
+			return fmt.Errorf("invalid source address: %w", err)
+		}
+
+		for _, tgt := range tgts {
+			b, err := ParseAddress(tgt)
+			if err != nil {
+				return fmt.Errorf("invalid target address: %w", err)
+			}
+
+			if err := each(a, b); err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }

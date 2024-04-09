@@ -7,7 +7,7 @@ import (
 type Input interface {
 	GetType() string
 
-	IsConnected() bool
+	// IsConnected() bool
 }
 
 type Inputs map[string]Input
@@ -15,9 +15,10 @@ type Inputs map[string]Input
 type TypedInput[T any] struct {
 	Type string
 
-	out            *TypedOutput[T]
-	value          T
-	connected, set bool
+	out   *TypedOutput[T]
+	value T
+	set   bool
+	// connected
 }
 
 func NewTypedInput[T any]() *TypedInput[T] {
@@ -30,25 +31,35 @@ func NewTypedInput[T any]() *TypedInput[T] {
 	}
 }
 
+func (ins Inputs) Find(addr *Address) (Input, bool) {
+	for name, input := range ins {
+		if name == addr.Port {
+			return input, true
+		}
+	}
+
+	return nil, false
+}
+
 func (in *TypedInput[T]) GetType() string {
 	return in.Type
 }
 
-func (in *TypedInput[T]) IsConnected() bool {
-	return in.out != nil
-}
+// func (in *TypedInput[T]) IsConnected() bool {
+// 	return in.out != nil
+// }
 
 func (in *TypedInput[T]) IsSet() bool {
 	return in.set
 }
 
-func (in *TypedInput[T]) Connect() {
-	in.connected = true
-}
+// func (in *TypedInput[T]) Connect() {
+// 	in.connected = true
+// }
 
-func (in *TypedInput[T]) Disconnect() {
-	in.connected = false
-}
+// func (in *TypedInput[T]) Disconnect() {
+// 	in.connected = false
+// }
 
 func (in *TypedInput[T]) Set(val T) {
 	in.value = val

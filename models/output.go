@@ -10,6 +10,7 @@ type Output interface {
 	GetType() string
 
 	Connect(Input) error
+	DisconnectAll()
 }
 
 type Outputs map[string]Output
@@ -27,6 +28,16 @@ func NewTypedOutput[T any]() *TypedOutput[T] {
 		Type:  reflect.TypeOf(t).String(),
 		Value: t,
 	}
+}
+
+func (outs Outputs) Find(addr *Address) (Output, bool) {
+	for name, out := range outs {
+		if name == addr.Port {
+			return out, true
+		}
+	}
+
+	return nil, false
 }
 
 func (out *TypedOutput[T]) GetType() string {
@@ -55,7 +66,9 @@ func (out *TypedOutput[T]) Connect(i Input) error {
 
 	out.Ins = append(out.Ins, in)
 
-	in.Connect()
-
 	return nil
+}
+
+func (out *TypedOutput[T]) DisconnectAll() {
+	out.Ins = []*TypedInput[T]{}
 }

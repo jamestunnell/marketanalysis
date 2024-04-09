@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -18,10 +16,6 @@ type errMissingParam struct {
 	Name string
 }
 
-type errInvalidParam struct {
-	Name   string
-	Errors []error
-}
 
 func MarshalBlockJSON(blk models.Block) ([]byte, error) {
 	ps := map[string]json.RawMessage{}
@@ -68,10 +62,6 @@ func UnmarshalBlockJSON(d []byte) (models.Block, error) {
 		if err := p.LoadVal(rawMsg); err != nil {
 			return nil, fmt.Errorf("failed to load value for param '%s': %w", name, err)
 		}
-
-		if errs := models.ValidateParam(p); len(errs) > 0 {
-			return nil, &errInvalidParam{Name: name, Errors: errs}
-		}
 	}
 
 	return blk, nil
@@ -79,14 +69,4 @@ func UnmarshalBlockJSON(d []byte) (models.Block, error) {
 
 func (err *errMissingParam) Error() string {
 	return fmt.Sprintf("missing param %s", err.Name)
-}
-
-func (err *errInvalidParam) Error() string {
-	var merr *multierror.Error
-
-	for _, err := range err.Errors {
-		merr = multierror.Append(merr, err)
-	}
-
-	return fmt.Sprintf("invalid param %s: %v", err.Name, merr)
 }

@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.0.1
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
+	github.com/dominikbraun/graph v0.23.0
 	github.com/go-echarts/go-echarts/v2 v2.2.5
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/go-multierror v1.0.0
