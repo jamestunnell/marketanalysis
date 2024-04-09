@@ -7,5 +7,6 @@ func init() {
 	reg.Add(TypeDMI, NewDMI)
 	reg.Add(TypeEMA, NewEMA)
 	reg.Add(TypeEMV, NewEMV)
+	reg.Add(TypeMAOrder, NewMAOrder)
 	reg.Add(TypeSMA, NewSMA)
 }
