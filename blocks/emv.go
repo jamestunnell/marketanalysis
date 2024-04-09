@@ -6,8 +6,7 @@ import (
 )
 
 type EMV struct {
-	EMV *indicators.EMV
-	in  *models.TypedInput[*models.Bar]
+	emv *indicators.EMV
 	out *models.TypedOutput[float64]
 }
 
@@ -18,8 +17,7 @@ const (
 
 func NewEMV() models.Block {
 	return &EMV{
-		EMV: nil,
-		in:  models.NewTypedInput[*models.Bar](),
+		emv: nil,
 		out: models.NewTypedOutput[float64](),
 	}
 }
@@ -37,9 +35,7 @@ func (blk *EMV) GetParams() models.Params {
 }
 
 func (blk *EMV) GetInputs() models.Inputs {
-	return models.Inputs{
-		NameIn: blk.in,
-	}
+	return models.Inputs{}
 }
 
 func (blk *EMV) GetOutputs() models.Outputs {
@@ -49,21 +45,21 @@ func (blk *EMV) GetOutputs() models.Outputs {
 }
 
 func (blk *EMV) IsWarm() bool {
-	return blk.EMV.Warm()
+	return blk.emv.Warm()
 }
 
 func (blk *EMV) Init() error {
-	blk.EMV = indicators.NewEMV()
+	blk.emv = indicators.NewEMV()
 
 	return nil
 }
 
-func (blk *EMV) Update() {
-	if !blk.in.IsSet() {
+func (blk *EMV) Update(cur *models.Bar) {
+	blk.emv.Update(cur)
+
+	if !blk.emv.Warm() {
 		return
 	}
 
-	blk.EMV.Update(blk.in.Get())
-
-	blk.out.Set(blk.EMV.EMV())
+	blk.out.Set(blk.emv.EMV())
 }

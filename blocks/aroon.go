@@ -68,7 +68,7 @@ func (blk *Aroon) Init() error {
 	return nil
 }
 
-func (blk *Aroon) Update() {
+func (blk *Aroon) Update(*models.Bar) {
 	if !blk.in.IsSet() {
 		return
 	}

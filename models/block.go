@@ -10,7 +10,7 @@ type Block interface {
 	IsWarm() bool
 
 	Init() error
-	Update()
+	Update(*Bar)
 }
 
 type Blocks map[string]Block

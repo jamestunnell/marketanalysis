@@ -65,7 +65,7 @@ func (blk *SMA) Init() error {
 	return nil
 }
 
-func (blk *SMA) Update() {
+func (blk *SMA) Update(*models.Bar) {
 	if !blk.in.IsSet() {
 		return
 	}

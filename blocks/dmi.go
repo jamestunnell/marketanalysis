@@ -9,7 +9,6 @@ import (
 type DMI struct {
 	period       *models.TypedParam[int]
 	dmi          *indicators.DMI
-	in           *models.TypedInput[*models.Bar]
 	pdi, ndi, dx *models.TypedOutput[float64]
 }
 
@@ -27,7 +26,6 @@ func NewDMI() models.Block {
 	return &DMI{
 		period: models.NewParam[int](1, periodRange),
 		dmi:    nil,
-		in:     models.NewTypedInput[*models.Bar](),
 		pdi:    models.NewTypedOutput[float64](),
 		ndi:    models.NewTypedOutput[float64](),
 		dx:     models.NewTypedOutput[float64](),
@@ -49,9 +47,7 @@ func (blk *DMI) GetParams() models.Params {
 }
 
 func (blk *DMI) GetInputs() models.Inputs {
-	return models.Inputs{
-		NameIn: blk.in,
-	}
+	return models.Inputs{}
 }
 
 func (blk *DMI) GetOutputs() models.Outputs {
@@ -72,12 +68,12 @@ func (blk *DMI) Init() error {
 	return nil
 }
 
-func (blk *DMI) Update() {
-	if !blk.in.IsSet() {
+func (blk *DMI) Update(cur *models.Bar) {
+	blk.dmi.Update(cur)
+
+	if !blk.dmi.Warm() {
 		return
 	}
-
-	blk.dmi.Update(blk.in.Get())
 
 	blk.dx.Set(blk.dmi.DX())
 	blk.ndi.Set(blk.dmi.NDI())

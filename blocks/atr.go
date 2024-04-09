@@ -9,7 +9,6 @@ import (
 type ATR struct {
 	period *models.TypedParam[int]
 	atr    *indicators.ATR
-	in     *models.TypedInput[*models.OHLC]
 	out    *models.TypedOutput[float64]
 }
 
@@ -24,7 +23,6 @@ func NewATR() models.Block {
 	return &ATR{
 		period: models.NewParam[int](1, periodRange),
 		atr:    nil,
-		in:     models.NewTypedInput[*models.OHLC](),
 		out:    models.NewTypedOutput[float64](),
 	}
 }
@@ -44,9 +42,7 @@ func (blk *ATR) GetParams() models.Params {
 }
 
 func (blk *ATR) GetInputs() models.Inputs {
-	return models.Inputs{
-		NameIn: blk.in,
-	}
+	return models.Inputs{}
 }
 
 func (blk *ATR) GetOutputs() models.Outputs {
@@ -65,12 +61,12 @@ func (blk *ATR) Init() error {
 	return nil
 }
 
-func (blk *ATR) Update() {
-	if !blk.in.IsSet() {
+func (blk *ATR) Update(cur *models.Bar) {
+	blk.atr.Update(cur.OHLC)
+
+	if !blk.atr.Warm() {
 		return
 	}
-
-	blk.atr.Update(blk.in.Get())
 
 	blk.out.Set(blk.atr.Current())
 }
