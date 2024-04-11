@@ -7,6 +7,7 @@ import (
 	"os"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -120,14 +121,16 @@ func (g *Graph) Init(r models.Recorder) error {
 		Inputs:   recordIns,
 		Recorder: r,
 	}
-	recordName := "record" + nanoid.Must()
+	recordName := "record-" + nanoid.Must()
 
 	g.augmentedBlocks[recordName] = record
 
 	// Add connections to the record block
 
 	for _, name := range g.Outputs {
-		g.augmentedConns[name] = append(g.augmentedConns[name], recordName+"."+name)
+		tgtInput := recordName + "." + name
+
+		g.augmentedConns[name] = append(g.augmentedConns[name], tgtInput)
 	}
 
 	if err := g.augmentedBlocks.Init(); err != nil {
@@ -138,6 +141,8 @@ func (g *Graph) Init(r models.Recorder) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
+
+	log.Debug().Strs("order", order).Msg("connected graph blocks")
 
 	g.blockOrder = order
 
@@ -153,7 +158,10 @@ func (g *Graph) Update(bar *models.Bar) {
 	}
 
 	for _, blockName := range g.blockOrder {
-		blk := g.Blocks[blockName]
+		blk, found := g.augmentedBlocks[blockName]
+		if !found {
+			log.Fatal().Str("name", blockName).Msg("block not found")
+		}
 
 		blk.Update(bar)
 	}

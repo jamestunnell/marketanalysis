@@ -9,12 +9,14 @@ import (
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/recorders"
 	"github.com/rickb777/date/timespan"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 var (
 	app = kingpin.New("plot", "Plot market data along with model outputs.")
 
+	debug     = app.Flag("debug", "Enable debug mode").Bool()
 	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
 	graphFile = app.Flag("model", "Model JSON file path").Required().String()
 	csvPath   = app.Flag("csv", "Path for a CSV output file").Required().String()
@@ -24,6 +26,12 @@ var (
 
 func main() {
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 
 	s, err := collection.NewDirStore(*dataDir)
 	if err != nil {

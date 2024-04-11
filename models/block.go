@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dominikbraun/graph"
+	"github.com/rs/zerolog/log"
 )
 
 type Block interface {
@@ -98,22 +99,27 @@ func (blocks Blocks) Connect(conns Connections) ([]string, error) {
 		}
 	}
 
-	err := conns.EachPair(func(src, tgt *Address) error {
+	err := conns.EachPair(func(src, dest *Address) error {
 		output, found := blocks.FindOutput(src)
 		if !found {
 			return fmt.Errorf("output %s not found", src)
 		}
 
-		input, found := blocks.FindInput(tgt)
+		input, found := blocks.FindInput(dest)
 		if !found {
-			return fmt.Errorf("input %s not found", tgt)
+			return fmt.Errorf("input %s not found", dest)
 		}
 
 		output.Connect(input)
 
-		if err := g.AddEdge(src.A, tgt.A); err != nil {
+		if err := g.AddEdge(src.A, dest.A); err != nil {
 			return fmt.Errorf("failed to add graph edge: %w", err)
 		}
+
+		log.Debug().
+			Stringer("output", src).
+			Stringer("input", dest).
+			Msg("connected pair")
 
 		return nil
 	})
