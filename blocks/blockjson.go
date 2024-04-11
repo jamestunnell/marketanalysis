@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -11,11 +12,6 @@ type BlockJSON struct {
 	Type   string                     `json:"type"`
 	Params map[string]json.RawMessage `json:"params"`
 }
-
-type errMissingParam struct {
-	Name string
-}
-
 
 func MarshalBlockJSON(blk models.Block) ([]byte, error) {
 	ps := map[string]json.RawMessage{}
@@ -46,17 +42,17 @@ func UnmarshalBlockJSON(d []byte) (models.Block, error) {
 		return blk, err
 	}
 
-	newElem, found := Registry().Get(blkJSON.Type)
+	newBlock, found := Registry().Get(blkJSON.Type)
 	if !found {
 		return blk, fmt.Errorf("unknown block type '%s'", blkJSON.Type)
 	}
 
-	blk = newElem()
+	blk = newBlock()
 
 	for name, p := range blk.GetParams() {
 		rawMsg, found := blkJSON.Params[name]
 		if !found {
-			return nil, &errMissingParam{Name: name}
+			return nil, commonerrs.NewErrNotFound("param", name)
 		}
 
 		if err := p.LoadVal(rawMsg); err != nil {
@@ -65,8 +61,4 @@ func UnmarshalBlockJSON(d []byte) (models.Block, error) {
 	}
 
 	return blk, nil
-}
-
-func (err *errMissingParam) Error() string {
-	return fmt.Sprintf("missing param %s", err.Name)
 }

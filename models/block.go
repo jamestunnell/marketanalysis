@@ -43,22 +43,46 @@ func (blocks Blocks) Init() error {
 	return nil
 }
 
-func (blocks Blocks) FindOutput(addr *Address) (Output, bool) {
-	block, found := blocks[addr.Block]
+func (blocks Blocks) FindParam(addr *Address) (Param, bool) {
+	block, found := blocks[addr.A]
 	if !found {
 		return nil, false
 	}
 
-	return block.GetOutputs().Find(addr)
+	p, found := block.GetParams()[addr.B]
+	if !found {
+		return nil, false
+	}
+
+	return p, true
 }
 
 func (blocks Blocks) FindInput(addr *Address) (Input, bool) {
-	block, found := blocks[addr.Block]
+	block, found := blocks[addr.A]
 	if !found {
 		return nil, false
 	}
 
-	return block.GetInputs().Find(addr)
+	in, found := block.GetInputs()[addr.B]
+	if !found {
+		return nil, false
+	}
+
+	return in, true
+}
+
+func (blocks Blocks) FindOutput(addr *Address) (Output, bool) {
+	block, found := blocks[addr.A]
+	if !found {
+		return nil, false
+	}
+
+	out, found := block.GetOutputs()[addr.B]
+	if !found {
+		return nil, false
+	}
+
+	return out, true
 }
 
 func (blocks Blocks) Connect(conns Connections) ([]string, error) {
@@ -87,7 +111,7 @@ func (blocks Blocks) Connect(conns Connections) ([]string, error) {
 
 		output.Connect(input)
 
-		if err := g.AddEdge(src.Block, tgt.Block); err != nil {
+		if err := g.AddEdge(src.A, tgt.A); err != nil {
 			return fmt.Errorf("failed to add graph edge: %w", err)
 		}
 

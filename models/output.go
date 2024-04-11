@@ -30,16 +30,6 @@ func NewTypedOutput[T any]() *TypedOutput[T] {
 	}
 }
 
-func (outs Outputs) Find(addr *Address) (Output, bool) {
-	for name, out := range outs {
-		if name == addr.Port {
-			return out, true
-		}
-	}
-
-	return nil, false
-}
-
 func (out *TypedOutput[T]) GetType() string {
 	return out.Type
 }

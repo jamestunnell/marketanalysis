@@ -7,6 +7,9 @@ import (
 type Input interface {
 	GetType() string
 
+	IsSet() bool
+
+	Reset()
 	// IsConnected() bool
 }
 
@@ -29,16 +32,6 @@ func NewTypedInput[T any]() *TypedInput[T] {
 		out:   nil,
 		value: val,
 	}
-}
-
-func (ins Inputs) Find(addr *Address) (Input, bool) {
-	for name, input := range ins {
-		if name == addr.Port {
-			return input, true
-		}
-	}
-
-	return nil, false
 }
 
 func (in *TypedInput[T]) GetType() string {
