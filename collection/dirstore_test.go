@@ -22,10 +22,8 @@ func TestDirStore(t *testing.T) {
 	require.NoError(t, err)
 
 	// nothing in the store yet
-	names, err := store.ItemNames()
-
 	assert.NoError(t, err)
-	assert.Empty(t, names)
+	assert.Empty(t, store.ItemNames())
 
 	// load non-existent item fails
 	d, err := store.LoadItem("bogus")
@@ -46,7 +44,7 @@ func TestDirStore(t *testing.T) {
 	require.NoError(t, err)
 
 	// one item in the store
-	names, err = store.ItemNames()
+	names := store.ItemNames()
 
 	assert.NoError(t, err)
 	assert.Len(t, names, 1)

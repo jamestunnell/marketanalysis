@@ -21,11 +21,11 @@ func TestCollection(t *testing.T) {
 		Resolution: collection.Resolution1Min,
 	}
 
-	c, err := collection.New(info, bars)
+	c, err := collection.New(info, store)
 
 	require.NoError(t, err)
 
-	err = c.Store(store)
+	err = c.StoreBars(bars)
 
 	require.NoError(t, err)
 
@@ -35,7 +35,16 @@ func TestCollection(t *testing.T) {
 
 	// spot checks
 	assert.Equal(t, c.Info().Symbol, c2.Info().Symbol)
-	assert.Equal(t, len(c.GetBars(c.Timespan())), len(c2.GetBars(c2.Timespan())))
+
+	bars1, err := c.LoadBars(c.TimeSpan())
+
+	assert.NoError(t, err)
+
+	bars2, err := c2.LoadBars(c2.TimeSpan())
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(bars1), len(bars2))
 }
 
 func makeTestStore(t *testing.T) (s collection.Store, cleanup func()) {

@@ -206,7 +206,11 @@ func (c *collection) StoreBars(bars models.Bars) error {
 		if err := c.barStore.StoreItem(name, buf.Bytes()); err != nil {
 			return fmt.Errorf("failed to store bar date: %w", err)
 		}
+
+		c.index.AddItem(name, d)
 	}
+
+	c.index.Update()
 
 	return nil
 }
