@@ -45,6 +45,7 @@ func (atr *ATR) Update(cur *models.OHLC) {
 		return
 	}
 
+	atr.prev = cur
 	atr.warm = true
 	atr.current = atr.ma.Current()
 }

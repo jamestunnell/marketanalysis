@@ -3,7 +3,6 @@ package blocks
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 	"os"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
@@ -18,9 +17,7 @@ type Graph struct {
 	Connections models.Connections
 	Outputs     []string
 
-	augmentedBlocks models.Blocks
-	augmentedConns  models.Connections
-	blockOrder      []string
+	blockOrder []string
 }
 
 type GraphJSON struct {
@@ -105,10 +102,7 @@ func (m *Graph) GetOutputs() models.Outputs {
 	return outs
 }
 
-func (g *Graph) Init(r models.Recorder) error {
-	g.augmentedBlocks = maps.Clone(g.Blocks)
-	g.augmentedConns = maps.Clone(g.Connections)
-
+func (g *Graph) AddRecorder(r models.Recorder) {
 	// Add the record block
 
 	recordIns := map[string]*models.TypedInput[float64]{}
@@ -123,21 +117,23 @@ func (g *Graph) Init(r models.Recorder) error {
 	}
 	recordName := "record-" + nanoid.Must()
 
-	g.augmentedBlocks[recordName] = record
+	g.Blocks[recordName] = record
 
 	// Add connections to the record block
 
 	for _, name := range g.Outputs {
 		tgtInput := recordName + "." + name
 
-		g.augmentedConns[name] = append(g.augmentedConns[name], tgtInput)
+		g.Connections[name] = append(g.Connections[name], tgtInput)
 	}
+}
 
-	if err := g.augmentedBlocks.Init(); err != nil {
+func (g *Graph) Init() error {
+	if err := g.Blocks.Init(); err != nil {
 		return fmt.Errorf("failed to init blocks: %w", err)
 	}
 
-	order, err := g.augmentedBlocks.Connect(g.augmentedConns)
+	order, err := g.Blocks.Connect(g.Connections)
 	if err != nil {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
@@ -151,14 +147,14 @@ func (g *Graph) Init(r models.Recorder) error {
 
 func (g *Graph) Update(bar *models.Bar) {
 	// reset all inputs so we know what has been set this cycle
-	for _, blk := range g.augmentedBlocks {
+	for _, blk := range g.Blocks {
 		for _, in := range blk.GetInputs() {
 			in.Reset()
 		}
 	}
 
 	for _, blockName := range g.blockOrder {
-		blk, found := g.augmentedBlocks[blockName]
+		blk, found := g.Blocks[blockName]
 		if !found {
 			log.Fatal().Str("name", blockName).Msg("block not found")
 		}

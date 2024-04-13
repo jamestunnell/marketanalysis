@@ -6,6 +6,6 @@ type Model interface {
 	GetParams() Params
 	GetOutputs() Outputs
 
-	Init(Recorder) error
+	Init() error
 	Update(*Bar)
 }
