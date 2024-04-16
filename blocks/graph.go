@@ -102,9 +102,9 @@ func (m *Graph) GetOutputs() models.Outputs {
 	return outs
 }
 
-func (g *Graph) AddRecorder(r models.Recorder) {
-	// Add the record block
-
+// addRecorder adds a record block that uses the given recorder
+// and connects outputs.
+func (g *Graph) addRecorder(r models.Recorder) {
 	recordIns := map[string]*models.TypedInput[float64]{}
 
 	for _, name := range g.Outputs {
@@ -128,7 +128,9 @@ func (g *Graph) AddRecorder(r models.Recorder) {
 	}
 }
 
-func (g *Graph) Init() error {
+func (g *Graph) Init(rec models.Recorder) error {
+	g.addRecorder(rec)
+
 	if err := g.Blocks.Init(); err != nil {
 		return fmt.Errorf("failed to init blocks: %w", err)
 	}

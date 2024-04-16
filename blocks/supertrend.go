@@ -21,12 +21,12 @@ type Supertrend struct {
 
 const (
 	DescrSupertrend = "Creates dynamic support and resistance levels from ATR. Uses these levels to determine trend."
-	NameATRLen     = "atrLength"
-	NameATRMul     = "atrMul"
-	NameLower      = "lower"
-	NameUpper      = "upper"
-	NameTrend      = "trend"
-	TypeSupertrend = "Supertrend"
+	NameATRLen      = "atrLength"
+	NameATRMul      = "atrMul"
+	NameLower       = "lower"
+	NameUpper       = "upper"
+	NameTrend       = "trend"
+	TypeSupertrend  = "Supertrend"
 )
 
 func NewSupertrend() models.Block {
@@ -44,77 +44,96 @@ func NewSupertrend() models.Block {
 	}
 }
 
-func (sup *Supertrend) GetType() string {
+func (blk *Supertrend) GetType() string {
 	return TypeSupertrend
 }
 
-func (sup *Supertrend) GetDescription() string {
+func (blk *Supertrend) GetDescription() string {
 	return DescrSupertrend
 }
 
-func (sup *Supertrend) GetParams() models.Params {
+func (blk *Supertrend) GetParams() models.Params {
 	return models.Params{
-		NameATRLen: sup.atrLen,
-		NameATRMul: sup.atrMul,
+		NameATRLen: blk.atrLen,
+		NameATRMul: blk.atrMul,
 	}
 }
 
-func (sup *Supertrend) GetInputs() models.Inputs {
+func (blk *Supertrend) GetInputs() models.Inputs {
 	return models.Inputs{
-		NameIn: sup.in,
+		NameIn: blk.in,
 	}
 }
 
-func (sup *Supertrend) GetOutputs() models.Outputs {
+func (blk *Supertrend) GetOutputs() models.Outputs {
 	return models.Outputs{
-		NameLower: sup.lower,
-		NameUpper: sup.upper,
-		NameTrend: sup.trend,
+		NameLower: blk.lower,
+		NameUpper: blk.upper,
+		NameTrend: blk.trend,
 	}
 }
 
-func (sup *Supertrend) IsWarm() bool {
-	return sup.atr.Warm() && (sup.prevVal != nil)
+func (blk *Supertrend) IsWarm() bool {
+	return blk.atr.Warm() && (blk.prevVal != nil)
 }
 
-func (sup *Supertrend) Init() error {
-	atr := indicators.NewATR(sup.atrLen.Value)
+func (blk *Supertrend) Init() error {
+	atr := indicators.NewATR(blk.atrLen.Value)
 
-	sup.atr = atr
+	blk.atr = atr
 
 	return nil
 }
 
-func (sup *Supertrend) Update(bar *models.Bar) {
-	sup.atr.Update(bar.OHLC)
+func (blk *Supertrend) Update(bar *models.Bar) {
+	defer blk.updatePrev(bar.OHLC)
 
-	if !sup.atr.Warm() || (sup.prevVal == nil) {
-		sup.prevVal = bar.OHLC
+	blk.atr.Update(bar.OHLC)
 
+	if !blk.atr.Warm() || (blk.prevVal == nil) {
 		return
 	}
 
-	atr := sup.atr.Current() * sup.atrMul.Value
-	up := sup.in.Get() + atr
-	dn := sup.in.Get() - atr
+	atr := blk.atr.Current() * blk.atrMul.Value
+	in := blk.in.Get()
+	upper := in + atr
+	lower := in - atr
 
-	if bar.Close > sup.upper.Value {
-		sup.trend.Set(1.0)
-	} else if bar.Close < sup.lower.Value {
-		sup.trend.Set(-1.0)
-	}
-
-	if sup.prevVal.Close < sup.upper.Value {
-		sup.upper.Set(math.Min(up, sup.upper.Value))
+	var lowerPrev float64
+	if blk.lower.SetCount > 0 {
+		lowerPrev = blk.lower.Value
 	} else {
-		sup.upper.Set(up)
+		lowerPrev = lower
 	}
 
-	if sup.prevVal.Close > sup.lower.Value {
-		sup.upper.Set(math.Max(dn, sup.lower.Value))
+	var upperPrev float64
+	if blk.upper.SetCount > 0 {
+		upperPrev = blk.upper.Value
 	} else {
-		sup.lower.Set(dn)
+		upperPrev = upper
 	}
 
-	sup.prevVal = bar.OHLC
+	if in > upperPrev {
+		blk.trend.Set(1.0)
+	} else if in < lowerPrev {
+		blk.trend.Set(-1.0)
+	} else {
+		blk.trend.Set(blk.trend.Value)
+	}
+
+	if blk.prevVal.Close < upperPrev {
+		blk.upper.Set(math.Min(upper, upperPrev))
+	} else {
+		blk.upper.Set(upper)
+	}
+
+	if blk.prevVal.Close > lowerPrev {
+		blk.lower.Set(math.Max(lower, lowerPrev))
+	} else {
+		blk.lower.Set(lower)
+	}
+}
+
+func (blk *Supertrend) updatePrev(cur *models.OHLC) {
+	blk.prevVal = cur
 }

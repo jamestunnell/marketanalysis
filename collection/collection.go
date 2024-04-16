@@ -12,15 +12,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Collection interface {
-	Info() *Info
-	TimeSpan() timespan.TimeSpan
-	LoadBars(timespan.TimeSpan) (models.Bars, error)
-	StoreBars(models.Bars) error
-}
-
 type collection struct {
-	info     *Info
+	info     *models.CollectionInfo
 	index    *DateIndex
 	store    Store
 	barStore Store
@@ -43,13 +36,13 @@ func Exists(store Store) bool {
 	return true
 }
 
-func Load(store Store) (Collection, error) {
+func Load(store Store) (models.Collection, error) {
 	d, err := store.LoadItem(InfoItemName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load info item: %w", err)
 	}
 
-	var info Info
+	var info models.CollectionInfo
 	if err = json.Unmarshal(d, &info); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
 	}
@@ -71,7 +64,7 @@ func Load(store Store) (Collection, error) {
 	return c, nil
 }
 
-func New(info *Info, store Store) (Collection, error) {
+func New(info *models.CollectionInfo, store Store) (models.Collection, error) {
 	if !slices.Contains(store.ItemNames(), InfoItemName) {
 		d, err := json.Marshal(info)
 		if err != nil {
@@ -111,11 +104,11 @@ func New(info *Info, store Store) (Collection, error) {
 	return c, nil
 }
 
-func (c *collection) Info() *Info {
+func (c *collection) GetInfo() *models.CollectionInfo {
 	return c.info
 }
 
-func (c *collection) TimeSpan() timespan.TimeSpan {
+func (c *collection) GetTimeSpan() timespan.TimeSpan {
 	return c.index.TimeSpan()
 }
 

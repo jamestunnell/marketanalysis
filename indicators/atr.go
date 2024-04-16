@@ -31,9 +31,9 @@ func (atr *ATR) Warm() bool {
 }
 
 func (atr *ATR) Update(cur *models.OHLC) {
-	if atr.prev == nil {
-		atr.prev = cur
+	defer atr.updatePrev(cur)
 
+	if atr.prev == nil {
 		return
 	}
 
@@ -45,11 +45,14 @@ func (atr *ATR) Update(cur *models.OHLC) {
 		return
 	}
 
-	atr.prev = cur
 	atr.warm = true
 	atr.current = atr.ma.Current()
 }
 
 func (atr *ATR) Current() float64 {
 	return atr.current
+}
+
+func (atr *ATR) updatePrev(cur *models.OHLC) {
+	atr.prev = cur
 }

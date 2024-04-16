@@ -12,6 +12,7 @@ import (
 
 type CSV struct {
 	writer     *csv.Writer
+	loc *time.Location
 	valNames   []string
 	record     []string
 	notFlushed int
@@ -19,9 +20,10 @@ type CSV struct {
 
 const timeCol = "time"
 
-func NewCSV(w io.Writer) *CSV {
+func NewCSV(w io.Writer, loc *time.Location) *CSV {
 	return &CSV{
 		writer:     csv.NewWriter(w),
+		loc: loc,
 		valNames:   []string{},
 		record:     []string{},
 		notFlushed: 0,
@@ -45,7 +47,7 @@ func (rec *CSV) Init(valNames []string) error {
 }
 
 func (rec *CSV) Record(t time.Time, vals map[string]float64) {
-	rec.record[0] = t.Local().String()
+	rec.record[0] = t.In(rec.loc).String()
 
 	missing := []string{}
 	for i, valName := range rec.valNames {

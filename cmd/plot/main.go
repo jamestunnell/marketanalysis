@@ -15,6 +15,7 @@ import (
 var (
 	app = kingpin.New("plot", "Plot market data along with model outputs.")
 
+	tzLoc     = app.Flag("tz", `Timezone location`).Default("US/Pacific").String()
 	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
 	graphFile = app.Flag("graphfile", "Graph Model JSON file path").Required().String()
 	csvOut    = app.Flag("csvout", "CSV output file").Required().String()
@@ -45,13 +46,18 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to creat CSV file")
 	}
 
-	recorder := recorders.NewCSV(csvFile)
+	loc, err := time.LoadLocation(*tzLoc)
+	if err != nil {
+		log.Fatal().Err(err).Str("tz", *tzLoc).Msg("failed to load timezone location")
+	}
+
+	recorder := recorders.NewCSV(csvFile, loc)
 
 	if err = g.Init(recorder); err != nil {
 		log.Fatal().Err(err).Msg("failed to init graph model")
 	}
 
-	ts := c.TimeSpan()
+	ts := c.GetTimeSpan()
 	tStart := ts.Start()
 	tEnd := ts.End()
 

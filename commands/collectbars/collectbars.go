@@ -89,7 +89,7 @@ func (cmd *Command) Run() error {
 		bars[i] = models.NewBarFromAlpaca(alpacaBar)
 	}
 
-	var c collection.Collection
+	var c models.Collection
 
 	if collection.Exists(cmd.Store) {
 		c, err = collection.Load(cmd.Store)
@@ -97,7 +97,7 @@ func (cmd *Command) Run() error {
 			return fmt.Errorf("failed to load collection: %w", err)
 		}
 
-		sym := c.Info().Symbol
+		sym := c.GetInfo().Symbol
 		if sym != cmd.Symbol {
 			err = fmt.Errorf(
 				"collection symbol '%s' does not match given '%s'", sym, cmd.Symbol)
@@ -107,7 +107,10 @@ func (cmd *Command) Run() error {
 
 		fmt.Println("collection exists")
 	} else {
-		info := collection.NewInfo(cmd.Symbol, collection.Resolution1Min)
+		info := &models.CollectionInfo{
+			Symbol:     cmd.Symbol,
+			Resolution: models.Resolution1Min,
+		}
 
 		c, err = collection.New(info, cmd.Store)
 		if err != nil {

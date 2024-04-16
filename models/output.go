@@ -16,17 +16,22 @@ type Output interface {
 type Outputs map[string]Output
 
 type TypedOutput[T any] struct {
-	Type  string
-	Value T
-	Ins   []*TypedInput[T]
+	Type     string
+	Value    T
+	Prev     T
+	SetCount int
+	Ins      []*TypedInput[T]
 }
 
 func NewTypedOutput[T any]() *TypedOutput[T] {
 	var t T
 
 	return &TypedOutput[T]{
-		Type:  reflect.TypeOf(t).String(),
-		Value: t,
+		Type:     reflect.TypeOf(t).String(),
+		Value:    t,
+		Prev:     t,
+		SetCount: 0,
+		Ins:      []*TypedInput[T]{},
 	}
 }
 
@@ -43,9 +48,16 @@ func (out *TypedOutput[T]) SetIfConnected(calcVal func() T) {
 }
 
 func (out *TypedOutput[T]) Set(val T) {
+	if out.SetCount > 0 {
+		out.Prev = out.Value
+	}
+
 	for _, in := range out.Ins {
 		in.Set(val)
 	}
+
+	out.Value = val
+	out.SetCount++
 }
 
 func (out *TypedOutput[T]) Connect(i Input) error {

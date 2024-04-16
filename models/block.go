@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dominikbraun/graph"
@@ -100,6 +101,12 @@ func (blocks Blocks) Connect(conns Connections) ([]string, error) {
 	}
 
 	err := conns.EachPair(func(src, dest *Address) error {
+		if err := g.AddEdge(src.A, dest.A); err != nil {
+			if !errors.Is(err, graph.ErrEdgeAlreadyExists) {
+				return fmt.Errorf("failed to add graph edge: %w", err)
+			}
+		}
+
 		output, found := blocks.FindOutput(src)
 		if !found {
 			return fmt.Errorf("output %s not found", src)
@@ -112,13 +119,9 @@ func (blocks Blocks) Connect(conns Connections) ([]string, error) {
 
 		output.Connect(input)
 
-		if err := g.AddEdge(src.A, dest.A); err != nil {
-			return fmt.Errorf("failed to add graph edge: %w", err)
-		}
-
 		log.Debug().
-			Stringer("output", src).
-			Stringer("input", dest).
+			Stringer("out", src).
+			Stringer("in", dest).
 			Msg("connected pair")
 
 		return nil

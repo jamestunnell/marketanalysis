@@ -17,6 +17,7 @@ import (
 var (
 	app = kingpin.New("plot", "Plot market data along with model outputs.")
 
+	tz        = app.Flag("tz", `Timezone location`).Default("US/Pacific").String()
 	debug     = app.Flag("debug", "Enable debug mode").Bool()
 	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
 	modelFile = app.Flag("model", "Model JSON file path").Required().String()
@@ -54,15 +55,18 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to creat CSV file")
 	}
 
-	recorder := recorders.NewCSV(csvFile)
+	loc, err := time.LoadLocation(*tz)
+	if err != nil {
+		log.Fatal().Err(err).Str("tz", *tz).Msg("failed to load timezone location")
+	}
 
-	g.AddRecorder(recorder)
+	rec := recorders.NewCSV(csvFile, loc)
 
-	if err = g.Init(); err != nil {
+	if err = g.Init(rec); err != nil {
 		log.Fatal().Err(err).Msg("failed to init graph model")
 	}
 
-	ts := c.TimeSpan()
+	ts := c.GetTimeSpan()
 	tStart := ts.Start()
 	tEnd := ts.End()
 
@@ -72,16 +76,16 @@ func main() {
 			log.Fatal().Err(err).Str("start", *startStr).Msg("failed to parse start date")
 		}
 
-		tStart = startDate.UTC()
+		tStart = startDate.In(loc)
 	}
 
 	if *endStr != "" {
-		endDate, err := date.Parse(time.RFC3339, *endStr)
+		endDate, err := date.Parse(date.RFC3339, *endStr)
 		if err != nil {
 			log.Fatal().Err(err).Str("end", *endStr).Msg("failed to parse end date")
 		}
 
-		tEnd = endDate.UTC()
+		tEnd = endDate.In(loc)
 	}
 
 	ts = timespan.NewTimeSpan(tStart, tEnd)
@@ -94,9 +98,15 @@ func main() {
 			Msg("failed to load bars")
 	}
 
+	log.Info().Err(err).
+		Time("start", ts.Start()).
+		Time("end", ts.End()).
+		Int("count", len(bars)).
+		Msg("loaded bars")
+
 	for _, bar := range bars {
 		g.Update(bar)
 	}
 
-	recorder.Flush()
+	rec.Flush()
 }
