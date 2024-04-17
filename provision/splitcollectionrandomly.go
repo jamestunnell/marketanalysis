@@ -5,17 +5,17 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date"
 )
 
 func SplitCollectionRandomly(
-	coll collection.Collection,
+	coll models.Collection,
 	split float64,
-	randSource rand.Source) (trainingBars, testingBars BarProvider, err error) {
-	dateRange := coll.TimeSpan().DateRangeIn(time.Local)
+	randSource rand.Source) (training, testing models.BarsProvider, err error) {
+	dateRange := coll.GetTimeSpan().DateRangeIn(time.Local)
 	nDays := int(dateRange.Days())
 
 	numTraining := int(math.Round(split * float64(nDays)))
@@ -40,8 +40,8 @@ func SplitCollectionRandomly(
 		return start.Add(date.PeriodOfDays(day))
 	})
 
-	trainingBars = NewDailyBarProvider(coll, trainingDates)
-	testingBars = NewDailyBarProvider(coll, testingDates)
+	training = NewDailyBarsProvider(coll, trainingDates)
+	testing = NewDailyBarsProvider(coll, testingDates)
 
 	return
 }

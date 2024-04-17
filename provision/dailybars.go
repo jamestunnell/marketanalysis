@@ -4,30 +4,29 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 )
 
 type DailyBarSeq struct {
-	Collection collection.Collection
+	Collection models.Collection
 	Date       date.Date
 }
 
 type DailyBarSeqs struct {
-	Collection collection.Collection
+	Collection models.Collection
 	Dates      []date.Date
 }
 
-func NewDailyBarSeq(c collection.Collection, d date.Date) *DailyBarSeq {
+func NewDailyBarSeq(c models.Collection, d date.Date) *DailyBarSeq {
 	return &DailyBarSeq{
 		Collection: c,
 		Date:       d,
 	}
 }
 
-func NewDailyBarSeqs(c collection.Collection, dates ...date.Date) *DailyBarSeqs {
+func NewDailyBarSeqs(c models.Collection, dates ...date.Date) *DailyBarSeqs {
 	return &DailyBarSeqs{
 		Collection: c,
 		Dates:      dates,
