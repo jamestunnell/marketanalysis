@@ -16,9 +16,9 @@ func TestCollection(t *testing.T) {
 	defer cleanup()
 
 	bars := makeTestBars(t)
-	info := &collection.Info{
+	info := &models.CollectionInfo{
 		Symbol:     "QQQ",
-		Resolution: collection.Resolution1Min,
+		Resolution: models.Resolution1Min,
 	}
 
 	c, err := collection.New(info, store)
@@ -34,13 +34,13 @@ func TestCollection(t *testing.T) {
 	require.NoError(t, err)
 
 	// spot checks
-	assert.Equal(t, c.Info().Symbol, c2.Info().Symbol)
+	assert.Equal(t, c.GetInfo().Symbol, c2.GetInfo().Symbol)
 
-	bars1, err := c.LoadBars(c.TimeSpan())
+	bars1, err := c.LoadBars(c.GetTimeSpan())
 
 	assert.NoError(t, err)
 
-	bars2, err := c2.LoadBars(c2.TimeSpan())
+	bars2, err := c2.LoadBars(c2.GetTimeSpan())
 
 	assert.NoError(t, err)
 
