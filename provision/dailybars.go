@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
+
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type DailyBarSeq struct {

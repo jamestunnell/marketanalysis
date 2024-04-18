@@ -8,7 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-type Pivot struct {
+type Pivots struct {
 	direction models.Direction
 	length    *models.TypedParam[int]
 	nPivots   *models.TypedParam[int]
@@ -24,7 +24,7 @@ const (
 	PivotLenMaxDefault = 100
 	PivotLenMin        = 2
 
-	TypePivot = "Pivot"
+	TypePivot = "Pivots"
 )
 
 var (
@@ -37,17 +37,17 @@ func init() {
 	upperLimits[NumPivotsName] = numPivotsMax
 }
 
-func NewPivot() models.Predictor {
+func NewPivots() models.Predictor {
 	numPivotsRange := constraints.NewValRange(NumPivotsMin, numPivotsMax.Value)
 	pivotLenRange := constraints.NewValRange(PivotLenMin, pivotLenMax.Value)
 
-	return &Pivot{
-		length:  models.NewParam[int](pivotLenRange),
-		nPivots: models.NewParam[int](numPivotsRange),
+	return &Pivots{
+		length:  models.NewParam[int](PivotLenMin, pivotLenRange),
+		nPivots: models.NewParam[int](NumPivotsMin, numPivotsRange),
 	}
 }
 
-func (p *Pivot) Initialize() error {
+func (p *Pivots) Initialize() error {
 	pivots, err := indicators.NewPivots(p.length.Value, p.nPivots.Value)
 	if err != nil {
 		return fmt.Errorf("failed to make pivots indicator: %w", err)
@@ -58,38 +58,44 @@ func (p *Pivot) Initialize() error {
 	return nil
 }
 
-func (piv *Pivot) Type() string {
+func (p *Pivots) Type() string {
 	return TypePivot
 }
 
-func (piv *Pivot) Params() models.Params {
+func (p *Pivots) Params() models.Params {
 	return models.Params{
-		PivotLenName:  piv.length,
-		NumPivotsName: piv.nPivots,
+		PivotLenName:  p.length,
+		NumPivotsName: p.nPivots,
 	}
 }
 
-func (piv *Pivot) WarmupPeriod() int {
-	return piv.pivots.WarmupPeriod()
+func (p *Pivots) WarmupPeriod() int {
+	return p.pivots.WarmupPeriod()
 }
 
-func (piv *Pivot) WarmUp(bars models.Bars) error {
-	times := bars.Timestamps()
+func (p *Pivots) WarmUp(bars models.Bars) error {
 	closePrices := bars.ClosePrices()
 
-	if err := piv.pivots.WarmUp(times, closePrices); err != nil {
+	if err := p.pivots.WarmUp(closePrices); err != nil {
 		return fmt.Errorf("failed to warm up pivots: %w", err)
 	}
 
 	return nil
 }
 
-func (piv *Pivot) Update(bar *models.Bar) {
-	if change := piv.pivots.Update(bar.Timestamp, bar.Close); change {
-		piv.direction = piv.pivots.Direction()
+func (p *Pivots) Update(bar *models.Bar) {
+	if piv, _, detected := p.pivots.Update(bar.Close); detected {
+		switch piv.Type {
+		case indicators.PivotHigh:
+			p.direction = models.DirDown
+		case indicators.PivotLow:
+			p.direction = models.DirUp
+		case indicators.PivotNeutral:
+			p.direction = models.DirNone
+		}
 	}
 }
 
-func (piv *Pivot) Direction() models.Direction {
+func (piv *Pivots) Direction() models.Direction {
 	return piv.direction
 }
