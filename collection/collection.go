@@ -112,6 +112,10 @@ func (c *collection) IsEmpty() bool {
 	return c.index.Empty()
 }
 
+func (c *collection) GetFirstDate() date.Date {
+	return c.index.FirstDate()
+}
+
 func (c *collection) GetLastDate() date.Date {
 	return c.index.LastDate()
 }

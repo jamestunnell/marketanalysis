@@ -52,5 +52,5 @@ func main() {
 		log.Fatal().Msgf("unknown command %s", cmdName)
 	}
 
-	commands.Run(cmd)
+	commands.InitAndRun(cmd)
 }

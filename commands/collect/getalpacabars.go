@@ -9,9 +9,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func GetAlpacaBars(start time.Time, sym string, loc *time.Location) (models.Bars, error) {
-	// as current as alpaca allows for free
-	end := time.Now().Add(-15 * time.Minute)
+func GetAlpacaBars(start, end time.Time, sym string, loc *time.Location) (models.Bars, error) {
+	// the most current end time alpaca allows for free
+	latestEndAllowed := time.Now().Add(-15 * time.Minute)
+	if end.After(latestEndAllowed) {
+		end = latestEndAllowed
+	}
 
 	alpacaBars, err := marketdata.GetBars(sym, marketdata.GetBarsRequest{
 		TimeFrame: marketdata.OneMin,

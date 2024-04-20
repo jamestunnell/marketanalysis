@@ -42,6 +42,10 @@ func (idx *DateIndex) Empty() bool {
 	return len(idx.entries) == 0
 }
 
+func (idx *DateIndex) FirstDate() date.Date {
+	return idx.first
+}
+
 func (idx *DateIndex) LastDate() date.Date {
 	return idx.last
 }

@@ -16,15 +16,15 @@ type CollectNew struct {
 	Dir       string    `json:"dir"`
 	Symbol    string    `json:"symbol"`
 	TimeZone  string    `json:"timeZone"`
+
+	*Collector
 }
 
 var (
 	errExists = errors.New("collection already exists, use add command")
 )
 
-func (cmd *CollectNew) Run() error {
-	const fmtMakeStoreFailed = "failed to make store for collection dir '%s': %w"
-
+func (cmd *CollectNew) Init() error {
 	loc, err := time.LoadLocation(cmd.TimeZone)
 	if err != nil {
 		return fmt.Errorf("failed to load location from time zone '%s': %w", cmd.TimeZone, err)
@@ -39,13 +39,6 @@ func (cmd *CollectNew) Run() error {
 		return errExists
 	}
 
-	start := cmd.StartDate.In(loc)
-
-	bars, err := GetAlpacaBars(start, cmd.Symbol, loc)
-	if err != nil {
-		return err
-	}
-
 	info := &models.CollectionInfo{
 		Symbol:     cmd.Symbol,
 		Resolution: models.Resolution1Min,
@@ -58,16 +51,13 @@ func (cmd *CollectNew) Run() error {
 		return fmt.Errorf("failed to create new collection: %w", err)
 	}
 
-	log.Info().
-		Str("dir", cmd.Dir).
-		Interface("info", info).
-		Msg("created new collection")
-
-	if err = c.StoreBars(bars); err != nil {
-		return fmt.Errorf("failed to store bars: %w", err)
-	}
-
-	log.Info().Msg("stored bars in collection")
+	cmd.Collector = NewCollector(c, loc)
 
 	return nil
+}
+
+func (cmd *CollectNew) Run() error {
+	log.Info().Msg("collecting all bars")
+
+	return cmd.CollectBars(cmd.StartDate.In(cmd.loc), time.Now())
 }

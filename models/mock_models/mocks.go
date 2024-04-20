@@ -354,6 +354,32 @@ func (mr *MockInputMockRecorder) GetType() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetType", reflect.TypeOf((*MockInput)(nil).GetType))
 }
 
+// IsSet mocks base method.
+func (m *MockInput) IsSet() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsSet")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsSet indicates an expected call of IsSet.
+func (mr *MockInputMockRecorder) IsSet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSet", reflect.TypeOf((*MockInput)(nil).IsSet))
+}
+
+// Reset mocks base method.
+func (m *MockInput) Reset() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Reset")
+}
+
+// Reset indicates an expected call of Reset.
+func (mr *MockInputMockRecorder) Reset() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reset", reflect.TypeOf((*MockInput)(nil).Reset))
+}
+
 // MockOutput is a mock of Output interface.
 type MockOutput struct {
 	ctrl     *gomock.Controller

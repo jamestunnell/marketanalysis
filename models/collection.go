@@ -8,6 +8,7 @@ import (
 type Collection interface {
 	GetInfo() *CollectionInfo
 	IsEmpty() bool
+	GetFirstDate() date.Date
 	GetLastDate() date.Date
 
 	LoadBars(timespan.TimeSpan) (Bars, error)
