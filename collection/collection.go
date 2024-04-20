@@ -108,8 +108,12 @@ func (c *collection) GetInfo() *models.CollectionInfo {
 	return c.info
 }
 
-func (c *collection) GetTimeSpan() timespan.TimeSpan {
-	return c.index.TimeSpan()
+func (c *collection) IsEmpty() bool {
+	return c.index.Empty()
+}
+
+func (c *collection) GetLastDate() date.Date {
+	return c.index.LastDate()
 }
 
 func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {

@@ -4,55 +4,53 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/jamestunnell/marketanalysis/commands/collectbars"
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
-)
 
-var (
-	app = kingpin.New("collect", "Collect historical 1-minute bar data.`")
-
-	startStr = app.Flag("start", "Start date formatted according to RFC3339.").Required().String()
-	endStr   = app.Flag("end", "End date formatted according to RFC3339.").String()
-	dir      = app.Flag("dir", "Collection dir path.").Required().String()
-	sym      = app.Flag("sym", "The stock symbol.").Required().String()
+	"github.com/jamestunnell/marketanalysis/commands"
+	"github.com/jamestunnell/marketanalysis/commands/collect"
 )
 
 func main() {
-	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+	app := kingpin.New("collect", "Collect historical 1-minute bar data.`")
 
-	startDate, err := date.Parse(date.RFC3339, *startStr)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to parse start date")
-	}
+	new := app.Command("new", "Start a new collection")
+	newDir := new.Flag("dir", "Collection dir path (created if needed).").Required().String()
+	newSym := new.Flag("sym", "The stock symbol.").Required().String()
+	newTZ := new.Flag("tz", "Time zone location").Default("America/New_York").String()
+	newStart := new.Flag("start", "Start date formatted according to RFC3339.").Required().String()
 
-	startTime := startDate.UTC()
+	update := app.Command("update", "Update existing collection data with the latest bars")
+	updateDir := update.Flag("dir", "Existing collection dir path.").Required().String()
 
-	var endDate date.Date
+	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	if *endStr == "" {
-		endDate = date.Today()
-	} else {
-		endDate, err = date.Parse(date.RFC3339, *endStr)
+	var cmd commands.Command
+
+	switch cmdName {
+	case new.FullCommand():
+		startDate, err := date.Parse(date.RFC3339, *newStart)
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to parse end date")
+			log.Fatal().Err(err).Msg("failed to parse start date")
 		}
+
+		if *newSym == "" {
+			log.Fatal().Msg("no symbol given")
+		}
+
+		cmd = &collect.CollectNew{
+			StartDate: startDate,
+			Dir:       *newDir,
+			Symbol:    *newSym,
+			TimeZone:  *newTZ,
+		}
+	case update.FullCommand():
+		cmd = &collect.CollectUpdate{
+			Dir: *updateDir,
+		}
+	default:
+		log.Fatal().Msgf("unknown command %s", cmdName)
 	}
 
-	endTime := endDate.UTC()
-	params := &collectbars.Params{
-		Start:         startTime,
-		End:           endTime,
-		CollectionDir: *dir,
-		Symbol:        *sym,
-	}
-
-	cmd, err := collectbars.New(params)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to make collectbars command")
-	}
-
-	if err := cmd.Run(); err != nil {
-		log.Fatal().Err(err).Msg("command failed")
-	}
+	commands.Run(cmd)
 }

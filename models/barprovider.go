@@ -1,6 +1,7 @@
 package models
 
-type BarsProvider interface {
+type BarProvider interface {
+	
 	AnySetsLeft() bool
 	Advance()
 	CurrentSet() (Bars, error)

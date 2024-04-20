@@ -5,14 +5,14 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
 )
 
 type DateIndex struct {
-	store    Store
-	entries  []*DateIndexEntry
-	timespan timespan.TimeSpan
+	store   Store
+	entries []*DateIndexEntry
+	first   date.Date
+	last    date.Date
 }
 
 type DateIndexEntry struct {
@@ -27,9 +27,10 @@ var (
 
 func NewDateIndex(s Store) *DateIndex {
 	idx := &DateIndex{
-		store:    s,
-		entries:  []*DateIndexEntry{},
-		timespan: timespan.TimeSpan{},
+		store:   s,
+		entries: []*DateIndexEntry{},
+		first:   date.Date{},
+		last:    date.Date{},
 	}
 
 	idx.Update()
@@ -37,8 +38,12 @@ func NewDateIndex(s Store) *DateIndex {
 	return idx
 }
 
-func (idx *DateIndex) TimeSpan() timespan.TimeSpan {
-	return idx.timespan
+func (idx *DateIndex) Empty() bool {
+	return len(idx.entries) == 0
+}
+
+func (idx *DateIndex) LastDate() date.Date {
+	return idx.last
 }
 
 func (idx *DateIndex) AddItem(name string, d date.Date) {
@@ -103,16 +108,12 @@ func (idx *DateIndex) Update() {
 		return a.Date.Before(b.Date)
 	})
 
-	ts := timespan.TimeSpan{}
-	if len(entries) > 0 {
-		start := entries[0].Date.UTC()
-		end := sliceutils.Last(entries).Date.Add(1).UTC()
-
-		ts = timespan.NewTimeSpan(start, end)
-	}
-
 	idx.entries = entries
-	idx.timespan = ts
+
+	if len(entries) > 0 {
+		idx.first = entries[0].Date
+		idx.last = sliceutils.Last(entries).Date
+	}
 }
 
 func ExtractDate(s string) (date.Date, bool) {
