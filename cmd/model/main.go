@@ -9,7 +9,6 @@ import (
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/recorders"
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -66,41 +65,38 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to init graph model")
 	}
 
-	ts := c.GetTimeSpan()
-	tStart := ts.Start()
-	tEnd := ts.End()
+	start := c.GetFirstDate()
+	end := c.GetLastDate()
 
 	if *startStr != "" {
-		startDate, err := date.Parse(date.RFC3339, *startStr)
+		var err error
+
+		start, err = date.Parse(date.RFC3339, *startStr)
 		if err != nil {
 			log.Fatal().Err(err).Str("start", *startStr).Msg("failed to parse start date")
 		}
-
-		tStart = startDate.In(loc)
 	}
 
 	if *endStr != "" {
-		endDate, err := date.Parse(date.RFC3339, *endStr)
+		var err error
+
+		end, err = date.Parse(date.RFC3339, *endStr)
 		if err != nil {
 			log.Fatal().Err(err).Str("end", *endStr).Msg("failed to parse end date")
 		}
-
-		tEnd = endDate.In(loc)
 	}
 
-	ts = timespan.NewTimeSpan(tStart, tEnd)
-
-	bars, err := c.LoadBars(ts)
+	bars, err := c.LoadBars(start, end)
 	if err != nil {
 		log.Fatal().Err(err).
-			Time("start", ts.Start()).
-			Time("end", ts.End()).
+			Stringer("start", start).
+			Stringer("end", end).
 			Msg("failed to load bars")
 	}
 
 	log.Info().Err(err).
-		Time("start", ts.Start()).
-		Time("end", ts.End()).
+		Stringer("start", start).
+		Stringer("end", end).
 		Int("count", len(bars)).
 		Msg("loaded bars")
 

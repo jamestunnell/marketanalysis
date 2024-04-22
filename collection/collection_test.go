@@ -36,11 +36,11 @@ func TestCollection(t *testing.T) {
 	// spot checks
 	assert.Equal(t, c.GetInfo().Symbol, c2.GetInfo().Symbol)
 
-	bars1, err := c.LoadBars(c.GetTimeSpan())
+	bars1, err := c.LoadBars(c.GetFirstDate(), c.GetLastDate())
 
 	assert.NoError(t, err)
 
-	bars2, err := c2.LoadBars(c2.GetTimeSpan())
+	bars2, err := c2.LoadBars(c2.GetFirstDate(), c2.GetLastDate())
 
 	assert.NoError(t, err)
 

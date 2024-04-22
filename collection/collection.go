@@ -6,9 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
 	"golang.org/x/exp/slices"
 )
 
@@ -141,16 +139,13 @@ func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
 	return bars, nil
 }
 
-func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
+func (c *collection) LoadBars(start, end date.Date) (models.Bars, error) {
 	bars := models.Bars{}
 
-	for cur := ts.Start(); cur.Before(ts.End()); cur = cur.AddDate(0, 0, 1) {
-		d := date.NewAt(cur)
-
-		dayBars, err := c.loadBarsForDate(d)
+	for cur := start; !cur.After(end); cur = cur.Add(1) {
+		dayBars, err := c.loadBarsForDate(cur)
 		if err != nil {
-			dStr := d.Format(date.RFC3339)
-			err = fmt.Errorf("failed to laod bars on date %s: %w", dStr, err)
+			err = fmt.Errorf("failed to load bars on date %s: %w", cur, err)
 
 			return models.Bars{}, err
 		}
@@ -159,12 +154,12 @@ func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
 			continue
 		}
 
-		if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
-		} else {
-			dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
-				return ts.Contains(b.Timestamp)
-			})
-		}
+		// if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
+		// } else {
+		// 	dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
+		// 		return ts.Contains(b.Timestamp)
+		// 	})
+		// }
 
 		bars = append(bars, dayBars...)
 	}

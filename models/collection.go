@@ -2,7 +2,6 @@ package models
 
 import (
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
 )
 
 type Collection interface {
@@ -11,7 +10,7 @@ type Collection interface {
 	GetFirstDate() date.Date
 	GetLastDate() date.Date
 
-	LoadBars(timespan.TimeSpan) (Bars, error)
+	LoadBars(start, end date.Date) (Bars, error)
 	StoreBars(Bars) error
 }
 
