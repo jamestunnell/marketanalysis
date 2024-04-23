@@ -12,7 +12,7 @@ import (
 
 type CSV struct {
 	writer     *csv.Writer
-	loc *time.Location
+	loc        *time.Location
 	valNames   []string
 	record     []string
 	notFlushed int
@@ -23,7 +23,7 @@ const timeCol = "time"
 func NewCSV(w io.Writer, loc *time.Location) *CSV {
 	return &CSV{
 		writer:     csv.NewWriter(w),
-		loc: loc,
+		loc:        loc,
 		valNames:   []string{},
 		record:     []string{},
 		notFlushed: 0,
@@ -57,7 +57,7 @@ func (rec *CSV) Record(t time.Time, vals map[string]float64) {
 			valStr = strconv.FormatFloat(val, 'g', -1, 64)
 		} else {
 			valStr = ""
-			
+
 			missing = append(missing, valName)
 		}
 
@@ -78,7 +78,7 @@ func (rec *CSV) Record(t time.Time, vals map[string]float64) {
 }
 
 func (rec *CSV) Flush() {
-	log.Debug().Int("count", rec.notFlushed).Msg("CSV: flushed records")
+	log.Debug().Int("count", rec.notFlushed).Msg("flushed CSV records")
 
 	rec.writer.Flush()
 

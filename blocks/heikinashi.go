@@ -65,6 +65,10 @@ func (blk *HeikinAshi) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *HeikinAshi) GetWarmupPeriod() int {
+	return 1
+}
+
 func (blk *HeikinAshi) IsWarm() bool {
 	return blk.prev != nil
 }
@@ -82,10 +86,10 @@ func (blk *HeikinAshi) Update(cur *models.Bar) {
 
 	ha := cur.HeikinAshi(blk.prev)
 
-	blk.open.Set(ha.Open)
-	blk.high.Set(ha.High)
-	blk.low.Set(ha.Low)
-	blk.close.Set(ha.Close)
+	blk.open.SetValue(ha.Open)
+	blk.high.SetValue(ha.High)
+	blk.low.SetValue(ha.Low)
+	blk.close.SetValue(ha.Close)
 
 	blk.hl2.SetIfConnected(ha.HL2)
 	blk.hlc3.SetIfConnected(ha.HLC3)

@@ -2,27 +2,27 @@ package models
 
 import (
 	"reflect"
+
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 )
 
 type Input interface {
 	GetType() string
 
-	IsSet() bool
+	IsConnected() bool
+	IsValueSet() bool
 
-	Reset()
-	// IsConnected() bool
+	Connect(Output) error
 }
-
-type Inputs map[string]Input
 
 type TypedInput[T any] struct {
 	Type string
 
 	out   *TypedOutput[T]
 	value T
-	set   bool
-	// connected
 }
+
+type Inputs map[string]Input
 
 func NewTypedInput[T any]() *TypedInput[T] {
 	var val T
@@ -38,34 +38,31 @@ func (in *TypedInput[T]) GetType() string {
 	return in.Type
 }
 
-// func (in *TypedInput[T]) IsConnected() bool {
-// 	return in.out != nil
-// }
-
-func (in *TypedInput[T]) IsSet() bool {
-	return in.set
+func (in *TypedInput[T]) IsConnected() bool {
+	return in.out != nil
 }
 
-// func (in *TypedInput[T]) Connect() {
-// 	in.connected = true
-// }
+func (in *TypedInput[T]) IsValueSet() bool {
+	return in.IsConnected() && in.out.IsValueSet()
+}
+
+func (in *TypedInput[T]) Connect(o Output) error {
+	out, ok := o.(*TypedOutput[T])
+	if !ok {
+		return commonerrs.NewErrWrongType(o.GetType(), in.Type)
+	}
+
+	out.Ins = append(out.Ins, in)
+
+	in.out = out
+
+	return nil
+}
 
 // func (in *TypedInput[T]) Disconnect() {
 // 	in.connected = false
 // }
 
-func (in *TypedInput[T]) Set(val T) {
-	in.value = val
-	in.set = true
-}
-
-func (in *TypedInput[T]) Get() T {
-	return in.value
-}
-
-func (in *TypedInput[T]) Reset() {
-	var val T
-
-	in.value = val
-	in.set = false
+func (in *TypedInput[T]) GetValue() T {
+	return in.out.value
 }

@@ -64,28 +64,34 @@ func (blk *MAOrder) GetOutputs() models.Outputs {
 	return models.Outputs{NameOut: blk.out}
 }
 
-func (blk *MAOrder) Init() error {
-	start := blk.periodStart.Value
-	span := blk.periodSpan.Value
-	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.Value)
-
-	maOrdering := indicators.NewMAOrdering(periods)
-
-	blk.maOrdering = maOrdering
-
-	return nil
+func (blk *MAOrder) GetWarmupPeriod() int {
+	return blk.maOrdering.WarmupPeriod()
 }
 
 func (blk *MAOrder) IsWarm() bool {
 	return blk.maOrdering.Warm()
 }
 
-func (blk *MAOrder) Update(bar *models.Bar) {
-	blk.maOrdering.Update(blk.in.Get())
+func (blk *MAOrder) Init() error {
+	start := blk.periodStart.Value
+	span := blk.periodSpan.Value
+	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.Value)
+
+	blk.maOrdering = indicators.NewMAOrdering(periods)
+
+	return nil
+}
+
+func (blk *MAOrder) Update(_ *models.Bar) {
+	if !blk.in.IsValueSet() {
+		return
+	}
+
+	blk.maOrdering.Update(blk.in.GetValue())
 
 	if !blk.maOrdering.Warm() {
 		return
 	}
 
-	blk.out.Set(blk.maOrdering.Correlation())
+	blk.out.SetValue(blk.maOrdering.Correlation())
 }

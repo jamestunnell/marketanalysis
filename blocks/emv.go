@@ -44,6 +44,10 @@ func (blk *EMV) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *EMV) GetWarmupPeriod() int {
+	return blk.emv.WarmupPeriod()
+}
+
 func (blk *EMV) IsWarm() bool {
 	return blk.emv.Warm()
 }
@@ -61,5 +65,5 @@ func (blk *EMV) Update(cur *models.Bar) {
 		return
 	}
 
-	blk.out.Set(blk.emv.EMV())
+	blk.out.SetValue(blk.emv.EMV())
 }

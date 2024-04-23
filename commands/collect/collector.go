@@ -14,9 +14,9 @@ type Collector struct {
 	sym  string
 }
 
-func NewCollector(coll models.Collection, loc *time.Location) *Collector {
+func NewCollector(coll models.Collection) *Collector {
 	return &Collector{
-		loc:  loc,
+		loc:  coll.GetLocation(),
 		coll: coll,
 		sym:  coll.GetInfo().Symbol,
 	}

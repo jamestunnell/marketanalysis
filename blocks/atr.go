@@ -51,6 +51,10 @@ func (blk *ATR) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *ATR) GetWarmupPeriod() int {
+	return blk.atr.Period()
+}
+
 func (blk *ATR) IsWarm() bool {
 	return blk.atr.Warm()
 }
@@ -68,5 +72,5 @@ func (blk *ATR) Update(cur *models.Bar) {
 		return
 	}
 
-	blk.out.Set(blk.atr.Current())
+	blk.out.SetValue(blk.atr.Current())
 }

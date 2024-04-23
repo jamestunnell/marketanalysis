@@ -5,28 +5,28 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/collection"
+	"github.com/jamestunnell/marketanalysis/commands"
+	"github.com/jamestunnell/marketanalysis/commands/model"
 	"github.com/jamestunnell/marketanalysis/recorders"
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	app = kingpin.New("plot", "Plot market data along with model outputs.")
-
-	tz        = app.Flag("tz", `Timezone location`).Default("US/Pacific").String()
-	debug     = app.Flag("debug", "Enable debug mode").Bool()
-	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
-	modelFile = app.Flag("model", "Model JSON file path").Required().String()
-	csvPath   = app.Flag("csv", "Path for a CSV output file").Required().String()
-	startStr  = app.Flag("start", "start date (YYYY-MM-DD)").String()
-	endStr    = app.Flag("end", "end date (YYYY-MM-DD)").String()
-)
-
 func main() {
-	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+	app := kingpin.New("model", "Work with a model.")
+	debug := app.Flag("debug", "Enable debug mode").Bool()
+
+	run := app.Command("run", "Run the model with bar data from given date")
+
+	runData := run.Flag("data", "Data collection root dir").Required().String()
+	runModel := run.Flag("model", "Model JSON file path").Required().String()
+	runCSV := run.Flag("csv", "Path for a CSV output file").Required().String()
+	runDate := run.Flag("date", "Date to test (YYYY-MM-DD)").String()
+	runTZ := run.Flag("tz", "Recording time zone location").String()
+
+	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
@@ -34,75 +34,48 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	s, err := collection.NewDirStore(*dataDir)
-	if err != nil {
-		log.Fatal().Err(err).Str("dataDir", *dataDir).Msg("failed to make dir store")
-	}
+	var cmd commands.Command
 
-	c, err := collection.Load(s)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load collection")
-	}
-
-	g, err := blocks.LoadGraphFile(*modelFile)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load model file")
-	}
-
-	csvFile, err := os.Create(*csvPath)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to creat CSV file")
-	}
-
-	loc, err := time.LoadLocation(*tz)
-	if err != nil {
-		log.Fatal().Err(err).Str("tz", *tz).Msg("failed to load timezone location")
-	}
-
-	rec := recorders.NewCSV(csvFile, loc)
-
-	if err = g.Init(rec); err != nil {
-		log.Fatal().Err(err).Msg("failed to init graph model")
-	}
-
-	start := c.GetFirstDate()
-	end := c.GetLastDate()
-
-	if *startStr != "" {
-		var err error
-
-		start, err = date.Parse(date.RFC3339, *startStr)
+	switch cmdName {
+	case run.FullCommand():
+		d, err := date.Parse(date.RFC3339, *runDate)
 		if err != nil {
-			log.Fatal().Err(err).Str("start", *startStr).Msg("failed to parse start date")
+			log.Fatal().Err(err).Msg("failed to parse date")
 		}
-	}
 
-	if *endStr != "" {
-		var err error
-
-		end, err = date.Parse(date.RFC3339, *endStr)
+		c, err := collection.LoadFromDir(*runData)
 		if err != nil {
-			log.Fatal().Err(err).Str("end", *endStr).Msg("failed to parse end date")
+			log.Fatal().Err(err).Str("dir", *runData).Msg("failed to load collection")
 		}
+
+		csvFile, err := os.Create(*runCSV)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to creat CSV file")
+		}
+
+		// use collection location by default
+		recordLoc := c.GetLocation()
+
+		if *runTZ != "" {
+			loc, err := time.LoadLocation(*runTZ)
+			if err != nil {
+				log.Fatal().Err(err).Str("tz", *runTZ).Msg("failed to load recording timezone location")
+			}
+
+			recordLoc = loc
+		}
+
+		rec := recorders.NewCSV(csvFile, recordLoc)
+
+		cmd = &model.ModelRun{
+			Collection: c,
+			ModelFile:  *runModel,
+			Recorder:   rec,
+			Date:       d,
+		}
+	default:
+		log.Fatal().Msgf("unknown command %s", cmdName)
 	}
 
-	bars, err := c.LoadBars(start, end)
-	if err != nil {
-		log.Fatal().Err(err).
-			Stringer("start", start).
-			Stringer("end", end).
-			Msg("failed to load bars")
-	}
-
-	log.Info().Err(err).
-		Stringer("start", start).
-		Stringer("end", end).
-		Int("count", len(bars)).
-		Msg("loaded bars")
-
-	for _, bar := range bars {
-		g.Update(bar)
-	}
-
-	rec.Flush()
+	commands.InitAndRun(cmd)
 }

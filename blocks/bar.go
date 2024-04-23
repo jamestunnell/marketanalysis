@@ -63,6 +63,10 @@ func (blk *Bar) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *Bar) GetWarmupPeriod() int {
+	return 0
+}
+
 func (blk *Bar) IsWarm() bool {
 	return true
 }
@@ -72,10 +76,10 @@ func (blk *Bar) Init() error {
 }
 
 func (blk *Bar) Update(cur *models.Bar) {
-	blk.open.Set(cur.Open)
-	blk.high.Set(cur.High)
-	blk.low.Set(cur.Low)
-	blk.close.Set(cur.Close)
+	blk.open.SetValue(cur.Open)
+	blk.high.SetValue(cur.High)
+	blk.low.SetValue(cur.Low)
+	blk.close.SetValue(cur.Close)
 
 	blk.hl2.SetIfConnected(cur.HL2)
 	blk.hlc3.SetIfConnected(cur.HLC3)

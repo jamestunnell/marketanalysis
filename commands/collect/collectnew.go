@@ -25,11 +25,6 @@ var (
 )
 
 func (cmd *CollectNew) Init() error {
-	loc, err := time.LoadLocation(cmd.TimeZone)
-	if err != nil {
-		return fmt.Errorf("failed to load location from time zone '%s': %w", cmd.TimeZone, err)
-	}
-
 	store, err := collection.NewDirStore(cmd.Dir)
 	if err != nil {
 		return err
@@ -51,7 +46,7 @@ func (cmd *CollectNew) Init() error {
 		return fmt.Errorf("failed to create new collection: %w", err)
 	}
 
-	cmd.Collector = NewCollector(c, loc)
+	cmd.Collector = NewCollector(c)
 
 	return nil
 }

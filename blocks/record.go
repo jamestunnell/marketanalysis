@@ -41,6 +41,10 @@ func (blk *Record) GetOutputs() models.Outputs {
 	return models.Outputs{}
 }
 
+func (blk *Record) GetWarmupPeriod() int {
+	return 0
+}
+
 func (blk *Record) IsWarm() bool {
 	return true
 }
@@ -53,8 +57,8 @@ func (blk *Record) Update(cur *models.Bar) {
 	vals := map[string]float64{}
 
 	for name, in := range blk.Inputs {
-		if in.IsSet() {
-			vals[name] = in.Get()
+		if in.IsValueSet() {
+			vals[name] = in.GetValue()
 		}
 	}
 

@@ -30,17 +30,7 @@ func (cmd *CollectUpdate) Init() error {
 
 	i := c.GetInfo()
 
-	log.Info().
-		Str("dir", cmd.Dir).
-		Interface("info", i).
-		Msg("loaded existing collection")
-
-	loc, err := time.LoadLocation(i.TimeZone)
-	if err != nil {
-		return fmt.Errorf("failed to load location from time zone '%s': %w", i.TimeZone, err)
-	}
-
-	cmd.Collector = NewCollector(c, loc)
+	cmd.Collector = NewCollector(c)
 	cmd.startDate = i.StartDate
 
 	return nil

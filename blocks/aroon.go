@@ -58,6 +58,10 @@ func (blk *Aroon) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *Aroon) GetWarmupPeriod() int {
+	return blk.aroon.WarmupPeriod()
+}
+
 func (blk *Aroon) IsWarm() bool {
 	return blk.aroon.Warm()
 }
@@ -68,17 +72,17 @@ func (blk *Aroon) Init() error {
 	return nil
 }
 
-func (blk *Aroon) Update(*models.Bar) {
-	if !blk.in.IsSet() {
+func (blk *Aroon) Update(_ *models.Bar) {
+	if !blk.in.IsValueSet() {
 		return
 	}
 
-	blk.aroon.Update(blk.in.Get())
+	blk.aroon.Update(blk.in.GetValue())
 
 	if !blk.aroon.Warm() {
 		return
 	}
 
-	blk.up.Set(blk.aroon.Up())
-	blk.dn.Set(blk.aroon.Down())
+	blk.up.SetValue(blk.aroon.Up())
+	blk.dn.SetValue(blk.aroon.Down())
 }

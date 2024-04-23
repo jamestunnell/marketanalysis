@@ -12,9 +12,8 @@ type Supertrend struct {
 	in                  *models.TypedInput[float64]
 	trend, lower, upper *models.TypedOutput[float64]
 
-	atrLen *models.TypedParam[int]
-	atrMul *models.TypedParam[float64]
-
+	atrLen  *models.TypedParam[int]
+	atrMul  *models.TypedParam[float64]
 	atr     *indicators.ATR
 	prevVal *models.OHLC
 }
@@ -73,64 +72,66 @@ func (blk *Supertrend) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *Supertrend) GetWarmupPeriod() int {
+	return blk.atr.Period()
+}
+
 func (blk *Supertrend) IsWarm() bool {
-	return blk.atr.Warm() && (blk.prevVal != nil)
+	return blk.atr.Warm()
 }
 
 func (blk *Supertrend) Init() error {
-	atr := indicators.NewATR(blk.atrLen.Value)
-
-	blk.atr = atr
+	blk.atr = indicators.NewATR(blk.atrLen.Value)
 
 	return nil
 }
 
-func (blk *Supertrend) Update(bar *models.Bar) {
-	defer blk.updatePrev(bar.OHLC)
+func (blk *Supertrend) Update(cur *models.Bar) {
+	defer blk.updatePrev(cur.OHLC)
 
-	blk.atr.Update(bar.OHLC)
+	blk.atr.Update(cur.OHLC)
 
-	if !blk.atr.Warm() || (blk.prevVal == nil) {
+	if !blk.atr.Warm() || !blk.in.IsValueSet() {
 		return
 	}
 
 	atr := blk.atr.Current() * blk.atrMul.Value
-	in := blk.in.Get()
+	in := blk.in.GetValue()
 	upper := in + atr
 	lower := in - atr
 
 	var lowerPrev float64
-	if blk.lower.SetCount > 0 {
-		lowerPrev = blk.lower.Value
+	if blk.lower.IsValueSet() {
+		lowerPrev = blk.lower.GetValue()
 	} else {
 		lowerPrev = lower
 	}
 
 	var upperPrev float64
-	if blk.upper.SetCount > 0 {
-		upperPrev = blk.upper.Value
+	if blk.upper.IsValueSet() {
+		upperPrev = blk.upper.GetValue()
 	} else {
 		upperPrev = upper
 	}
 
 	if in > upperPrev {
-		blk.trend.Set(1.0)
+		blk.trend.SetValue(1.0)
 	} else if in < lowerPrev {
-		blk.trend.Set(-1.0)
+		blk.trend.SetValue(-1.0)
 	} else {
-		blk.trend.Set(blk.trend.Value)
+		blk.trend.SetValue(blk.trend.GetValue())
 	}
 
 	if blk.prevVal.Close < upperPrev {
-		blk.upper.Set(math.Min(upper, upperPrev))
+		blk.upper.SetValue(math.Min(upper, upperPrev))
 	} else {
-		blk.upper.Set(upper)
+		blk.upper.SetValue(upper)
 	}
 
 	if blk.prevVal.Close > lowerPrev {
-		blk.lower.Set(math.Max(lower, lowerPrev))
+		blk.lower.SetValue(math.Max(lower, lowerPrev))
 	} else {
-		blk.lower.Set(lower)
+		blk.lower.SetValue(lower)
 	}
 }
 

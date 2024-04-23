@@ -58,6 +58,10 @@ func (blk *DMI) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *DMI) GetWarmupPeriod() int {
+	return blk.dmi.WarmupPeriod()
+}
+
 func (blk *DMI) IsWarm() bool {
 	return blk.dmi.Warm()
 }
@@ -75,7 +79,7 @@ func (blk *DMI) Update(cur *models.Bar) {
 		return
 	}
 
-	blk.dx.Set(blk.dmi.DX())
-	blk.ndi.Set(blk.dmi.NDI())
-	blk.pdi.Set(blk.dmi.PDI())
+	blk.dx.SetValue(blk.dmi.DX())
+	blk.ndi.SetValue(blk.dmi.NDI())
+	blk.pdi.SetValue(blk.dmi.PDI())
 }

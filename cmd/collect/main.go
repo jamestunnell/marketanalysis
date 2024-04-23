@@ -5,6 +5,7 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/rickb777/date"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/commands"
@@ -13,6 +14,7 @@ import (
 
 func main() {
 	app := kingpin.New("collect", "Collect historical 1-minute bar data.`")
+	debug := app.Flag("debug", "Enable debug mode").Bool()
 
 	new := app.Command("new", "Start a new collection")
 	newDir := new.Flag("dir", "Collection dir path (created if needed).").Required().String()
@@ -24,6 +26,12 @@ func main() {
 	updateDir := update.Flag("dir", "Existing collection dir path.").Required().String()
 
 	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 
 	var cmd commands.Command
 

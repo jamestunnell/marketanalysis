@@ -55,6 +55,10 @@ func (blk *SMA) GetOutputs() models.Outputs {
 	}
 }
 
+func (blk *SMA) GetWarmupPeriod() int {
+	return blk.sma.Period()
+}
+
 func (blk *SMA) IsWarm() bool {
 	return blk.sma.Warm()
 }
@@ -65,12 +69,16 @@ func (blk *SMA) Init() error {
 	return nil
 }
 
-func (blk *SMA) Update(*models.Bar) {
-	if !blk.in.IsSet() {
+func (blk *SMA) Update(_ *models.Bar) {
+	if !blk.in.IsValueSet() {
 		return
 	}
 
-	blk.sma.Update(blk.in.Get())
+	blk.sma.Update(blk.in.GetValue())
 
-	blk.out.Set(blk.sma.Current())
+	if !blk.sma.Warm() {
+		return
+	}
+
+	blk.out.SetValue(blk.sma.Current())
 }
