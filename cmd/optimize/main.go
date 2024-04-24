@@ -170,7 +170,7 @@ func overrideUpperLimits(jsonStr string) {
 
 func makeEAFuncs(
 	newPred predictors.NewPredictorFunc,
-	c collection.Collection,
+	c models.Collection,
 ) (optimization.GenomeToPredictorFunc, optimization.NewGenomeFunc) {
 	gToP := func(g eaopt.Genome) (models.Predictor, error) {
 		cg := g.(*optimization.CompositeGenome)
@@ -216,9 +216,9 @@ func makeEAFuncs(
 
 func makeFit(
 	gToP optimization.GenomeToPredictorFunc,
-	c collection.Collection) optimization.FitFunc {
+	c models.Collection) optimization.FitFunc {
 	return func(g eaopt.Genome) (float64, error) {
-		ts := c.TimeSpan()
+		ts := c.GetTimeSpan()
 		dateRange := timespan.NewDateRangeOf(
 			ts.Start(), ts.End().Sub(ts.Start()))
 

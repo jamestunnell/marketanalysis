@@ -1,9 +1,6 @@
 package indicators
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/util/buffer"
 )
 
@@ -14,10 +11,6 @@ type EMA struct {
 	warm       bool
 }
 
-type MovingAvgJSON struct {
-	Length int `json:"length"`
-}
-
 func NewEMA(len int) *EMA {
 	return &EMA{
 		current:  0.0,
@@ -26,26 +19,6 @@ func NewEMA(len int) *EMA {
 		startBuf: buffer.NewCircularBuffer[float64](len),
 		warm:     false,
 	}
-}
-
-func (ema *EMA) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&MovingAvgJSON{Length: ema.len})
-}
-
-func (ema *EMA) UnmarshalJSON(d []byte) error {
-	var maj MovingAvgJSON
-
-	if err := json.Unmarshal(d, &maj); err != nil {
-		return fmt.Errorf("failed to unmarshal EMM JSON: %w", err)
-	}
-
-	ema.current = 0.0
-	ema.k = EMAWeightingMultiplier(maj.Length)
-	ema.len = maj.Length
-	ema.startBuf = buffer.NewCircularBuffer[float64](maj.Length)
-	ema.warm = false
-
-	return nil
 }
 
 func (ema *EMA) Period() int {

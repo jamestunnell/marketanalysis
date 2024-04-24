@@ -2,6 +2,7 @@ package collection
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -13,9 +14,19 @@ type DirStore struct {
 }
 
 func NewDirStore(root string) (Store, error) {
-	rootInfo, err := os.Stat(root)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat root dir '%s': %w", root, err)
+	rootInfo, statErr := os.Stat(root)
+	if statErr != nil && os.IsNotExist(statErr) {
+		log.Info().Str("dir", root).Msg("making dir for store")
+
+		if err := os.MkdirAll(root, fs.ModePerm); err != nil {
+			return nil, fmt.Errorf("os.MkdirAll '%s' failed: %w", root, err)
+		}
+
+		rootInfo, statErr = os.Stat(root)
+	}
+
+	if statErr != nil {
+		return nil, fmt.Errorf("os.Stat '%s' failed: %w", root, statErr)
 	}
 
 	if !rootInfo.IsDir() {

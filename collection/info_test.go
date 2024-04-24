@@ -4,20 +4,22 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jamestunnell/marketanalysis/collection"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInfo_StoreLoad(t *testing.T) {
-	info := collection.NewInfo(
-		"QQQ", collection.Resolution1Min)
+	info := &models.CollectionInfo{
+		Symbol:     "QQQ",
+		Resolution: models.Resolution1Min,
+	}
 
 	d, err := json.Marshal(info)
 
 	require.NoError(t, err)
 
-	var info2 collection.Info
+	var info2 models.CollectionInfo
 
 	err = json.Unmarshal(d, &info2)
 

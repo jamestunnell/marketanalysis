@@ -24,6 +24,12 @@ type OHLC struct {
 	Close float64 `json:"c"`
 }
 
+const (
+	oneHalf   = 1.0 / 2.0
+	oneThird  = 1.0 / 3.0
+	oneFourth = 1.0 / 4.0
+)
+
 func NewBarFromAlpaca(alpacaBar marketdata.Bar) *Bar {
 	ohlc := &OHLC{
 		Open:  alpacaBar.Open,
@@ -62,4 +68,24 @@ func (b *Bar) HeikinAshi(prev *OHLC) *OHLC {
 
 func (ohlc *OHLC) Float64s() []float64 {
 	return []float64{ohlc.Open, ohlc.High, ohlc.Low, ohlc.Close}
+}
+
+func (ohlc *OHLC) HL2() float64 {
+	return oneHalf * (ohlc.High + ohlc.Low)
+}
+
+func (ohlc *OHLC) HLC3() float64 {
+	return oneThird * (ohlc.High + ohlc.Low + ohlc.Close)
+}
+
+func (ohlc *OHLC) OCC3() float64 {
+	return oneThird * (ohlc.Open + ohlc.Close + ohlc.Close)
+}
+
+func (ohlc *OHLC) OHLC4() float64 {
+	return oneFourth * (ohlc.Open + ohlc.High + ohlc.Low + ohlc.Close)
+}
+
+func (ohlc *OHLC) HLCC4() float64 {
+	return oneFourth * (ohlc.High + ohlc.Low + ohlc.Close + ohlc.Close)
 }

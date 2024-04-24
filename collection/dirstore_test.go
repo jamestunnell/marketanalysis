@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/jamestunnell/marketanalysis/collection"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,10 +23,8 @@ func TestDirStore(t *testing.T) {
 	require.NoError(t, err)
 
 	// nothing in the store yet
-	names, err := store.ItemNames()
-
 	assert.NoError(t, err)
-	assert.Empty(t, names)
+	assert.Empty(t, store.ItemNames())
 
 	// load non-existent item fails
 	d, err := store.LoadItem("bogus")
@@ -33,8 +32,10 @@ func TestDirStore(t *testing.T) {
 	assert.Empty(t, d)
 	assert.Error(t, err)
 
-	info := collection.NewInfo(
-		"QQQ", collection.Resolution1Min)
+	info := &models.CollectionInfo{
+		Symbol:     "QQQ",
+		Resolution: models.Resolution1Min,
+	}
 
 	d, err = json.Marshal(info)
 
@@ -46,7 +47,7 @@ func TestDirStore(t *testing.T) {
 	require.NoError(t, err)
 
 	// one item in the store
-	names, err = store.ItemNames()
+	names := store.ItemNames()
 
 	assert.NoError(t, err)
 	assert.Len(t, names, 1)

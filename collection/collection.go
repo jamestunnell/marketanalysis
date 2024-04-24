@@ -4,26 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/timespan"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 )
 
-type Collection interface {
-	Info() *Info
-	TimeSpan() timespan.TimeSpan
-	LoadBars(timespan.TimeSpan) (models.Bars, error)
-	StoreBars(models.Bars) error
-}
-
 type collection struct {
-	info     *Info
+	info     *models.CollectionInfo
 	index    *DateIndex
 	store    Store
 	barStore Store
+	loc      *time.Location
 }
 
 const (
@@ -43,15 +37,29 @@ func Exists(store Store) bool {
 	return true
 }
 
-func Load(store Store) (Collection, error) {
+func LoadFromDir(dir string) (models.Collection, error) {
+	store, err := NewDirStore(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make dir store: %w", err)
+	}
+
+	return Load(store)
+}
+
+func Load(store Store) (models.Collection, error) {
 	d, err := store.LoadItem(InfoItemName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load info item: %w", err)
 	}
 
-	var info Info
+	var info models.CollectionInfo
 	if err = json.Unmarshal(d, &info); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal info: %w", err)
+	}
+
+	loc, err := time.LoadLocation(info.TimeZone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location from time zone '%s': %w", info.TimeZone, err)
 	}
 
 	barStore, err := store.Substore(BarsStoreName)
@@ -61,17 +69,20 @@ func Load(store Store) (Collection, error) {
 
 	idx := NewDateIndex(barStore)
 
+	log.Debug().Interface("info", info).Msg("loaded collection")
+
 	c := &collection{
 		info:     &info,
 		store:    store,
 		barStore: barStore,
 		index:    idx,
+		loc:      loc,
 	}
 
 	return c, nil
 }
 
-func New(info *Info, store Store) (Collection, error) {
+func New(info *models.CollectionInfo, store Store) (models.Collection, error) {
 	if !slices.Contains(store.ItemNames(), InfoItemName) {
 		d, err := json.Marshal(info)
 		if err != nil {
@@ -99,6 +110,11 @@ func New(info *Info, store Store) (Collection, error) {
 		}
 	}
 
+	loc, err := time.LoadLocation(info.TimeZone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location from time zone '%s': %w", info.TimeZone, err)
+	}
+
 	idx := NewDateIndex(barStore)
 
 	c := &collection{
@@ -106,17 +122,30 @@ func New(info *Info, store Store) (Collection, error) {
 		barStore: barStore,
 		store:    store,
 		index:    idx,
+		loc:      loc,
 	}
 
 	return c, nil
 }
 
-func (c *collection) Info() *Info {
+func (c *collection) GetInfo() *models.CollectionInfo {
 	return c.info
 }
 
-func (c *collection) TimeSpan() timespan.TimeSpan {
-	return c.index.TimeSpan()
+func (c *collection) GetLocation() *time.Location {
+	return c.loc
+}
+
+func (c *collection) GetFirstDate() date.Date {
+	return c.index.first
+}
+
+func (c *collection) GetLastDate() date.Date {
+	return c.index.last
+}
+
+func (c *collection) IsEmpty() bool {
+	return c.index.Empty()
 }
 
 func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
@@ -140,16 +169,13 @@ func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
 	return bars, nil
 }
 
-func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
+func (c *collection) LoadBars(start, endIncl date.Date) (models.Bars, error) {
 	bars := models.Bars{}
 
-	for cur := ts.Start(); cur.Before(ts.End()); cur = cur.AddDate(0, 0, 1) {
-		d := date.NewAt(cur)
-
-		dayBars, err := c.loadBarsForDate(d)
+	for cur := start; !cur.After(endIncl); cur = cur.Add(1) {
+		dayBars, err := c.loadBarsForDate(cur)
 		if err != nil {
-			dStr := d.Format(date.RFC3339)
-			err = fmt.Errorf("failed to laod bars on date %s: %w", dStr, err)
+			err = fmt.Errorf("failed to load bars on date %s: %w", cur, err)
 
 			return models.Bars{}, err
 		}
@@ -158,15 +184,20 @@ func (c *collection) LoadBars(ts timespan.TimeSpan) (models.Bars, error) {
 			continue
 		}
 
-		if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
-		} else {
-			dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
-				return ts.Contains(b.Timestamp)
-			})
-		}
+		// if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
+		// } else {
+		// 	dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
+		// 		return ts.Contains(b.Timestamp)
+		// 	})
+		// }
 
 		bars = append(bars, dayBars...)
 	}
+
+	log.Debug().
+		Stringer("start", start).
+		Stringer("endIncl", endIncl).
+		Msgf("loaded %d bars", len(bars))
 
 	return bars, nil
 }
@@ -206,7 +237,11 @@ func (c *collection) StoreBars(bars models.Bars) error {
 		if err := c.barStore.StoreItem(name, buf.Bytes()); err != nil {
 			return fmt.Errorf("failed to store bar date: %w", err)
 		}
+
+		c.index.AddItem(name, d)
 	}
+
+	c.index.Update()
 
 	return nil
 }

@@ -8,98 +8,97 @@ import (
 
 // DMI is a Directional Movement Index indicator.
 type DMI struct {
-	period                int
-	prevOHLC              *models.OHLC
-	mdmEMA, pdmEMA, trEMA *EMA
-	pdi, mdi, dx          float64
-	warm                  bool
+	period           int
+	prevOHLC         *models.OHLC
+	negDirMoveEMA    *EMA
+	posDirMoveEMA    *EMA
+	trueRangeEMA     *EMA
+	posDI, negDI, dx float64
+	warm             bool
 }
 
 func NewDMI(period int) *DMI {
 	return &DMI{
-		period:   period,
-		prevOHLC: nil,
-		mdmEMA:   NewEMA(period),
-		pdmEMA:   NewEMA(period),
-		trEMA:    NewEMA(period),
-		pdi:      0.0,
-		mdi:      0.0,
-		dx:       0.0,
-		warm:     false,
+		period:        period,
+		prevOHLC:      nil,
+		negDirMoveEMA: NewEMA(period),
+		posDirMoveEMA: NewEMA(period),
+		trueRangeEMA:  NewEMA(period),
+		posDI:         0.0,
+		negDI:         0.0,
+		dx:            0.0,
+		warm:          false,
 	}
 }
 
-func (dmi *DMI) WarmupPeriod() int {
-	return 1 + dmi.period
+func (ind *DMI) WarmupPeriod() int {
+	return 1 + ind.period
 }
 
-func (dmi *DMI) Warm() bool {
-	return dmi.warm
+func (ind *DMI) Warm() bool {
+	return ind.warm
 }
 
-func (dmi *DMI) Update(b *models.Bar) {
-	if dmi.prevOHLC == nil {
-		dmi.prevOHLC = b.OHLC
+func (ind *DMI) Update(b *models.Bar) {
+	defer ind.updatePrev(b.OHLC)
 
+	if ind.prevOHLC == nil {
 		return
 	}
 
 	cur := b.OHLC
-	pdm, mdm := pdmAndMDM(cur, dmi.prevOHLC)
-	tr := TrueRange(cur, dmi.prevOHLC)
+	pdm, ndm := PDMAndNDM(cur, ind.prevOHLC)
+	tr := TrueRange(cur, ind.prevOHLC)
 
-	dmi.mdmEMA.Update(mdm)
-	dmi.pdmEMA.Update(pdm)
-	dmi.trEMA.Update(tr)
+	ind.negDirMoveEMA.Update(ndm)
+	ind.posDirMoveEMA.Update(pdm)
+	ind.trueRangeEMA.Update(tr)
 
-	if !dmi.mdmEMA.Warm() {
+	if !ind.negDirMoveEMA.Warm() {
 		return
 	}
 
-	dmi.updateOutputs()
+	ind.updateOutputs()
 
-	dmi.warm = true
-	dmi.prevOHLC = cur
+	ind.warm = true
 }
 
-func (dmi *DMI) updateOutputs() {
-	dmi.pdi = dmi.pdmEMA.Current() / dmi.trEMA.Current()
-	dmi.mdi = dmi.mdmEMA.Current() / dmi.trEMA.Current()
-	dmi.dx = math.Abs(dmi.pdi-dmi.mdi) / (dmi.pdi + dmi.mdi)
+func (ind *DMI) updateOutputs() {
+	ind.posDI = ind.posDirMoveEMA.Current() / ind.trueRangeEMA.Current()
+	ind.negDI = ind.negDirMoveEMA.Current() / ind.trueRangeEMA.Current()
+	ind.dx = math.Abs(ind.posDI-ind.negDI) / (ind.posDI + ind.negDI)
 }
 
-// PDI returns the positive directional indicator value.
-func (dmi *DMI) PDI() float64 {
-	return dmi.pdi
+// PDI returns the positive directional index value.
+func (ind *DMI) PDI() float64 {
+	return ind.posDI
 }
 
-// MDI returns the minus directional indicator value.
-func (dmi *DMI) MDI() float64 {
-	return dmi.mdi
+// NDI returns the negative directional index value.
+func (ind *DMI) NDI() float64 {
+	return ind.negDI
 }
 
-// DX returns the directional movement value.
-func (dmi *DMI) DX() float64 {
-	return dmi.dx
+// DX returns the directional index value.
+func (ind *DMI) DX() float64 {
+	return ind.dx
 }
 
-func pdmAndMDM(cur, prev *models.OHLC) (float64, float64) {
-	pdm := cur.High - prev.High
-	mdm := prev.Low - cur.Low
+func PDMAndNDM(cur, prev *models.OHLC) (float64, float64) {
+	posMove := cur.High - prev.High
+	negMove := prev.Low - cur.Low
 
-	if pdm > mdm {
-		mdm = 0.0
-	} else if mdm > pdm {
-		pdm = 0.0
+	if posMove <= negMove || posMove <= 0.0 {
+		posMove = 0.0
 	}
 
-	if pdm < 0.0 {
-		pdm = 0.0
+	if negMove <= posMove || negMove <= 0.0 {
+		negMove = 0.0
 	}
 
-	if mdm < 0.0 {
-		mdm = 0.0
-	}
+	return posMove, negMove
+}
 
-	return pdm, mdm
+func (ind *DMI) updatePrev(cur *models.OHLC) {
+	ind.prevOHLC = cur
 }

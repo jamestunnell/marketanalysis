@@ -7,12 +7,11 @@ import (
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 
-	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type DayTrader struct {
-	Collection     collection.Collection
+	Collection     models.Collection
 	Predictor      models.Predictor
 	DateController DateController
 	Eval           EvalFunc
@@ -30,7 +29,7 @@ const (
 )
 
 func NewDayTrader(
-	c collection.Collection,
+	c models.Collection,
 	p models.Predictor,
 	dc DateController,
 	eval EvalFunc) *DayTrader {

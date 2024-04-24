@@ -74,7 +74,7 @@ func main() {
 		}
 	}
 
-	dc := backtesting.NewSequentialDates(c.TimeSpan().DateRangeIn(time.Local))
+	dc := backtesting.NewSequentialDates(c.GetTimeSpan().DateRangeIn(time.Local))
 	dt := backtesting.NewDayTrader(c, pred, dc, evalPredictions)
 
 	fmt.Println("Running backtests")

@@ -1,8 +1,6 @@
 package predictors
 
 import (
-	"fmt"
-
 	"github.com/jamestunnell/marketanalysis/constraints"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
@@ -58,11 +56,11 @@ func NewMAOrdering() models.Predictor {
 
 	return &MAOrdering{
 		direction:   models.DirNone,
-		numPeriods:  models.NewParam[int](numPeriodsRange),
-		periodStart: models.NewParam[int](periodStartRange),
-		periodSpan:  models.NewParam[int](periodSpanRange),
-		signalLen:   models.NewParam[int](signalLenRange),
-		threshold:   models.NewParam[float64](threshRange),
+		numPeriods:  models.NewParam[int](NumPeriodsMin, numPeriodsRange),
+		periodStart: models.NewParam[int](PeriodStartMin, periodStartRange),
+		periodSpan:  models.NewParam[int](PeriodSpanMin, periodSpanRange),
+		signalLen:   models.NewParam[int](SignalLenMin, signalLenRange),
+		threshold:   models.NewParam[float64](0.5, threshRange),
 		maOrdering:  nil,
 	}
 }
@@ -72,12 +70,7 @@ func (mao *MAOrdering) Initialize() error {
 	span := mao.periodSpan.Value
 	periods := util.LinSpaceInts(start, start+span, mao.numPeriods.Value)
 
-	maOrdering, err := indicators.NewMAOrdering(periods, mao.signalLen.Value)
-	if err != nil {
-		return fmt.Errorf("failed to make MA ordering indicator: %w", err)
-	}
-
-	mao.maOrdering = maOrdering
+	mao.maOrdering = indicators.NewMAOrdering(periods)
 
 	return nil
 }
@@ -101,8 +94,8 @@ func (mao *MAOrdering) WarmupPeriod() int {
 }
 
 func (mao *MAOrdering) WarmUp(bars models.Bars) error {
-	if err := mao.maOrdering.WarmUp(bars.ClosePrices()); err != nil {
-		return fmt.Errorf("failed to warm up MA ordering indicator: %w", err)
+	for _, close := range bars.ClosePrices() {
+		mao.maOrdering.Update(close)
 	}
 
 	return nil
@@ -111,7 +104,7 @@ func (mao *MAOrdering) WarmUp(bars models.Bars) error {
 func (mao *MAOrdering) Update(bar *models.Bar) {
 	mao.maOrdering.Update(bar.Close)
 
-	sig := mao.maOrdering.Signal()
+	sig := mao.maOrdering.Correlation()
 	thresh := mao.threshold.Value
 
 	if sig >= thresh {

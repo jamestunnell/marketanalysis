@@ -5,95 +5,26 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/collection"
-	"github.com/jamestunnell/marketanalysis/indicators"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/recorders"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 )
 
 var (
-	app = kingpin.New("plot", "Plot market data.")
+	app = kingpin.New("plot", "Plot market data along with model outputs.")
 
-	dataDir = app.Flag("datadir", "Data collection root dir").Required().String()
-	htmlOut = app.Flag("htmlout", "HTML output file").Required().String()
-	start   = app.Flag("start", "start datetime formatted in RFC3339").String()
-	end     = app.Flag("end", "end datetime formatted in RFC3339").String()
-
-	barsCmd = app.Command("bars", "Plot bar data.")
-	atrCmd  = app.Command("atr", "Plot ATR.")
-
-	atrLength = atrCmd.Flag("n", "length, must be positive").Required().Int()
+	tzLoc     = app.Flag("tz", `Timezone location`).Default("US/Pacific").String()
+	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
+	graphFile = app.Flag("graphfile", "Graph Model JSON file path").Required().String()
+	csvOut    = app.Flag("csvout", "CSV output file").Required().String()
+	start     = app.Flag("start", "start datetime formatted in RFC3339").String()
+	end       = app.Flag("end", "end datetime formatted in RFC3339").String()
 )
 
-func lineChart(title, seriesName string, times []time.Time, data []float64) *charts.Line {
-	line := charts.NewLine()
-
-	if len(times) != len(data) {
-		log.Fatal().Msg("len mismatch")
-	}
-
-	x := make([]string, 0)
-	y := make([]opts.LineData, 0)
-	for i := 0; i < len(times); i++ {
-		x = append(x, times[i].Format(time.RFC3339))
-		y = append(y, opts.LineData{Value: data[i]})
-	}
-
-	line.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{Title: title}),
-	)
-
-	line.SetXAxis(x).
-		AddSeries(seriesName, y)
-
-	return line
-}
-
-func klineChart(title, seriesName string, bars []*models.Bar) *charts.Kline {
-	kline := charts.NewKLine()
-
-	x := make([]string, 0)
-	y := make([]opts.KlineData, 0)
-	for i := 0; i < len(bars); i++ {
-		x = append(x, bars[i].Timestamp.Format(time.RFC3339))
-		y = append(y, opts.KlineData{Value: bars[i].OHLC.Float64s()})
-	}
-
-	kline.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{
-			Title: title,
-		}),
-		charts.WithXAxisOpts(opts.XAxis{
-			SplitNumber: 20,
-		}),
-		charts.WithYAxisOpts(opts.YAxis{
-			Scale: true,
-		}),
-		charts.WithDataZoomOpts(opts.DataZoom{
-			Start:      50,
-			End:        100,
-			XAxisIndex: []int{0},
-		}),
-	)
-
-	kline.SetXAxis(x).AddSeries(seriesName, y)
-
-	return kline
-}
-
-// func httpserver(w http.ResponseWriter, _ *http.Request) {
-// 	page := components.NewPage()
-// 	page.AddCharts(
-// 		klineBase(),
-// 	)
-// 	page.Render(w)
-// }
-
 func main() {
-	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
+	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	s, err := collection.NewDirStore(*dataDir)
 	if err != nil {
@@ -105,7 +36,28 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load collection")
 	}
 
-	ts := c.Timespan()
+	g, err := blocks.LoadGraphFile(*graphFile)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load model file")
+	}
+
+	csvFile, err := os.Create(*csvOut)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to creat CSV file")
+	}
+
+	loc, err := time.LoadLocation(*tzLoc)
+	if err != nil {
+		log.Fatal().Err(err).Str("tz", *tzLoc).Msg("failed to load timezone location")
+	}
+
+	recorder := recorders.NewCSV(csvFile, loc)
+
+	if err = g.Init(recorder); err != nil {
+		log.Fatal().Err(err).Msg("failed to init graph model")
+	}
+
+	ts := c.GetTimeSpan()
 	tStart := ts.Start()
 	tEnd := ts.End()
 
@@ -123,45 +75,19 @@ func main() {
 		}
 	}
 
-	bars := c.GetBars(timespan.NewTimeSpan(tStart, tEnd))
+	ts = timespan.NewTimeSpan(tStart, tEnd)
 
-	switch cmdName {
-	case barsCmd.FullCommand():
-		chart := klineChart(c.Info().Symbol, "bar data", bars)
-
-		f, err := os.Create(*htmlOut)
-		if err != nil {
-			log.Fatal().Err(err).Str("htmlout", *htmlOut).Msg("failed to create HTML output file")
-		}
-
-		chart.Render(f)
-	case atrCmd.FullCommand():
-		atr := indicators.NewATR(*atrLength)
-		warmupBars := bars[:atr.WarmupPeriod()]
-		remainingBars := bars[atr.WarmupPeriod():]
-
-		err = atr.WarmUp(warmupBars)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to init ATR indicator")
-		}
-
-		atrVals := make([]float64, len(remainingBars))
-		times := make([]time.Time, len(remainingBars))
-		for i, bar := range remainingBars {
-			times[i] = bar.Timestamp
-			atrVals[i] = atr.Update(bar)
-		}
-
-		chart := lineChart(c.Info().Symbol, "bar data", times, atrVals)
-
-		f, err := os.Create(*htmlOut)
-		if err != nil {
-			log.Fatal().Err(err).Str("htmlout", *htmlOut).Msg("failed to create HTML output file")
-		}
-
-		chart.Render(f)
+	bars, err := c.LoadBars(ts)
+	if err != nil {
+		log.Fatal().Err(err).
+			Time("start", ts.Start()).
+			Time("end", ts.End()).
+			Msg("failed to load bars")
 	}
 
-	// 	http.HandleFunc("/", httpserver)
-	// 	http.ListenAndServe(":8081", nil)
+	for _, bar := range bars {
+		g.Update(bar)
+	}
+
+	recorder.Flush()
 }

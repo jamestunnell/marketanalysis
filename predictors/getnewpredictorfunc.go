@@ -15,7 +15,7 @@ func GetNewPredictorFunc(
 	// case TypeMAPivot:
 	// 	newPredictor = NewMAPivot
 	case TypePivot:
-		newPredictor = NewPivot
+		newPredictor = NewPivots
 	}
 
 	if newPredictor == nil {

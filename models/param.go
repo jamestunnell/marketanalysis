@@ -22,11 +22,9 @@ type TypedParam[T any] struct {
 	cs    []Constraint
 }
 
-func NewParam[T any](cs ...Constraint) *TypedParam[T] {
-	var t T
-
+func NewParam[T any](startVal T, cs ...Constraint) *TypedParam[T] {
 	return &TypedParam[T]{
-		Value: t,
+		Value: startVal,
 		cs:    cs,
 	}
 }
