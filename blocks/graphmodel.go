@@ -166,11 +166,18 @@ func (m *GraphModel) Init(rec models.Recorder) error {
 	}
 
 	for _, name := range order {
-		totalWU := m.Blocks[name].GetWarmupPeriod()
-
+		predTotalWUs := []int{}
 		for predName := range predMap[name] {
-			totalWU += totalWUs[predName]
+			predTotalWUs = append(predTotalWUs, totalWUs[predName])
 		}
+
+
+		totalWU := m.Blocks[name].GetWarmupPeriod()
+		if len(predTotalWUs) > 0 {
+			totalWU += slices.Max(predTotalWUs)
+		}
+
+		log.Debug().Str("block", name).Int("count", totalWU).Msg("total warmup")
 
 		totalWUs[name] = totalWU
 	}
@@ -237,38 +244,4 @@ func (m *GraphModel) UnmarshalJSON(d []byte) error {
 	m.Outputs = j.Outputs
 
 	return nil
-}
-
-func (m *GraphModel) longestWarmupPeriod(
-	blkName string,
-	predMap map[string]map[string]graph.Edge[string],
-) (int, bool) {
-	b, found := m.Blocks[blkName]
-	if !found {
-		return 0, false
-	}
-
-	preds, found := predMap[blkName]
-	if !found {
-		return 0, false
-	}
-
-	if len(preds) == 0 {
-		return b.GetWarmupPeriod(), true
-	}
-
-	predWUs := make([]int, len(preds))
-
-	for predBlkName := range preds {
-		predWU, ok := m.longestWarmupPeriod(predBlkName, predMap)
-		if !ok {
-			return 0, false
-		}
-
-		predWUs = append(predWUs, predWU)
-	}
-
-	longestWU := b.GetWarmupPeriod() + slices.Max(predWUs)
-
-	return longestWU, true
 }

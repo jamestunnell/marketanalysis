@@ -12,15 +12,15 @@ type Supertrend struct {
 	in                  *models.TypedInput[float64]
 	trend, lower, upper *models.TypedOutput[float64]
 
-	atrLen  *models.TypedParam[int]
-	atrMul  *models.TypedParam[float64]
-	atr     *indicators.ATR
-	prevVal *models.OHLC
+	atrPeriod *models.TypedParam[int]
+	atrMul    *models.TypedParam[float64]
+	atr       *indicators.ATR
+	prevVal   *models.OHLC
 }
 
 const (
 	DescrSupertrend = "Creates dynamic support and resistance levels from ATR. Uses these levels to determine trend."
-	NameATRLen      = "atrLength"
+	NameATRPeriod   = "atrPeriod"
 	NameATRMul      = "atrMul"
 	NameLower       = "lower"
 	NameUpper       = "upper"
@@ -29,17 +29,17 @@ const (
 )
 
 func NewSupertrend() models.Block {
-	atrLenRange := constraints.NewValRange(2, 200)
+	atrPeriodRange := constraints.NewValRange(2, 200)
 	atrMulRange := constraints.NewValRange(0.1, 10.0)
 
 	return &Supertrend{
-		in:     models.NewTypedInput[float64](),
-		trend:  models.NewTypedOutput[float64](),
-		lower:  models.NewTypedOutput[float64](),
-		upper:  models.NewTypedOutput[float64](),
-		atrLen: models.NewParam[int](2, atrLenRange),
-		atrMul: models.NewParam[float64](0.1, atrMulRange),
-		atr:    nil,
+		in:        models.NewTypedInput[float64](),
+		trend:     models.NewTypedOutput[float64](),
+		lower:     models.NewTypedOutput[float64](),
+		upper:     models.NewTypedOutput[float64](),
+		atrPeriod: models.NewParam[int](2, atrPeriodRange),
+		atrMul:    models.NewParam[float64](0.1, atrMulRange),
+		atr:       nil,
 	}
 }
 
@@ -53,8 +53,8 @@ func (blk *Supertrend) GetDescription() string {
 
 func (blk *Supertrend) GetParams() models.Params {
 	return models.Params{
-		NameATRLen: blk.atrLen,
-		NameATRMul: blk.atrMul,
+		NameATRPeriod: blk.atrPeriod,
+		NameATRMul:    blk.atrMul,
 	}
 }
 
@@ -81,7 +81,7 @@ func (blk *Supertrend) IsWarm() bool {
 }
 
 func (blk *Supertrend) Init() error {
-	blk.atr = indicators.NewATR(blk.atrLen.Value)
+	blk.atr = indicators.NewATR(blk.atrPeriod.Value)
 
 	return nil
 }
@@ -100,26 +100,24 @@ func (blk *Supertrend) Update(cur *models.Bar) {
 	upper := in + atr
 	lower := in - atr
 
-	var lowerPrev float64
+	lowerPrev := lower
 	if blk.lower.IsValueSet() {
 		lowerPrev = blk.lower.GetValue()
-	} else {
-		lowerPrev = lower
 	}
 
-	var upperPrev float64
+	upperPrev := upper
 	if blk.upper.IsValueSet() {
 		upperPrev = blk.upper.GetValue()
-	} else {
-		upperPrev = upper
 	}
 
-	if in > upperPrev {
+	if !blk.trend.IsValueSet() {
+		blk.trend.SetValue(0.0)
+	}
+
+	if blk.trend.GetValue() <= 0.0 && in > upperPrev {
 		blk.trend.SetValue(1.0)
-	} else if in < lowerPrev {
+	} else if blk.trend.GetValue() >= 0.0 && in < lowerPrev {
 		blk.trend.SetValue(-1.0)
-	} else {
-		blk.trend.SetValue(blk.trend.GetValue())
 	}
 
 	if blk.prevVal.Close < upperPrev {
