@@ -5,6 +5,7 @@
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
 
 image: gitpod/workspace-mongodb
+
 tasks:
   - init: go get && go build ./... && go test ./...
     command: go run .
@@ -12,6 +13,7 @@ tasks:
     command: 'mkdir -p /workspace/data'
   - name: start mongodb
     command: 'mongod --dbpath /workspace/data --port 27017'
+
 ports:
   - name: database
     port: 27017
