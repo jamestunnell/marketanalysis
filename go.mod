@@ -9,15 +9,14 @@ require (
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.0.1
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
 	github.com/dominikbraun/graph v0.23.0
-	github.com/go-echarts/go-echarts/v2 v2.2.5
 	github.com/golang/mock v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/montanaflynn/stats v0.7.0
 	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5
 	github.com/rickb777/date v1.20.1
 	github.com/rs/zerolog v1.29.0
-	github.com/sajari/regression v1.0.1
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	gonum.org/v1/gonum v0.12.0
