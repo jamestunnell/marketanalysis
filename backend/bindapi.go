@@ -24,18 +24,18 @@ func BindAPI(r *mux.Router, db *mongo.Database) {
 		Schema:     schema,
 	}
 
-	schema, err = models.LoadSchema(models.ModelDefSchemaStr)
+	schema, err = models.LoadSchema(models.ModelSchemaStr)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load model def schema")
 	}
 
-	modelDefsAPI := &api.API[models.ModelDef]{
-		KeyName:    models.ModelDefKeyName,
-		NamePlural: models.ModelDefNamePlural,
-		Collection: db.Collection(models.ModelDefNamePlural),
+	modelsAPI := &api.API[models.Model]{
+		KeyName:    models.ModelKeyName,
+		NamePlural: models.ModelNamePlural,
+		Collection: db.Collection(models.ModelNamePlural),
 		Schema:     schema,
 	}
 
 	securitiesAPI.Bind(r)
-	modelDefsAPI.Bind(r)
+	modelsAPI.Bind(r)
 }
