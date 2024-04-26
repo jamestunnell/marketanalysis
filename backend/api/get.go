@@ -13,20 +13,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type getSecurity struct {
-	coll *mongo.Collection
-}
-
-func NewGetSecurity(coll *mongo.Collection) http.Handler {
-	return &getSecurity{coll: coll}
-}
-
-func (h *getSecurity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *API[T]) Get(w http.ResponseWriter, r *http.Request) {
 	symbol := mux.Vars(r)["symbol"]
 
 	var security models.Security
 
-	err := h.coll.FindOne(r.Context(), bson.D{{"_id", symbol}}).Decode(&security)
+	err := a.Collection.FindOne(r.Context(), bson.D{{"_id", symbol}}).Decode(&security)
 	if err == mongo.ErrNoDocuments {
 		err = fmt.Errorf("security with symbol '%s' not found", symbol)
 

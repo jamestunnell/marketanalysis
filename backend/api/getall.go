@@ -5,25 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jamestunnell/marketanalysis/backend/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type getSecurities struct {
-	coll *mongo.Collection
-}
-
-type GetSecuritiesResponse struct {
-	Securities []models.Security `json:"securities"`
-}
-
-func NewGetSecurities(coll *mongo.Collection) http.Handler {
-	return &getSecurities{coll: coll}
-}
-
-func (h *getSecurities) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	cursor, err := h.coll.Find(r.Context(), bson.D{})
+func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
+	cursor, err := a.Collection.Find(r.Context(), bson.D{})
 	if err != nil {
 		err = fmt.Errorf("failed to find securities: %w", err)
 
@@ -32,9 +18,9 @@ func (h *getSecurities) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var securities []models.Security
+	var all []T
 
-	err = cursor.All(r.Context(), &securities)
+	err = cursor.All(r.Context(), &all)
 	if err != nil {
 		err = fmt.Errorf("failed to decode find results: %w", err)
 
@@ -43,11 +29,16 @@ func (h *getSecurities) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// for no results
+	if all == nil {
+		all = []T{}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	p := GetSecuritiesResponse{Securities: securities}
+	p := map[string][]T{a.NamePlural: all}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
 		err = fmt.Errorf("failed to marshal response JSON: %w", err)

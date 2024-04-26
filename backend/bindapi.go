@@ -1,29 +1,28 @@
 package backend
 
 import (
-	"context"
-	"net/http"
-
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/jamestunnell/marketanalysis/backend/api"
+	"github.com/jamestunnell/marketanalysis/backend/models"
 )
 
 func BindAPI(r *mux.Router, db *mongo.Database) {
 	r.Handle("/status", api.NewStatus())
 
-	db.Collection("assets").DeleteMany(context.Background(), bson.D{})
+	schema, err := models.LoadSecuritySchema()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load security schema")
+	}
 
-	coll := db.Collection("securities")
+	securitiesAPI := &api.API[models.Security]{
+		KeyName:    "symbol",
+		NamePlural: "securities",
+		Collection: db.Collection("securities"),
+		Schema:     schema,
+	}
 
-	r.Handle("/securities/{symbol}", api.NewPutSecurity(coll)).
-		Methods(http.MethodPut)
-	r.Handle("/securities/{symbol}", api.NewGetSecurity(coll)).
-		Methods(http.MethodGet)
-	r.Handle("/securities/{symbol}", api.NewDelSecurity(coll)).
-		Methods(http.MethodDelete)
-	r.Handle("/securities", api.NewGetSecurities(coll)).
-		Methods(http.MethodGet)
+	securitiesAPI.Bind(r)
 }
