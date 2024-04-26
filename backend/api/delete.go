@@ -14,7 +14,7 @@ func (a *API[T]) Delete(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Collection.DeleteOne(r.Context(), bson.D{{"_id", keyVal}})
 	if err != nil {
-		err = fmt.Errorf("failed to delete '%s': %w", keyVal, err)
+		err = fmt.Errorf("failed to delete %s with %s '%s': %w", a.Name, a.KeyName, keyVal, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 
@@ -22,7 +22,7 @@ func (a *API[T]) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if result.DeletedCount == 0 {
-		err = fmt.Errorf("document with key '%s' not found", keyVal)
+		err = fmt.Errorf("%s with %s '%s' not found", a.Name, a.KeyName, keyVal)
 
 		handleErr(w, err, http.StatusNotFound)
 

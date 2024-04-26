@@ -11,9 +11,11 @@ import (
 
 type API[T any] struct {
 	KeyName    string
+	Name       string
 	NamePlural string
 	Schema     *gojsonschema.Schema
 	Collection *mongo.Collection
+	Validate   func(*T) error
 }
 
 func (a *API[T]) Bind(r *mux.Router) {

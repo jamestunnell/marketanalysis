@@ -11,7 +11,7 @@ import (
 func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
 	cursor, err := a.Collection.Find(r.Context(), bson.D{})
 	if err != nil {
-		err = fmt.Errorf("failed to find securities: %w", err)
+		err = fmt.Errorf("failed to find %s: %w", a.NamePlural, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 
@@ -22,7 +22,7 @@ func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	err = cursor.All(r.Context(), &all)
 	if err != nil {
-		err = fmt.Errorf("failed to decode find results: %w", err)
+		err = fmt.Errorf("failed to decode find results as %s: %w", a.NamePlural, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 

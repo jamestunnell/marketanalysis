@@ -5,6 +5,7 @@ import (
 )
 
 const SecurityKeyName = "symbol"
+const SecurityName = "security"
 const SecurityNamePlural = "securities"
 const SecuritySchemaStr = `{
 	"$id": "https://github.com/jamestunnell/marketanalysis/security.json",

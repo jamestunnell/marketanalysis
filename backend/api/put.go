@@ -32,27 +32,16 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 	if requestKeyVal == "" {
 		d, err = sjson.SetBytes(d, a.KeyName, urlKeyVal)
 		if err != nil {
-			err = fmt.Errorf("failed to insert key value into JSON: %w", err)
+			err = fmt.Errorf("failed to insert %s '%s' into JSON: %w", a.KeyName, urlKeyVal, err)
 
 			handleErr(w, err, http.StatusInternalServerError)
 
 			return
 		}
 	} else if requestKeyVal != urlKeyVal {
-		err = fmt.Errorf("key '%s' in JSON does not match '%s' in URL", requestKeyVal, urlKeyVal)
+		err = fmt.Errorf("%s '%s' in JSON does not match '%s' in URL", a.KeyName, requestKeyVal, urlKeyVal)
 
 		handleErr(w, err, http.StatusBadRequest)
-
-		return
-	}
-
-	var val T
-
-	err = json.Unmarshal(d, &val)
-	if err != nil {
-		err = fmt.Errorf("failed to unmarshal request JSON: %w", err)
-
-		handleErr(w, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -73,7 +62,28 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 			merr = multierror.Append(merr, fmt.Errorf("%s", resultErr.String()))
 		}
 
-		handleErr(w, merr, http.StatusBadRequest)
+		err = fmt.Errorf("%s JSON is invalid: %w", a.Name, merr)
+
+		handleErr(w, err, http.StatusBadRequest)
+
+		return
+	}
+
+	var val T
+
+	err = json.Unmarshal(d, &val)
+	if err != nil {
+		err = fmt.Errorf("failed to unmarshal request JSON: %w", err)
+
+		handleErr(w, err, http.StatusInternalServerError)
+
+		return
+	}
+
+	if err = a.Validate(&val); err != nil {
+		err = fmt.Errorf("unmarshaled %s is invalid: %w", a.Name, err)
+
+		handleErr(w, err, http.StatusBadRequest)
 
 		return
 	}
@@ -81,7 +91,7 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 	_, err = a.Collection.ReplaceOne(
 		r.Context(), bson.D{{"_id", urlKeyVal}}, val, options.Replace().SetUpsert(true))
 	if err != nil {
-		err = fmt.Errorf("failed to upsert into collection: %w", err)
+		err = fmt.Errorf("failed to upsert %s into collection: %w", a.Name, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 

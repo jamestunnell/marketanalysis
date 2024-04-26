@@ -8,25 +8,24 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/backend/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (a *API[T]) Get(w http.ResponseWriter, r *http.Request) {
-	symbol := mux.Vars(r)["symbol"]
+	keyVal := mux.Vars(r)[a.KeyName]
 
-	var security models.Security
+	var val T
 
-	err := a.Collection.FindOne(r.Context(), bson.D{{"_id", symbol}}).Decode(&security)
+	err := a.Collection.FindOne(r.Context(), bson.D{{"_id", keyVal}}).Decode(&val)
 	if err == mongo.ErrNoDocuments {
-		err = fmt.Errorf("security with symbol '%s' not found", symbol)
+		err = fmt.Errorf("%s with %s '%s' not found", a.Name, a.KeyName, keyVal)
 
 		handleErr(w, err, http.StatusNotFound)
 
 		return
 	} else if err != nil {
-		err = fmt.Errorf("failed to find security: %w", err)
+		err = fmt.Errorf("failed to find %s with %s '%s': %w", a.Name, a.KeyName, keyVal, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 
@@ -37,7 +36,7 @@ func (a *API[T]) Get(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	if err = json.NewEncoder(w).Encode(security); err != nil {
+	if err = json.NewEncoder(w).Encode(val); err != nil {
 		log.Warn().Msg("failed to write response")
 	}
 }
