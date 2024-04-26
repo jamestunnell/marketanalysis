@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -15,7 +14,6 @@ import (
 type HTTPServer struct {
 	httpServer *http.Server
 	router     *mux.Router
-	running    atomic.Bool
 }
 
 const (
@@ -39,8 +37,6 @@ func NewServer(port int) *HTTPServer {
 		router:     r,
 	}
 
-	srv.running.Store(false)
-
 	return srv
 }
 
@@ -58,10 +54,6 @@ func (s *HTTPServer) Stop() {
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		log.Error().Err(err).Msg("http server: failed to shut down")
 	}
-}
-
-func (s *HTTPServer) IsRunning() bool {
-	return s.running.Load()
 }
 
 func (s *HTTPServer) listen() {

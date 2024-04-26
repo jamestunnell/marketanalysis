@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
+	"github.com/jamestunnell/marketanalysis/backend"
 	"github.com/jamestunnell/marketanalysis/server"
 )
 
@@ -26,7 +27,6 @@ func main() {
 	debug := app.Flag("debug", "Enable debug mode").Bool()
 	port := app.Flag("port", "Server port").Required().Int()
 	dbPort := app.Flag("dbport", "Databse port").Default("27017").Int()
-	// dir := app.Flag("dir", "Root storage directory (must exist)").Required().String()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -39,6 +39,8 @@ func main() {
 	client := connectToLocalDB(*dbPort)
 
 	srv := server.NewServer(*port)
+
+	backend.BindAPI(srv.GetRouter(), client.Database(DBName))
 
 	srv.Start()
 
