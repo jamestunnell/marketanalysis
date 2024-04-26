@@ -1,12 +1,11 @@
 package models
 
 import (
-	"fmt"
-
 	m "github.com/jamestunnell/marketanalysis/models"
-	"github.com/xeipuuv/gojsonschema"
 )
 
+const SecurityKeyName = "symbol"
+const SecurityNamePlural = "securities"
 const SecuritySchemaStr = `{
 	"$id": "https://github.com/jamestunnell/marketanalysis/security.json",
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -41,19 +40,4 @@ type Security struct {
 	TimeZone string       `json:"timeZone"`
 	Open     *m.TimeOfDay `json:"open"`
 	Close    *m.TimeOfDay `json:"close"`
-}
-
-var securitySchema *gojsonschema.Schema
-
-func LoadSecuritySchema() (*gojsonschema.Schema, error) {
-	if securitySchema == nil {
-		schema, err := LoadSchema(SecuritySchemaStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load security schema: %w", err)
-		}
-
-		securitySchema = schema
-	}
-
-	return securitySchema, nil
 }
