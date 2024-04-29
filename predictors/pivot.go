@@ -62,8 +62,8 @@ func (p *Pivots) Type() string {
 	return TypePivot
 }
 
-func (p *Pivots) Params() models.Params {
-	return models.Params{
+func (p *Pivots) Params() blocks.Params {
+	return blocks.Params{
 		PivotLenName:  p.length,
 		NumPivotsName: p.nPivots,
 	}

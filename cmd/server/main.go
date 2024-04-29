@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -24,9 +23,9 @@ const (
 
 func main() {
 	app := kingpin.New("server", "Provide market analysis features with an HTTP server`")
-	debug := app.Flag("debug", "Enable debug mode").Bool()
+	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Required().Int()
-	dbPort := app.Flag("dbport", "Databse port").Default("27017").Int()
+	dbConn := app.Flag("dbconn", "Database connection").String()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -36,7 +35,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	client := connectToLocalDB(*dbPort)
+	client := connectToLocalDB(*dbConn)
 
 	srv := server.NewServer(*port)
 
@@ -50,8 +49,7 @@ func main() {
 	server.BlockUntilSignaled(syscall.SIGINT, syscall.SIGTERM)
 }
 
-func connectToLocalDB(dbPort int) *mongo.Client {
-	uri := fmt.Sprintf("mongodb://localhost:%d", dbPort)
+func connectToLocalDB(uri string) *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

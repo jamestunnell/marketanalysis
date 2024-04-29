@@ -49,10 +49,10 @@ func (mr *MockBlockMockRecorder) GetDescription() *gomock.Call {
 }
 
 // GetInputs mocks base method.
-func (m *MockBlock) GetInputs() models.Inputs {
+func (m *MockBlock) GetInputs() blocks.Inputs {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInputs")
-	ret0, _ := ret[0].(models.Inputs)
+	ret0, _ := ret[0].(blocks.Inputs)
 	return ret0
 }
 
@@ -63,10 +63,10 @@ func (mr *MockBlockMockRecorder) GetInputs() *gomock.Call {
 }
 
 // GetOutputs mocks base method.
-func (m *MockBlock) GetOutputs() models.Outputs {
+func (m *MockBlock) GetOutputs() blocks.Outputs {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOutputs")
-	ret0, _ := ret[0].(models.Outputs)
+	ret0, _ := ret[0].(blocks.Outputs)
 	return ret0
 }
 
@@ -77,10 +77,10 @@ func (mr *MockBlockMockRecorder) GetOutputs() *gomock.Call {
 }
 
 // GetParams mocks base method.
-func (m *MockBlock) GetParams() models.Params {
+func (m *MockBlock) GetParams() blocks.Params {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetParams")
-	ret0, _ := ret[0].(models.Params)
+	ret0, _ := ret[0].(blocks.Params)
 	return ret0
 }
 

@@ -65,8 +65,8 @@ func (mac *MACross) Type() string {
 	return TypeMACross
 }
 
-func (mac *MACross) Params() models.Params {
-	return models.Params{
+func (mac *MACross) Params() blocks.Params {
+	return blocks.Params{
 		Period1Name:   mac.period1,
 		Period2Name:   mac.period2,
 		SignalLenName: mac.signalLen,
