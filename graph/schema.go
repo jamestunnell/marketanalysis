@@ -51,7 +51,7 @@ const ConfigSchemaStr = `{
 			"title": "Block configuration",
 			"description": "Config needed to make a block",
 			"type": "object",
-			"required": ["name", "type"],
+			"required": ["type"],
 			"properties": {
 				"type": {
 					"type": "string",

@@ -81,7 +81,7 @@ func (blocks Blocks) Connect(
 	for _, c := range conns {
 		if err := g.AddEdge(c.Source.A, c.Target.A); err != nil {
 			if !errors.Is(err, gr.ErrEdgeAlreadyExists) {
-				return nil, fmt.Errorf("failed to add graph edge: %w", err)
+				return nil, fmt.Errorf("failed to add graph edge from %s to %s: %w", c.Source.A, c.Target.A, err)
 			}
 		}
 
@@ -98,8 +98,8 @@ func (blocks Blocks) Connect(
 		output.Connect(input)
 
 		log.Debug().
-			Stringer("out", c.Source).
-			Stringer("in", c.Target).
+			Stringer("src", c.Source).
+			Stringer("tgt", c.Target).
 			Msg("connected pair")
 	}
 

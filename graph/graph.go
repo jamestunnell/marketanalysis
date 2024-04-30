@@ -62,7 +62,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 		return fmt.Errorf("failed to init blocks: %w", err)
 	}
 
-	g, err := m.blocks.Connect(conns)
+	g, err := blks.Connect(conns)
 	if err != nil {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
@@ -74,13 +74,13 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 
 	log.Debug().Strs("order", order).Msg("connected graph blocks")
 
-	wuPeriod, err := m.computeWarmupPeriod(g, order)
+	wuPeriod, err := MaxTotalWarmupPeriod(blks, g, order)
 	if err != nil {
 		return err
 	}
 
 	log.Debug().
-		Int("warmupPeriod", m.warmupPeriod).
+		Int("warmupPeriod", wuPeriod).
 		Msg("initialized graph model")
 
 	m.blocks = blks
@@ -120,7 +120,7 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 				return Blocks{}, []*Connection{}, err
 			}
 
-			recTarget := fmt.Sprintf("%s.%s", name, cfg.Recording)
+			recTarget := fmt.Sprintf("%s.%s", name, outName)
 			recordConn := &Connection{
 				Source: NewAddress(name, outName),
 				Target: NewAddress(recordName, recTarget),
@@ -140,7 +140,7 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 	return blks, conns, nil
 }
 
-func (m *Graph) computeWarmupPeriod(g gr.Graph[string, string], order []string) (int, error) {
+func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []string) (int, error) {
 	totalWUs := map[string]int{}
 
 	predMap, err := g.PredecessorMap()
@@ -154,7 +154,7 @@ func (m *Graph) computeWarmupPeriod(g gr.Graph[string, string], order []string) 
 			predTotalWUs = append(predTotalWUs, totalWUs[predName])
 		}
 
-		totalWU := m.blocks[name].GetWarmupPeriod()
+		totalWU := blks[name].GetWarmupPeriod()
 		if len(predTotalWUs) > 0 {
 			totalWU += slices.Max(predTotalWUs)
 		}

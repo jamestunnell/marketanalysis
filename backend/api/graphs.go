@@ -41,7 +41,7 @@ func NewGraphs(
 }
 
 func (a *Graphs) Bind(r *mux.Router) {
-	a.CRUDAPI.Bind(r)
+	r.HandleFunc(a.SingleRoute()+"/run", a.Run).Methods(http.MethodPost)
 
-	r.HandleFunc(a.SingleRoute(), a.Run).Methods(http.MethodPost)
+	a.CRUDAPI.Bind(r)
 }

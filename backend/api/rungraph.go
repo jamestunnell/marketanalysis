@@ -21,7 +21,27 @@ const (
 )
 
 func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
-	symbol := r.URL.Query().Get(ParamNameSymbol)
+	urlVals := r.URL.Query()
+
+	dateStr := urlVals.Get(ParamNameDate)
+	if dateStr == "" {
+		err := fmt.Errorf("date param is missing")
+
+		handleErr(w, err, http.StatusBadRequest)
+
+		return
+	}
+
+	runDate, err := date.Parse(date.RFC3339, dateStr)
+	if err != nil {
+		err := fmt.Errorf("run date %s is invalid: %w", dateStr, err)
+
+		handleErr(w, err, http.StatusBadRequest)
+
+		return
+	}
+
+	symbol := urlVals.Get(ParamNameSymbol)
 	if symbol == "" {
 		err := fmt.Errorf("symbol param is missing")
 
@@ -33,15 +53,6 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 	security, herr := a.securities.FindOne(r.Context(), symbol)
 	if herr != nil {
 		handleErr(w, herr.Error, herr.StatusCode)
-
-		return
-	}
-
-	runDate, err := parseDateParam(r.URL.Query())
-	if err != nil {
-		err = fmt.Errorf("failed to parse date param: %w", err)
-
-		handleErr(w, err, http.StatusBadRequest)
 
 		return
 	}
@@ -96,6 +107,8 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug().
 		Stringer("date", runDate).
+		Time("firstBar", bars[0].Timestamp).
+		Time("lastBar", bars[len(bars)-1].Timestamp).
 		Msgf("running model with %d bars", len(bars))
 
 	for _, bar := range bars {
