@@ -2,32 +2,24 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (a *API[T]) Get(w http.ResponseWriter, r *http.Request) {
-	keyVal := mux.Vars(r)[a.KeyName]
+func Get[T any](
+	w http.ResponseWriter,
+	r *http.Request,
+	res *Resource[T],
+	col *mongo.Collection,
+) {
+	keyVal := mux.Vars(r)[res.KeyName]
 
-	var val T
-
-	err := a.Collection.FindOne(r.Context(), bson.D{{"_id", keyVal}}).Decode(&val)
-	if err == mongo.ErrNoDocuments {
-		err = fmt.Errorf("%s with %s '%s' not found", a.Name, a.KeyName, keyVal)
-
-		handleErr(w, err, http.StatusNotFound)
-
-		return
-	} else if err != nil {
-		err = fmt.Errorf("failed to find %s with %s '%s': %w", a.Name, a.KeyName, keyVal, err)
-
-		handleErr(w, err, http.StatusInternalServerError)
+	val, herr := FindOne[T](r.Context(), keyVal, res, col)
+	if herr != nil {
+		handleErr(w, herr.Error, herr.StatusCode)
 
 		return
 	}
@@ -36,7 +28,7 @@ func (a *API[T]) Get(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	if err = json.NewEncoder(w).Encode(val); err != nil {
-		log.Warn().Msg("failed to write response")
+	if err := json.NewEncoder(w).Encode(val); err != nil {
+		log.Warn().Err(err).Msg("failed to write response")
 	}
 }

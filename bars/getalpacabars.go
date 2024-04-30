@@ -1,15 +1,19 @@
-package collect
+package bars
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
+
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func GetAlpacaBars(start, end time.Time, sym string, loc *time.Location) (models.Bars, error) {
+func GetAlpacaBars(ts timespan.TimeSpan, sym string, loc *time.Location) (models.Bars, error) {
+	start, end := ts.Start(), ts.End()
+
 	// the most current end time alpaca allows for free
 	latestEndAllowed := time.Now().Add(-15 * time.Minute)
 	if end.After(latestEndAllowed) {

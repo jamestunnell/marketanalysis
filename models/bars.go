@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/rickb777/date/timespan"
+
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type Bars []*Bar

@@ -1,9 +1,5 @@
 package models
 
-import (
-	m "github.com/jamestunnell/marketanalysis/models"
-)
-
 const SecurityKeyName = "symbol"
 const SecurityName = "security"
 const SecurityNamePlural = "securities"
@@ -37,8 +33,8 @@ const SecuritySchemaStr = `{
 }`
 
 type Security struct {
-	Symbol   string       `json:"symbol" bson:"_id"`
-	TimeZone string       `json:"timeZone"`
-	Open     *m.TimeOfDay `json:"open"`
-	Close    *m.TimeOfDay `json:"close"`
+	Symbol   string     `json:"symbol" bson:"_id"`
+	TimeZone string     `json:"timeZone"`
+	Open     *TimeOfDay `json:"open"`
+	Close    *TimeOfDay `json:"close"`
 }

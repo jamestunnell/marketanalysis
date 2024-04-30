@@ -11,21 +11,20 @@ import (
 )
 
 func BindAPI(r *mux.Router, db *mongo.Database) {
-	r.Handle("/status", api.NewStatus())
+	securities, err := api.NewSecurities(db)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to make securities API")
+	}
+
+	graphs, err := api.NewGraphs(db, securities)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to make securities API")
+	}
 
 	r.Handle("/blocks/{type}", api.NewGetBlockInfo()).Methods(http.MethodGet)
 	r.Handle("/blocks", api.NewGetAllBlockInfo()).Methods(http.MethodGet)
+	r.Handle("/status", api.NewStatus())
 
-	securitiesAPI, err := api.MakeSecuritiesAPI(db)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to make securities API")
-	}
-
-	graphsAPI, err := api.MakeGraphsAPI(db)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to make securities API")
-	}
-
-	securitiesAPI.Bind(r)
-	graphsAPI.Bind(r)
+	graphs.Bind(r)
+	securities.Bind(r)
 }

@@ -12,11 +12,17 @@ import (
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
-	urlKeyVal := mux.Vars(r)[a.KeyName]
+func Put[T any](
+	w http.ResponseWriter,
+	r *http.Request,
+	res *Resource[T],
+	col *mongo.Collection,
+) {
+	urlKeyVal := mux.Vars(r)[res.KeyName]
 
 	d, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -28,25 +34,25 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// the key value can be left out of the request JSON since it's in the URL
-	requestKeyVal := gjson.GetBytes(d, a.KeyName).String()
+	requestKeyVal := gjson.GetBytes(d, res.KeyName).String()
 	if requestKeyVal == "" {
-		d, err = sjson.SetBytes(d, a.KeyName, urlKeyVal)
+		d, err = sjson.SetBytes(d, res.KeyName, urlKeyVal)
 		if err != nil {
-			err = fmt.Errorf("failed to insert %s '%s' into JSON: %w", a.KeyName, urlKeyVal, err)
+			err = fmt.Errorf("failed to insert %s '%s' into JSON: %w", res.KeyName, urlKeyVal, err)
 
 			handleErr(w, err, http.StatusInternalServerError)
 
 			return
 		}
 	} else if requestKeyVal != urlKeyVal {
-		err = fmt.Errorf("%s '%s' in JSON does not match '%s' in URL", a.KeyName, requestKeyVal, urlKeyVal)
+		err = fmt.Errorf("%s '%s' in JSON does not match '%s' in URL", res.KeyName, requestKeyVal, urlKeyVal)
 
 		handleErr(w, err, http.StatusBadRequest)
 
 		return
 	}
 
-	vResult, err := a.Schema.Validate(gojsonschema.NewBytesLoader(d))
+	vResult, err := res.Schema.Validate(gojsonschema.NewBytesLoader(d))
 	if err != nil {
 		err = fmt.Errorf("failed to validate request JSON: %w", err)
 
@@ -62,7 +68,7 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 			merr = multierror.Append(merr, fmt.Errorf("%s", resultErr.String()))
 		}
 
-		err = fmt.Errorf("%s JSON is invalid: %w", a.Name, merr)
+		err = fmt.Errorf("%s JSON is invalid: %w", res.Name, merr)
 
 		handleErr(w, err, http.StatusBadRequest)
 
@@ -80,18 +86,18 @@ func (a *API[T]) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.Validate(&val); err != nil {
-		err = fmt.Errorf("unmarshaled %s is invalid: %w", a.Name, err)
+	if err = res.Validate(&val); err != nil {
+		err = fmt.Errorf("unmarshaled %s is invalid: %w", res.Name, err)
 
 		handleErr(w, err, http.StatusBadRequest)
 
 		return
 	}
 
-	_, err = a.Collection.ReplaceOne(
+	_, err = col.ReplaceOne(
 		r.Context(), bson.D{{"_id", urlKeyVal}}, val, options.Replace().SetUpsert(true))
 	if err != nil {
-		err = fmt.Errorf("failed to upsert %s into collection: %w", a.Name, err)
+		err = fmt.Errorf("failed to upsert %s into collection: %w", res.Name, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 

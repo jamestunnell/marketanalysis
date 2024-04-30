@@ -1,14 +1,15 @@
-package blocks
+package graph
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/dominikbraun/graph"
+	gr "github.com/dominikbraun/graph"
+	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/rs/zerolog/log"
 )
 
-type Blocks map[string]Block
+type Blocks map[string]blocks.Block
 
 func (blocks Blocks) Init() error {
 	for name, block := range blocks {
@@ -20,7 +21,7 @@ func (blocks Blocks) Init() error {
 	return nil
 }
 
-func (blocks Blocks) FindParam(addr *Address) (Param, bool) {
+func (blocks Blocks) FindParam(addr *Address) (blocks.Param, bool) {
 	block, found := blocks[addr.A]
 	if !found {
 		return nil, false
@@ -34,7 +35,7 @@ func (blocks Blocks) FindParam(addr *Address) (Param, bool) {
 	return p, true
 }
 
-func (blocks Blocks) FindInput(addr *Address) (Input, bool) {
+func (blocks Blocks) FindInput(addr *Address) (blocks.Input, bool) {
 	block, found := blocks[addr.A]
 	if !found {
 		return nil, false
@@ -48,7 +49,7 @@ func (blocks Blocks) FindInput(addr *Address) (Input, bool) {
 	return in, true
 }
 
-func (blocks Blocks) FindOutput(addr *Address) (Output, bool) {
+func (blocks Blocks) FindOutput(addr *Address) (blocks.Output, bool) {
 	block, found := blocks[addr.A]
 	if !found {
 		return nil, false
@@ -62,8 +63,10 @@ func (blocks Blocks) FindOutput(addr *Address) (Output, bool) {
 	return out, true
 }
 
-func (blocks Blocks) Connect(conns Connections) (graph.Graph[string, string], error) {
-	g := graph.New(graph.StringHash, graph.Directed(), graph.Acyclic())
+func (blocks Blocks) Connect(
+	conns []*Connection,
+) (gr.Graph[string, string], error) {
+	g := gr.New(gr.StringHash, gr.Directed(), gr.Acyclic())
 
 	for name, block := range blocks {
 		if err := g.AddVertex(name); err != nil {
@@ -75,34 +78,29 @@ func (blocks Blocks) Connect(conns Connections) (graph.Graph[string, string], er
 		}
 	}
 
-	err := conns.EachPair(func(src, dest *Address) error {
-		if err := g.AddEdge(src.A, dest.A); err != nil {
-			if !errors.Is(err, graph.ErrEdgeAlreadyExists) {
-				return fmt.Errorf("failed to add graph edge: %w", err)
+	for _, c := range conns {
+		if err := g.AddEdge(c.Source.A, c.Target.A); err != nil {
+			if !errors.Is(err, gr.ErrEdgeAlreadyExists) {
+				return nil, fmt.Errorf("failed to add graph edge: %w", err)
 			}
 		}
 
-		output, found := blocks.FindOutput(src)
+		output, found := blocks.FindOutput(c.Source)
 		if !found {
-			return fmt.Errorf("output %s not found", src)
+			return nil, fmt.Errorf("output %s not found", c.Source)
 		}
 
-		input, found := blocks.FindInput(dest)
+		input, found := blocks.FindInput(c.Target)
 		if !found {
-			return fmt.Errorf("input %s not found", dest)
+			return nil, fmt.Errorf("input %s not found", c.Target)
 		}
 
 		output.Connect(input)
 
 		log.Debug().
-			Stringer("out", src).
-			Stringer("in", dest).
+			Stringer("out", c.Source).
+			Stringer("in", c.Target).
 			Msg("connected pair")
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	return g, nil

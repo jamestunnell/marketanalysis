@@ -6,12 +6,18 @@ import (
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
-	cursor, err := a.Collection.Find(r.Context(), bson.D{})
+func GetAll[T any](
+	w http.ResponseWriter,
+	r *http.Request,
+	res *Resource[T],
+	coll *mongo.Collection,
+) {
+	cursor, err := coll.Find(r.Context(), bson.D{})
 	if err != nil {
-		err = fmt.Errorf("failed to find %s: %w", a.NamePlural, err)
+		err = fmt.Errorf("failed to find %s: %w", res.NamePlural, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 
@@ -22,7 +28,7 @@ func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	err = cursor.All(r.Context(), &all)
 	if err != nil {
-		err = fmt.Errorf("failed to decode find results as %s: %w", a.NamePlural, err)
+		err = fmt.Errorf("failed to decode find results as %s: %w", res.NamePlural, err)
 
 		handleErr(w, err, http.StatusInternalServerError)
 
@@ -38,7 +44,7 @@ func (a *API[T]) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	p := map[string][]T{a.NamePlural: all}
+	p := map[string][]T{res.NamePlural: all}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
 		err = fmt.Errorf("failed to marshal response JSON: %w", err)

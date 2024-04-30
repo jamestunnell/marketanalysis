@@ -1,85 +1,47 @@
 package api
 
 import (
-	"fmt"
+	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/hashicorp/go-multierror"
-	"github.com/jamestunnell/marketanalysis/backend/models"
-	"github.com/jamestunnell/marketanalysis/blocks/registry"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/gorilla/mux"
+	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func MakeGraphsAPI(db *mongo.Database) (*API[models.GraphDef], error) {
-	schema, err := models.LoadSchema(models.GraphDefSchemaStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load graph def schema: %w", err)
-	}
+type Graphs struct {
+	*CRUDAPI[graph.Configuration]
 
-	a := &API[models.GraphDef]{
-		KeyName:    models.GraphDefKeyName,
-		Name:       models.GraphDefName,
-		NamePlural: models.GraphDefNamePlural,
-		Collection: db.Collection(models.GraphDefNamePlural),
-		Schema:     schema,
-		Validate: func(g *models.GraphDef) error {
-			names := map[string]int{}
-			for _, b := range g.Blocks {
-				if _, found := names[b.Name]; found {
-					return fmt.Errorf("block name '%s' is not unique", b.Name)
-				}
+	securities *CRUDAPI[models.Security]
+}
 
-				names[b.Name] = 1
+const GraphKeyName = "id"
 
-				newBlk, blkFound := registry.Get(b.Type)
-				if !blkFound {
-					return fmt.Errorf("unknown block type '%s'", b.Type)
-				}
-
-				params := newBlk().GetParams()
-
-				for name, val := range b.ParamVals {
-					param, found := params[name]
-					if !found {
-						return fmt.Errorf("unknown param name '%s'", name)
-					}
-
-					l := gojsonschema.NewGoLoader(param.GetSchema())
-
-					schema, err := gojsonschema.NewSchema(l)
-					if err != nil {
-						return fmt.Errorf("failed to compile schema for param %s: %w", name, err)
-					}
-
-					result, err := schema.Validate(gojsonschema.NewGoLoader(val))
-					if err != nil {
-						return fmt.Errorf("failed to validate value %v for param %s: %w", val, name, err)
-					}
-
-					if !result.Valid() {
-						return newValidateParamValErr(name, val, result)
-					}
-				}
-			}
-
-			return nil
+func NewGraphs(
+	db *mongo.Database,
+	securities *CRUDAPI[models.Security],
+) (*Graphs, error) {
+	res := &Resource[graph.Configuration]{
+		KeyName:    GraphKeyName,
+		Name:       "graph",
+		NamePlural: "graphs",
+		Schema:     graph.GetConfigSchema(),
+		Validate: func(cfg *graph.Configuration) error {
+			return cfg.Validate()
 		},
 	}
 
-	return a, nil
-}
-
-func newValidateParamValErr(
-	name string,
-	val any,
-	result *gojsonschema.Result,
-) error {
-	var merr *multierror.Error
-
-	for _, resultErr := range result.Errors() {
-		merr = multierror.Append(merr, fmt.Errorf("%s", resultErr.String()))
+	graphs := &Graphs{
+		CRUDAPI:    NewCRUDAPI[graph.Configuration](res, db),
+		securities: securities,
 	}
 
-	return fmt.Errorf("param %s value %v is invalid: %w", name, val, merr)
+	return graphs, nil
+}
+
+func (a *Graphs) Bind(r *mux.Router) {
+	a.CRUDAPI.Bind(r)
+
+	r.HandleFunc(a.SingleRoute(), a.Run).Methods(http.MethodPost)
 }

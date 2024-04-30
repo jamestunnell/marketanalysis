@@ -22,7 +22,7 @@ const (
 )
 
 func main() {
-	app := kingpin.New("server", "Provide market analysis features with an HTTP server`")
+	app := kingpin.New("backend server", "Provide market analysis features with an HTTP server`")
 	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Required().Int()
 	dbConn := app.Flag("dbconn", "Database connection").String()

@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jamestunnell/marketanalysis/backend/models"
-	"github.com/jamestunnell/marketanalysis/blocks/registry"
 	"github.com/rs/zerolog/log"
+
+	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
 type getBlockInfo struct{}
@@ -29,7 +29,7 @@ func (h *getBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info := models.MakeBlockInfo(new())
+	info := NewBlockInfo(new())
 
 	w.Header().Set("Content-Type", "application/json")
 
