@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -23,6 +24,29 @@ func ParseAddress(s string) (*Address, error) {
 	}
 
 	return a, nil
+}
+
+func (addr *Address) MarshalJSON() ([]byte, error) {
+	d, err := json.Marshal(addr.String())
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to marshal JSON as string: %w", err)
+	}
+
+	return d, nil
+}
+
+func (addr *Address) UnmarshalJSON(d []byte) error {
+	var str string
+
+	if err := json.Unmarshal(d, &str); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON as string: %w", err)
+	}
+
+	if err := addr.Parse(str); err != nil {
+		return fmt.Errorf("failed to parse '%s' as address: %w", str, err)
+	}
+
+	return nil
 }
 
 func (addr *Address) String() string {
