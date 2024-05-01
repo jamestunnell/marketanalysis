@@ -26,7 +26,7 @@ func GetAll[T any](
 	p := map[string][]*T{s.RDef().NamePlural: vals}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
-		appErr := app.NewActionFailedError("marshal response JSON", err)
+		appErr := app.NewErrActionFailed("marshal response JSON", err.Error())
 
 		handleAppErr(w, appErr)
 

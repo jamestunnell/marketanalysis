@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/hashicorp/go-multierror"
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
@@ -18,22 +16,22 @@ import (
 	"github.com/jamestunnell/marketanalysis/recorders"
 )
 
-const (
-	ParamNameSymbol = "symbol"
-	ParamNameDate   = "date"
-)
+type RunDayRequest struct {
+	Symbol string    `json:"symbol"`
+	Date   date.Date `json:"date"`
+}
 
 func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
-	symbol, runDate, err := parseRunParams(r.URL.Query())
+	runReq, err := LoadRequestJSON[RunDayRequest](r)
 	if err != nil {
-		err := fmt.Errorf("invalid query params: %w", err)
+		appErr := app.NewErrActionFailed("load request JSON", err.Error())
 
-		handleAppErr(w, &app.Error{Err: err, Code: app.InvalidInput})
+		handleAppErr(w, appErr)
 
 		return
 	}
 
-	security, appErr := a.securities.Store.Get(r.Context(), symbol)
+	security, appErr := a.securities.Store.Get(r.Context(), runReq.Symbol)
 	if appErr != nil {
 		handleAppErr(w, appErr)
 
@@ -44,7 +42,7 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		action := fmt.Sprintf("load location from time zone '%s'", security.TimeZone)
 
-		handleAppErr(w, app.NewActionFailedError(action, err))
+		handleAppErr(w, app.NewErrActionFailed(action, err.Error()))
 
 		return
 	}
@@ -62,9 +60,9 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	buf := bytes.NewBuffer([]byte{})
 	recorder := recorders.NewCSV(buf, loc)
 
-	err = graph.RunDay(security, runDate, cfg, barsLoader, recorder)
+	err = graph.RunDay(security, runReq.Date, cfg, barsLoader, recorder)
 	if err != nil {
-		appErr := app.NewActionFailedError("run graph", err)
+		appErr := app.NewErrActionFailed("run graph", err.Error())
 
 		handleAppErr(w, appErr)
 
@@ -78,37 +76,4 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	if _, err = w.Write(buf.Bytes()); err != nil {
 		log.Warn().Err(err).Msg("failed to write response")
 	}
-}
-
-func parseRunParams(urlVals url.Values) (symbol string, runDate date.Date, err error) {
-	symbol = urlVals.Get(ParamNameSymbol)
-	dateStr := urlVals.Get(ParamNameDate)
-	errs := []error{}
-
-	if dateStr != "" {
-		var parseErr error
-
-		runDate, parseErr = date.Parse(date.RFC3339, dateStr)
-		if parseErr != nil {
-			errs = append(errs, fmt.Errorf("invalid date values '%s': %w", dateStr, parseErr))
-		}
-	} else {
-		errs = append(errs, fmt.Errorf("%s param is missing", ParamNameDate))
-	}
-
-	if symbol == "" {
-		errs = append(errs, fmt.Errorf("%s param is missing", ParamNameSymbol))
-	}
-
-	if len(errs) > 0 {
-		var merr *multierror.Error
-
-		for _, oneErr := range errs {
-			merr = multierror.Append(merr, oneErr)
-		}
-
-		err = merr
-	}
-
-	return
 }

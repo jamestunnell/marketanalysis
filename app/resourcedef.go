@@ -12,8 +12,8 @@ type ResourceDef[T any] struct {
 	GetKey     func(*T) string
 }
 
-func (rdef *ResourceDef[T]) NewNotFoundError(key string) *Error {
-	descr := fmt.Sprintf("%s with %s '%s'", rdef.Name, rdef.KeyName, key)
+func (rdef *ResourceDef[T]) NewErrNotFound(key string) Error {
+	what := fmt.Sprintf("%s with %s '%s'", rdef.Name, rdef.KeyName, key)
 
-	return NewNotFoundError(descr)
+	return NewErrNotFound(what)
 }

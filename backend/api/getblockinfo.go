@@ -23,7 +23,7 @@ func (h *getBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	new, found := registry.Get(typ)
 	if !found {
-		appErr := app.NewNotFoundError(fmt.Sprintf("block with type '%s'", typ))
+		appErr := app.NewErrNotFound(fmt.Sprintf("block with type '%s'", typ))
 
 		handleAppErr(w, appErr)
 

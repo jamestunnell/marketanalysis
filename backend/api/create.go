@@ -11,7 +11,14 @@ func Create[T any](
 	r *http.Request,
 	s app.Store[T],
 ) {
-	if appErr := s.CreateFromJSON(r.Context(), r.Body); appErr != nil {
+	val, err := LoadRequestJSON[T](r)
+	if err != nil {
+		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+
+		return
+	}
+
+	if appErr := s.Create(r.Context(), val); appErr != nil {
 		handleAppErr(w, appErr)
 
 		return
