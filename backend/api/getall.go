@@ -2,54 +2,33 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/jamestunnell/marketanalysis/app"
 )
 
 func GetAll[T any](
 	w http.ResponseWriter,
 	r *http.Request,
-	res *Resource[T],
-	coll *mongo.Collection,
+	s app.Store[T],
 ) {
-	cursor, err := coll.Find(r.Context(), bson.D{})
-	if err != nil {
-		err = fmt.Errorf("failed to find %s: %w", res.NamePlural, err)
-
-		handleErr(w, err, http.StatusInternalServerError)
+	vals, appErr := s.GetAll(r.Context())
+	if appErr != nil {
+		handleAppErr(w, appErr)
 
 		return
-	}
-
-	var all []T
-
-	err = cursor.All(r.Context(), &all)
-	if err != nil {
-		err = fmt.Errorf("failed to decode find results as %s: %w", res.NamePlural, err)
-
-		handleErr(w, err, http.StatusInternalServerError)
-
-		return
-	}
-
-	// for no results
-	if all == nil {
-		all = []T{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	p := map[string][]T{res.NamePlural: all}
+	p := map[string][]*T{s.RDef().NamePlural: vals}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
-		err = fmt.Errorf("failed to marshal response JSON: %w", err)
+		appErr := app.NewActionFailedError("marshal response JSON", err)
 
-		handleErr(w, err, http.StatusInternalServerError)
+		handleAppErr(w, appErr)
 
 		return
 	}

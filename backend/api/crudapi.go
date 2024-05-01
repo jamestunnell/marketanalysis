@@ -1,56 +1,57 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/jamestunnell/marketanalysis/app"
 )
 
 type CRUDAPI[T any] struct {
-	*Resource[T]
-
-	Collection *mongo.Collection
+	Store app.Store[T]
 }
 
-func NewCRUDAPI[T any](r *Resource[T], db *mongo.Database) *CRUDAPI[T] {
+func NewCRUDAPI[T any](s app.Store[T]) *CRUDAPI[T] {
 	return &CRUDAPI[T]{
-		Resource:   r,
-		Collection: db.Collection(r.NamePlural),
+		Store: s,
 	}
 }
 
 func (a *CRUDAPI[T]) Bind(r *mux.Router) {
-	singleRoute := a.SingleRoute()
+	r.HandleFunc(a.PluralRoute(), a.GetAll).Methods(http.MethodGet)
+	r.HandleFunc(a.PluralRoute(), a.Create).Methods(http.MethodPost)
 
-	r.HandleFunc(singleRoute, a.Put).Methods(http.MethodPut)
-	r.HandleFunc(singleRoute, a.Get).Methods(http.MethodGet)
-	r.HandleFunc(singleRoute, a.Delete).Methods(http.MethodDelete)
-	r.HandleFunc("/"+a.NamePlural, a.GetAll).Methods(http.MethodGet)
+	r.HandleFunc(a.SingularRoute(), a.Get).Methods(http.MethodGet)
+	r.HandleFunc(a.SingularRoute(), a.Update).Methods(http.MethodPut)
+	r.HandleFunc(a.SingularRoute(), a.Delete).Methods(http.MethodDelete)
 }
 
 func (a *CRUDAPI[T]) Get(w http.ResponseWriter, r *http.Request) {
-	Get(w, r, a.Resource, a.Collection)
+	Get(w, r, a.Store)
 }
 
 func (a *CRUDAPI[T]) GetAll(w http.ResponseWriter, r *http.Request) {
-	GetAll[T](w, r, a.Resource, a.Collection)
+	GetAll[T](w, r, a.Store)
 }
 
-func (a *CRUDAPI[T]) Put(w http.ResponseWriter, r *http.Request) {
-	Put(w, r, a.Resource, a.Collection)
+func (a *CRUDAPI[T]) Create(w http.ResponseWriter, r *http.Request) {
+	Create(w, r, a.Store)
+}
+
+func (a *CRUDAPI[T]) Update(w http.ResponseWriter, r *http.Request) {
+	Update(w, r, a.Store)
 }
 
 func (a *CRUDAPI[T]) Delete(w http.ResponseWriter, r *http.Request) {
-	Delete(w, r, a.Resource, a.Collection)
+	Delete(w, r, a.Store)
 }
 
-func (a *CRUDAPI[T]) FindOne(ctx context.Context, key string) (*T, *HTTPErr) {
-	return FindOne(ctx, key, a.Resource, a.Collection)
+func (a *CRUDAPI[T]) PluralRoute() string {
+	return fmt.Sprintf("/%s", a.Store.RDef().NamePlural)
 }
 
-func (a *CRUDAPI[T]) SingleRoute() string {
-	return fmt.Sprintf("/%s/{%s}", a.Resource.NamePlural, a.Resource.KeyName)
+func (a *CRUDAPI[T]) SingularRoute() string {
+	return fmt.Sprintf("/%s/{%s}", a.Store.RDef().NamePlural, a.Store.RDef().KeyName)
 }

@@ -8,11 +8,14 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-multierror"
+	"github.com/rickb777/date"
+	"github.com/rs/zerolog/log"
+
+	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/graph"
 	"github.com/jamestunnell/marketanalysis/recorders"
-	"github.com/rickb777/date"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -20,102 +23,53 @@ const (
 	ParamNameDate   = "date"
 )
 
-func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
-	urlVals := r.URL.Query()
-
-	dateStr := urlVals.Get(ParamNameDate)
-	if dateStr == "" {
-		err := fmt.Errorf("date param is missing")
-
-		handleErr(w, err, http.StatusBadRequest)
-
-		return
-	}
-
-	runDate, err := date.Parse(date.RFC3339, dateStr)
+func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
+	symbol, runDate, err := parseRunParams(r.URL.Query())
 	if err != nil {
-		err := fmt.Errorf("run date %s is invalid: %w", dateStr, err)
+		err := fmt.Errorf("invalid query params: %w", err)
 
-		handleErr(w, err, http.StatusBadRequest)
-
-		return
-	}
-
-	symbol := urlVals.Get(ParamNameSymbol)
-	if symbol == "" {
-		err := fmt.Errorf("symbol param is missing")
-
-		handleErr(w, err, http.StatusBadRequest)
+		handleAppErr(w, &app.Error{Err: err, Code: app.InvalidInput})
 
 		return
 	}
 
-	security, herr := a.securities.FindOne(r.Context(), symbol)
-	if herr != nil {
-		handleErr(w, herr.Error, herr.StatusCode)
+	security, appErr := a.securities.Store.Get(r.Context(), symbol)
+	if appErr != nil {
+		handleAppErr(w, appErr)
 
 		return
 	}
 
 	loc, err := time.LoadLocation(security.TimeZone)
 	if err != nil {
-		err = fmt.Errorf("failed to load location from time zone '%s': %w", security.TimeZone, err)
+		action := fmt.Sprintf("load location from time zone '%s'", security.TimeZone)
 
-		handleErr(w, err, http.StatusInternalServerError)
-
-		return
-	}
-
-	keyVal := mux.Vars(r)[a.KeyName]
-
-	cfg, herr := a.FindOne(r.Context(), keyVal)
-	if herr != nil {
-		handleErr(w, herr.Error, herr.StatusCode)
+		handleAppErr(w, app.NewActionFailedError(action, err))
 
 		return
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-	recorder := recorders.NewCSV(buf, loc)
-	g := graph.New(cfg)
+	keyVal := mux.Vars(r)[a.Store.RDef().KeyName]
 
-	if err = g.Init(recorder); err != nil {
-		err = fmt.Errorf("failed to init graph: %w", err)
-
-		handleErr(w, err, http.StatusBadRequest)
+	cfg, appErr := a.Store.Get(r.Context(), keyVal)
+	if appErr != nil {
+		handleAppErr(w, appErr)
 
 		return
 	}
 
 	barsLoader := bars.NewAlpacaLoader(security)
-	if err = barsLoader.Init(); err != nil {
-		err = fmt.Errorf("failed to init alpaca bars loader: %w", err)
+	buf := bytes.NewBuffer([]byte{})
+	recorder := recorders.NewCSV(buf, loc)
 
-		handleErr(w, err, http.StatusBadRequest)
-
-		return
-	}
-
-	bars, err := barsLoader.GetRunBars(runDate, g.GetWarmupPeriod())
+	err = graph.RunDay(security, runDate, cfg, barsLoader, recorder)
 	if err != nil {
-		err = fmt.Errorf("failed to get run bars: %w", err)
+		appErr := app.NewActionFailedError("run graph", err)
 
-		handleErr(w, err, http.StatusInternalServerError)
+		handleAppErr(w, appErr)
 
 		return
 	}
-
-	log.Debug().
-		Stringer("date", runDate).
-		Time("firstBar", bars[0].Timestamp).
-		Time("lastBar", bars[len(bars)-1].Timestamp).
-		Msgf("running model with %d bars", len(bars))
-
-	for _, bar := range bars {
-		g.Update(bar)
-	}
-
-	recorder.Flush()
 
 	w.Header().Set("Content-Type", "text/csv")
 
@@ -126,11 +80,35 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parseDateParam(urlVals url.Values) (date.Date, error) {
+func parseRunParams(urlVals url.Values) (symbol string, runDate date.Date, err error) {
+	symbol = urlVals.Get(ParamNameSymbol)
 	dateStr := urlVals.Get(ParamNameDate)
-	if dateStr == "" {
-		return date.Date{}, fmt.Errorf("%s param is missing", ParamNameDate)
+	errs := []error{}
+
+	if dateStr != "" {
+		var parseErr error
+
+		runDate, parseErr = date.Parse(date.RFC3339, dateStr)
+		if parseErr != nil {
+			errs = append(errs, fmt.Errorf("invalid date values '%s': %w", dateStr, parseErr))
+		}
+	} else {
+		errs = append(errs, fmt.Errorf("%s param is missing", ParamNameDate))
 	}
 
-	return date.Parse(date.RFC3339, dateStr)
+	if symbol == "" {
+		errs = append(errs, fmt.Errorf("%s param is missing", ParamNameSymbol))
+	}
+
+	if len(errs) > 0 {
+		var merr *multierror.Error
+
+		for _, oneErr := range errs {
+			merr = multierror.Append(merr, oneErr)
+		}
+
+		err = merr
+	}
+
+	return
 }

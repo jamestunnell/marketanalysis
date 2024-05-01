@@ -6,6 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/gorilla/mux"
+
+	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/graph"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -22,18 +24,21 @@ func NewGraphs(
 	db *mongo.Database,
 	securities *CRUDAPI[models.Security],
 ) (*Graphs, error) {
-	res := &Resource[graph.Configuration]{
+	rdef := &app.ResourceDef[graph.Configuration]{
 		KeyName:    GraphKeyName,
 		Name:       "graph",
 		NamePlural: "graphs",
-		Schema:     graph.GetConfigSchema(),
-		Validate: func(cfg *graph.Configuration) error {
+		Validate: func(cfg *graph.Configuration) []error {
 			return cfg.Validate()
 		},
+		GetKey: func(c *graph.Configuration) string {
+			return c.ID
+		},
 	}
-
+	col := db.Collection(rdef.NamePlural)
+	store := app.NewMongoStore[graph.Configuration](rdef, col)
 	graphs := &Graphs{
-		CRUDAPI:    NewCRUDAPI[graph.Configuration](res, db),
+		CRUDAPI:    NewCRUDAPI[graph.Configuration](store),
 		securities: securities,
 	}
 
@@ -41,7 +46,7 @@ func NewGraphs(
 }
 
 func (a *Graphs) Bind(r *mux.Router) {
-	r.HandleFunc(a.SingleRoute()+"/run", a.Run).Methods(http.MethodPost)
-
 	a.CRUDAPI.Bind(r)
+
+	r.HandleFunc(a.SingularRoute()+"/run-day", a.RunDay).Methods(http.MethodPost)
 }

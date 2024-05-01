@@ -1,13 +1,19 @@
-package api
+package app
 
 import (
-	"github.com/xeipuuv/gojsonschema"
+	"fmt"
 )
 
-type Resource[T any] struct {
+type ResourceDef[T any] struct {
 	KeyName    string
 	Name       string
 	NamePlural string
-	Schema     *gojsonschema.Schema
-	Validate   func(*T) error
+	Validate   func(*T) []error
+	GetKey     func(*T) string
+}
+
+func (rdef *ResourceDef[T]) NewNotFoundError(key string) *Error {
+	descr := fmt.Sprintf("%s with %s '%s'", rdef.Name, rdef.KeyName, key)
+
+	return NewNotFoundError(descr)
 }

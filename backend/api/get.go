@@ -6,20 +6,20 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/jamestunnell/marketanalysis/app"
 )
 
 func Get[T any](
 	w http.ResponseWriter,
 	r *http.Request,
-	res *Resource[T],
-	col *mongo.Collection,
+	s app.Store[T],
 ) {
-	keyVal := mux.Vars(r)[res.KeyName]
+	keyVal := mux.Vars(r)[s.RDef().KeyName]
 
-	val, herr := FindOne[T](r.Context(), keyVal, res, col)
-	if herr != nil {
-		handleErr(w, herr.Error, herr.StatusCode)
+	val, appErr := s.Get(r.Context(), keyVal)
+	if appErr != nil {
+		handleAppErr(w, appErr)
 
 		return
 	}

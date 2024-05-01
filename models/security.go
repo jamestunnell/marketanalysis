@@ -1,5 +1,10 @@
 package models
 
+import (
+	"fmt"
+	"time"
+)
+
 const SecurityKeyName = "symbol"
 const SecurityName = "security"
 const SecurityNamePlural = "securities"
@@ -37,4 +42,22 @@ type Security struct {
 	TimeZone string     `json:"timeZone"`
 	Open     *TimeOfDay `json:"open"`
 	Close    *TimeOfDay `json:"close"`
+}
+
+func (s *Security) Validate() []error {
+	errs := []error{}
+
+	if s.Open.MinuteOfDay() >= s.Close.MinuteOfDay() {
+		err := fmt.Errorf("open '%s' is not before close '%s'", s.Open, s.Close)
+
+		errs = append(errs, err)
+	}
+
+	if _, err := time.LoadLocation(s.TimeZone); err != nil {
+		err := fmt.Errorf("time zone '%s' is invalid: %w", s.TimeZone, err)
+
+		errs = append(errs, err)
+	}
+
+	return errs
 }

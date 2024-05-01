@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/xeipuuv/gojsonschema"
-	
+
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
@@ -24,40 +24,72 @@ type BlockConfig struct {
 	Recording []string       `json:"recording"`
 }
 
-func (cfg *Configuration) Validate() error {
+func (cfg Configuration) GetID() string {
+	return cfg.ID
+}
+
+func (cfg *Configuration) Validate() []error {
+	errs := []error{}
+	blks := Blocks{}
+
 	for blkName, b := range cfg.Blocks {
 		newBlk, blkFound := registry.Get(b.Type)
 		if !blkFound {
-			return fmt.Errorf("block %s: has unknown type '%s'", blkName, b.Type)
+			err := fmt.Errorf("block %s: has unknown type '%s'", blkName, b.Type)
+
+			errs = append(errs, err)
+
+			continue
 		}
 
-		params := newBlk().GetParams()
+		blk := newBlk()
+
+		blks[blkName] = blk
+
+		// TODO: validate recording outputs
+
+		// validate params
+		params := blk.GetParams()
 
 		for name, val := range b.ParamVals {
 			param, found := params[name]
 			if !found {
-				return fmt.Errorf("block %s: unknown param name '%s'", blkName, name)
+				err := fmt.Errorf("block %s: unknown param name '%s'", blkName, name)
+
+				errs = append(errs, err)
+
+				continue
 			}
 
 			l := gojsonschema.NewGoLoader(param.GetSchema())
 
 			schema, err := gojsonschema.NewSchema(l)
 			if err != nil {
-				return fmt.Errorf("block %s: failed to compile schema for param %s: %w", blkName, name, err)
+				err := fmt.Errorf("block %s: failed to compile schema for param %s: %w", blkName, name, err)
+
+				errs = append(errs, err)
+
+				continue
 			}
 
 			result, err := schema.Validate(gojsonschema.NewGoLoader(val))
 			if err != nil {
-				return fmt.Errorf("block %s: failed to validate value %v for param %s: %w", blkName, val, name, err)
+				err := fmt.Errorf("block %s: failed to validate value %v for param %s: %w", blkName, val, name, err)
+
+				errs = append(errs, err)
+
+				continue
 			}
 
 			if !result.Valid() {
-				return newValidateParamValErr(name, val, result)
+				errs = append(errs, newValidateParamValErr(name, val, result))
 			}
 		}
 	}
 
-	return nil
+	// TODO: validate connections
+
+	return errs
 }
 
 func newValidateParamValErr(
