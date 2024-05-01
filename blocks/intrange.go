@@ -27,8 +27,18 @@ func (p *IntRange) GetVal() any {
 }
 
 func (p *IntRange) SetVal(val any) error {
-	intVal, ok := val.(int)
-	if !ok {
+	var intVal int
+
+	switch vv := val.(type) {
+	case float64:
+		intVal = int(vv)
+
+		if float64(intVal) != vv {
+			return commonerrs.NewErrWrongType("float64", "int")
+		}
+	case int:
+		intVal = vv
+	default:
 		actual := reflect.TypeOf(val).String()
 
 		return commonerrs.NewErrWrongType(actual, "int")
