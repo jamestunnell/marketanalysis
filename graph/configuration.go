@@ -9,7 +9,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
-const GraphDefKeyName = "id"
+const ConfigKeyName = "id"
 
 type Configuration struct {
 	ID          string                  `json:"id" bson:"_id"`
@@ -24,7 +24,7 @@ type BlockConfig struct {
 	Recording []string       `json:"recording"`
 }
 
-func (cfg Configuration) GetID() string {
+func (cfg Configuration) GetKey() string {
 	return cfg.ID
 }
 

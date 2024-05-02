@@ -8,12 +8,12 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 )
 
-func Delete[T any](
+func Delete[T app.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
 	s app.Store[T],
 ) {
-	keyVal := mux.Vars(r)[s.RDef().KeyName]
+	keyVal := mux.Vars(r)[s.GetInfo().KeyName]
 
 	appErr := s.Delete(r.Context(), keyVal)
 	if appErr != nil {

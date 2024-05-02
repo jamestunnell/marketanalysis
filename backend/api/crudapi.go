@@ -9,11 +9,11 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 )
 
-type CRUDAPI[T any] struct {
+type CRUDAPI[T app.Resource] struct {
 	Store app.Store[T]
 }
 
-func NewCRUDAPI[T any](s app.Store[T]) *CRUDAPI[T] {
+func NewCRUDAPI[T app.Resource](s app.Store[T]) *CRUDAPI[T] {
 	return &CRUDAPI[T]{
 		Store: s,
 	}
@@ -49,9 +49,9 @@ func (a *CRUDAPI[T]) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *CRUDAPI[T]) PluralRoute() string {
-	return fmt.Sprintf("/%s", a.Store.RDef().NamePlural)
+	return fmt.Sprintf("/%s", a.Store.GetInfo().NamePlural)
 }
 
 func (a *CRUDAPI[T]) SingularRoute() string {
-	return fmt.Sprintf("/%s/{%s}", a.Store.RDef().NamePlural, a.Store.RDef().KeyName)
+	return fmt.Sprintf("/%s/{%s}", a.Store.GetInfo().NamePlural, a.Store.GetInfo().KeyName)
 }

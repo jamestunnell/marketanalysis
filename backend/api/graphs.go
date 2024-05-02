@@ -13,32 +13,24 @@ import (
 )
 
 type Graphs struct {
-	*CRUDAPI[graph.Configuration]
+	*CRUDAPI[*graph.Configuration]
 
-	securities *CRUDAPI[models.Security]
+	securities *CRUDAPI[*models.Security]
 }
-
-const GraphKeyName = "id"
 
 func NewGraphs(
 	db *mongo.Database,
-	securities *CRUDAPI[models.Security],
+	securities *CRUDAPI[*models.Security],
 ) (*Graphs, error) {
-	rdef := &app.ResourceDef[graph.Configuration]{
-		KeyName:    GraphKeyName,
+	info := &app.ResourceInfo{
+		KeyName:    graph.ConfigKeyName,
 		Name:       "graph",
 		NamePlural: "graphs",
-		Validate: func(cfg *graph.Configuration) []error {
-			return cfg.Validate()
-		},
-		GetKey: func(c *graph.Configuration) string {
-			return c.ID
-		},
 	}
-	col := db.Collection(rdef.NamePlural)
-	store := app.NewMongoStore[graph.Configuration](rdef, col)
+	col := db.Collection(info.NamePlural)
+	store := app.NewMongoStore[*graph.Configuration](info, col)
 	graphs := &Graphs{
-		CRUDAPI:    NewCRUDAPI[graph.Configuration](store),
+		CRUDAPI:    NewCRUDAPI(store),
 		securities: securities,
 	}
 

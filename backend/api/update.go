@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -8,21 +9,20 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 )
 
-func Update[T any](
+func Update[T app.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
 	s app.Store[T],
 ) {
-	key := mux.Vars(r)[s.RDef().KeyName]
-
-	val, err := LoadRequestJSON[T](r)
-	if err != nil {
+	val := app.NewResource[T]()
+	if err := json.NewDecoder(r.Body).Decode(val); err != nil {
 		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
 
-	if jsonKey := s.RDef().GetKey(val); jsonKey != key {
+	key := mux.Vars(r)[s.GetInfo().KeyName]
+	if jsonKey := val.GetKey(); jsonKey != key {
 		handleAppErr(w, app.NewErrInvalidInput("key in request JSON", "does not match key in URL"))
 
 		return

@@ -7,7 +7,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 )
 
-func GetAll[T any](
+func GetAll[T app.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
 	s app.Store[T],
@@ -23,7 +23,7 @@ func GetAll[T any](
 
 	w.WriteHeader(http.StatusOK)
 
-	p := map[string][]*T{s.RDef().NamePlural: vals}
+	p := map[string][]T{s.GetInfo().NamePlural: vals}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
 		appErr := app.NewErrActionFailed("marshal response JSON", err.Error())

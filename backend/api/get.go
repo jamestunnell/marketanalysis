@@ -10,12 +10,12 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 )
 
-func Get[T any](
+func Get[T app.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
 	s app.Store[T],
 ) {
-	keyVal := mux.Vars(r)[s.RDef().KeyName]
+	keyVal := mux.Vars(r)[s.GetInfo().KeyName]
 
 	val, appErr := s.Get(r.Context(), keyVal)
 	if appErr != nil {

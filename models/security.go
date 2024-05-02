@@ -44,6 +44,10 @@ type Security struct {
 	Close    *TimeOfDay `json:"close"`
 }
 
+func (s *Security) GetKey() string {
+	return s.Symbol
+}
+
 func (s *Security) Validate() []error {
 	errs := []error{}
 

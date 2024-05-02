@@ -47,7 +47,7 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	keyVal := mux.Vars(r)[a.Store.RDef().KeyName]
+	keyVal := mux.Vars(r)[a.Store.GetInfo().KeyName]
 
 	cfg, appErr := a.Store.Get(r.Context(), keyVal)
 	if appErr != nil {

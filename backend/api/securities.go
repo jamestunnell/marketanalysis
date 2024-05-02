@@ -7,22 +7,16 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func NewSecurities(db *mongo.Database) (*CRUDAPI[models.Security], error) {
-	rdef := &app.ResourceDef[models.Security]{
+func NewSecurities(db *mongo.Database) (*CRUDAPI[*models.Security], error) {
+	info := &app.ResourceInfo{
 		KeyName:    models.SecurityKeyName,
 		Name:       models.SecurityName,
 		NamePlural: models.SecurityNamePlural,
-		Validate: func(s *models.Security) []error {
-			return s.Validate()
-		},
-		GetKey: func(s *models.Security) string {
-			return s.Symbol
-		},
 	}
-	col := db.Collection(rdef.NamePlural)
-	store := app.NewMongoStore[models.Security](rdef, col)
+	col := db.Collection(info.NamePlural)
+	store := app.NewMongoStore[*models.Security](info, col)
 
-	a := NewCRUDAPI[models.Security](store)
+	a := NewCRUDAPI(store)
 
 	return a, nil
 }
