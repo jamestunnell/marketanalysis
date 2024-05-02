@@ -10,7 +10,10 @@ import (
 
 type MAOrdering struct {
 	MAs            []*EMA
-	uptrendIndices []float64
+	orderCurrent   []float64
+	orderUptrend   []float64
+	valuesSorted   []float64
+	valuesUnsorted []float64
 	correlation    float64
 	nPeriods       int
 	lastMA         *EMA
@@ -19,61 +22,68 @@ type MAOrdering struct {
 const MinNumPeriods = 2
 
 func NewMAOrdering(periods []int) *MAOrdering {
-	mas := make([]*EMA, len(periods))
-	uptrendIndices := make([]float64, len(periods))
+	slices.Sort(periods)
+
+	nPeriods := len(periods)
+	mas := make([]*EMA, nPeriods)
+	orderUptrend := make([]float64, nPeriods)
+	lastIndex := nPeriods - 1
 
 	for i, period := range periods {
 		mas[i] = NewEMA(period)
-		uptrendIndices[i] = float64(i)
+		orderUptrend[lastIndex-i] = float64(i) // uptrend means lowest period MA has the highest value
 	}
 
-	mao := &MAOrdering{
+	ind := &MAOrdering{
 		MAs:            mas,
-		uptrendIndices: uptrendIndices,
+		orderUptrend:   orderUptrend,
+		orderCurrent:   make([]float64, nPeriods),
+		valuesSorted:   make([]float64, nPeriods),
+		valuesUnsorted: make([]float64, nPeriods),
 		correlation:    0.0,
-		nPeriods:       len(periods),
+		nPeriods:       nPeriods,
 		lastMA:         sliceutils.Last(mas),
 	}
 
-	return mao
+	return ind
 }
 
-func (mao *MAOrdering) WarmupPeriod() int {
-	return mao.lastMA.Period()
+func (ind *MAOrdering) WarmupPeriod() int {
+	return ind.lastMA.Period()
 }
 
-func (mao *MAOrdering) Warm() bool {
-	return mao.lastMA.Warm()
+func (ind *MAOrdering) Warm() bool {
+	return ind.lastMA.Warm()
 }
 
-func (mao *MAOrdering) Update(val float64) {
-	for _, ma := range mao.MAs {
+func (ind *MAOrdering) Update(val float64) {
+	for _, ma := range ind.MAs {
 		ma.Update(val)
 	}
 
-	if mao.Warm() {
-		mao.updateCorrelation()
+	if ind.Warm() {
+		ind.updateCorrelation()
 	}
 }
 
-func (mao *MAOrdering) Correlation() float64 {
-	return mao.correlation
+func (ind *MAOrdering) Correlation() float64 {
+	return ind.correlation
 }
 
-func (mao *MAOrdering) updateCorrelation() {
-	values := sliceutils.Map(mao.MAs, func(ma *EMA) float64 {
-		return ma.Current()
-	})
+func (ind *MAOrdering) updateCorrelation() {
+	for i, ma := range ind.MAs {
+		ind.valuesUnsorted[i] = ma.Current()
+		ind.valuesSorted[i] = ma.Current()
+	}
 
-	sort.Float64s(values)
+	sort.Float64s(ind.valuesSorted)
 
-	// find the indices of the values after they are sorted
-	currentIndices := sliceutils.Map(mao.MAs, func(ma *EMA) float64 {
-		return float64(slices.Index(values, ma.Current()))
-	})
+	for i, val := range ind.valuesSorted {
+		ind.orderCurrent[i] = float64(slices.Index(ind.valuesUnsorted, val))
+	}
 
 	// how well do they correlate with the perfect uptrend ordering?
-	a, _ := stats.Correlation(mao.uptrendIndices, currentIndices)
+	a, _ := stats.Correlation(ind.orderUptrend, ind.orderCurrent)
 
-	mao.correlation = a
+	ind.correlation = a
 }
