@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type HTTPServer struct {
+type Server struct {
 	httpServer *http.Server
 	router     *mux.Router
 }
@@ -20,7 +20,7 @@ const (
 	ShutdownTimeout = 15 * time.Second
 )
 
-func NewServer(port int) *HTTPServer {
+func New(port int) *Server {
 	httpSrv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
 		WriteTimeout:      time.Minute,
@@ -32,7 +32,7 @@ func NewServer(port int) *HTTPServer {
 
 	httpSrv.Handler = r
 
-	srv := &HTTPServer{
+	srv := &Server{
 		httpServer: httpSrv,
 		router:     r,
 	}
@@ -40,15 +40,15 @@ func NewServer(port int) *HTTPServer {
 	return srv
 }
 
-func (s *HTTPServer) GetRouter() *mux.Router {
+func (s *Server) GetRouter() *mux.Router {
 	return s.router
 }
 
-func (s *HTTPServer) Start() {
+func (s *Server) Start() {
 	go s.listen()
 }
 
-func (s *HTTPServer) Stop() {
+func (s *Server) Stop() {
 	ctx, _ := context.WithTimeout(context.Background(), ShutdownTimeout)
 
 	if err := s.httpServer.Shutdown(ctx); err != nil {
@@ -56,7 +56,7 @@ func (s *HTTPServer) Stop() {
 	}
 }
 
-func (s *HTTPServer) listen() {
+func (s *Server) listen() {
 	log.Info().
 		Str("addr", s.httpServer.Addr).
 		Msg("http server: started")

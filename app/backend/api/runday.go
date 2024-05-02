@@ -2,31 +2,25 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/graph"
 	"github.com/jamestunnell/marketanalysis/recorders"
 )
 
-type RunDayRequest struct {
-	Symbol string    `json:"symbol"`
-	Date   date.Date `json:"date"`
-}
-
 func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
-	runReq, err := LoadRequestJSON[RunDayRequest](r)
-	if err != nil {
-		appErr := app.NewErrActionFailed("load request JSON", err.Error())
-
-		handleAppErr(w, appErr)
+	var runReq models.RunDayRequest
+	if err := json.NewDecoder(r.Body).Decode(&runReq); err != nil {
+		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}

@@ -38,6 +38,16 @@ func (s *MongoStore[T]) GetInfo() *ResourceInfo {
 	return s.info
 }
 
+func (s *MongoStore[T]) Reset(ctx context.Context) Error {
+	if err := s.col.Drop(ctx); err != nil {
+		action := fmt.Sprintf("drop %s collection", s.col.Name())
+
+		return NewErrActionFailed(action, err.Error())
+	}
+
+	return nil
+}
+
 func (s *MongoStore[T]) Create(ctx context.Context, val T) Error {
 	if key := val.GetKey(); key == "" {
 		return NewErrInvalidInput(s.info.KeyName, "key is empty")

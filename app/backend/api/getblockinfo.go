@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
@@ -30,7 +31,7 @@ func (h *getBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info := NewBlockInfo(new())
+	info := models.NewBlockInfo(new())
 
 	w.Header().Set("Content-Type", "application/json")
 

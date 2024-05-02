@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
@@ -17,7 +18,7 @@ func NewGetAllBlockInfo() http.Handler {
 }
 
 func (h *getAllBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	infos := []*BlockInfo{}
+	infos := []*models.BlockInfo{}
 
 	types := registry.Types()
 
@@ -27,7 +28,7 @@ func (h *getAllBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		new, _ := registry.Get(typ)
 
-		infos = append(infos, NewBlockInfo(new()))
+		infos = append(infos, models.NewBlockInfo(new()))
 	}
 
 	w.Header().Set("Content-Type", "application/json")

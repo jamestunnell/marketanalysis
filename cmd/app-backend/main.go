@@ -13,8 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
-	"github.com/jamestunnell/marketanalysis/backend"
-	"github.com/jamestunnell/marketanalysis/server"
+	"github.com/jamestunnell/marketanalysis/app/backend/api"
+	"github.com/jamestunnell/marketanalysis/app/backend/server"
 )
 
 const (
@@ -37,9 +37,9 @@ func main() {
 
 	client := connectToLocalDB(*dbConn)
 
-	srv := server.NewServer(*port)
+	srv := server.New(*port)
 
-	backend.BindAPI(srv.GetRouter(), client.Database(DBName))
+	api.BindAll(srv.GetRouter(), client.Database(DBName))
 
 	srv.Start()
 
