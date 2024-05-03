@@ -51,7 +51,7 @@ func NewErrNotFound(what string) Error {
 func NewErrInvalidInput(name string, reasons ...string) Error {
 	return &appErr{
 		Type:    InvalidInput,
-		Message: fmt.Sprintf("%s is not found", name),
+		Message: fmt.Sprintf("invalid %s", name),
 		Details: reasons,
 	}
 }

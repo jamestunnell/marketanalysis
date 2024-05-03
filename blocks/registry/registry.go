@@ -12,6 +12,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/emv"
 	"github.com/jamestunnell/marketanalysis/blocks/heikinashi"
 	"github.com/jamestunnell/marketanalysis/blocks/maorder"
+	"github.com/jamestunnell/marketanalysis/blocks/multitrend"
 	"github.com/jamestunnell/marketanalysis/blocks/sma"
 	"github.com/jamestunnell/marketanalysis/blocks/supertrend"
 )
@@ -37,6 +38,7 @@ func init() {
 	Add(maorder.Type, maorder.New)
 	Add(sma.Type, sma.New)
 	Add(supertrend.Type, supertrend.New)
+	Add(multitrend.Type, multitrend.New)
 }
 
 func Types() []string {

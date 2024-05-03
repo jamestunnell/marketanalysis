@@ -37,7 +37,7 @@ func handleAppErr(w http.ResponseWriter, appErr app.Error) {
 	}
 
 	log.Error().
-		Str("type", resp.ErrType).
+		Str("errType", resp.ErrType).
 		Str("message", resp.Message).
 		Strs("details", resp.Details).
 		Msg("app error")
