@@ -1,0 +1,19 @@
+{
+  "name": "marketanalysis",
+  "version": "0.1.0",
+  "description": "Frontend UI for a market analysis app",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "author": "James Tunnell",
+  "license": "ISC",
+  "dependencies": {
+    "vanjs-core": "^1.5.0"
+  },
+  "devDependencies": {
+    "vite": "^5.2.11"
+  }
+}
