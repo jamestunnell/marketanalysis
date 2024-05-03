@@ -7,10 +7,10 @@ type ErrMoreThanMax struct {
 	Max, Actual any
 }
 
-func NewErrMoreThanMax(name string, actual, min any) *ErrMoreThanMax {
+func NewErrMoreThanMax(name string, actual, max any) *ErrMoreThanMax {
 	return &ErrMoreThanMax{
 		Name:   name,
-		Max:    min,
+		Max:    max,
 		Actual: actual,
 	}
 }

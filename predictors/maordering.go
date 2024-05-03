@@ -79,8 +79,8 @@ func (mao *MAOrdering) Type() string {
 	return TypeMAOrdering
 }
 
-func (mao *MAOrdering) Params() models.Params {
-	return models.Params{
+func (mao *MAOrdering) Params() blocks.Params {
+	return blocks.Params{
 		NumPeriodsName:  mao.numPeriods,
 		PeriodStartName: mao.periodStart,
 		PeriodSpanName:  mao.periodSpan,

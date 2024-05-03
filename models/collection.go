@@ -47,6 +47,10 @@ func (tod *TimeOfDay) On(d date.Date, loc *time.Location) time.Time {
 	return time.Date(yyyy, mm, dd, tod.Hour, tod.Minute, 0, 0, loc)
 }
 
+func (tod *TimeOfDay) MinuteOfDay() int {
+	return tod.Hour*60 + tod.Minute
+}
+
 func (tod *TimeOfDay) String() string {
 	return fmt.Sprintf("%02d:%02d", tod.Hour, tod.Minute)
 }

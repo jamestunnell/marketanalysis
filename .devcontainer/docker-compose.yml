@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  market-analysis:
+    image: mcr.microsoft.com/devcontainers/go:1-1.22-bookworm
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      port: 3000
+      dbconn: mongodb://db:27017
+    command: sleep infinity
+
+  db:
+    image: mongo:latest
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/mongodb/data
+
+volumes:
+  db-data:
