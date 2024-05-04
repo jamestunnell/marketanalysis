@@ -4,61 +4,49 @@ import (
 	"math/rand"
 	"reflect"
 
-	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/constraints"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/blocks"
 )
 
-func MakePartial(param models.Param, rng *rand.Rand) (PartialGenome, error) {
-	switch param.Type() {
+func MakePartial(param blocks.Param, rng *rand.Rand) (PartialGenome, error) {
+	switch param.GetType() {
 	case "int":
 		return makeIntPartial(param, rng)
 	case "float64":
 		return makeFloatPartial(param, rng)
 	}
 
-	return nil, &ErrUnsupportedType{Type: param.Type()}
+	return nil, &ErrUnsupportedType{Type: param.GetType()}
 }
 
-func makeIntPartial(param models.Param, rng *rand.Rand) (PartialGenome, error) {
-	cs := param.Constraints()
-	if len(cs) != 1 {
-		return nil, commonerrs.NewErrExactLen("constraints", len(cs), 1)
-	}
-
+func makeIntPartial(param blocks.Param, rng *rand.Rand) (PartialGenome, error) {
 	var m IntMutator
 
-	switch c := cs[0].(type) {
-	case *constraints.TypedValRange[int]:
-		m = NewIntRangeMutator(c.Min, c.Max)
-	case *constraints.TypedValOneOf[int]:
-		m = NewIntEnumMutator(c.Allowed)
+	switch p := param.(type) {
+	case *blocks.IntRange:
+		m = NewIntRangeMutator(p.Min, p.Max)
+	case *blocks.IntEnum:
+		m = NewIntEnumMutator(p.Enum)
 	}
 
 	if m == nil {
-		return nil, NewErrUnsupportedCombo("int", reflect.TypeOf(cs[0]).String())
+		return nil, NewErrUnsupportedCombo("int", reflect.TypeOf(param).String())
 	}
 
 	return NewIntValue(m, rng), nil
 }
 
-func makeFloatPartial(param models.Param, rng *rand.Rand) (PartialGenome, error) {
-	cs := param.Constraints()
-	if len(cs) != 1 {
-		return nil, commonerrs.NewErrExactLen("constraints", len(cs), 1)
-	}
-
+func makeFloatPartial(param blocks.Param, rng *rand.Rand) (PartialGenome, error) {
 	var m FloatMutator
 
-	switch c := cs[0].(type) {
-	case *constraints.TypedValRange[float64]:
-		m = NewFloatRangeMutator(c.Min, c.Max)
-	case *constraints.TypedValOneOf[float64]:
-		m = NewFloatEnumMutator(c.Allowed)
+	switch p := param.(type) {
+	case *blocks.FltRange:
+		m = NewFloatRangeMutator(p.Min, p.Max)
+	case *blocks.FltEnum:
+		m = NewFloatEnumMutator(p.Enum)
 	}
 
 	if m == nil {
-		return nil, NewErrUnsupportedCombo("float64", reflect.TypeOf(cs[0]).String())
+		return nil, NewErrUnsupportedCombo("float64", reflect.TypeOf(param).String())
 	}
 
 	return NewFloatValue(m, rng), nil

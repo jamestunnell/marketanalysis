@@ -22,6 +22,10 @@ func (p *FltRange) GetSchema() map[string]any {
 	}
 }
 
+func (p *FltRange) GetType() string {
+	return "float64"
+}
+
 func (p *FltRange) GetVal() any {
 	return p.Value
 }

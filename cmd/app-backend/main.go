@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"syscall"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/jub0bs/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,6 +30,7 @@ func main() {
 	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Required().Int()
 	dbConn := app.Flag("dbconn", "Database connection").String()
+	origins := app.Flag("origins", "Allowed origins for CORS").Default("*").Strings()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -37,7 +42,25 @@ func main() {
 
 	client := connectToLocalDB(*dbConn)
 
-	srv := server.New(*port)
+	srv, router := server.New(*port)
+
+	loggingMiddleware := func(next http.Handler) http.Handler {
+		return handlers.CombinedLoggingHandler(os.Stdout, next)
+	}
+
+	corsMW, err := cors.NewMiddleware(cors.Config{
+		Origins:        *origins,
+		Methods:        []string{"*"},
+		RequestHeaders: []string{"Authorization"},
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to make CORS middleware")
+	}
+
+	corsMW.SetDebug(*debug)
+
+	router.Use(corsMW.Wrap)
+	router.Use(mux.MiddlewareFunc(loggingMiddleware))
 
 	api.BindAll(srv.GetRouter(), client.Database(DBName))
 

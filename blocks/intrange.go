@@ -22,6 +22,10 @@ func (p *IntRange) GetSchema() map[string]any {
 	}
 }
 
+func (p *IntRange) GetType() string {
+	return "int"
+}
+
 func (p *IntRange) GetVal() any {
 	return p.Value
 }

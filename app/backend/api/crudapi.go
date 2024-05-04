@@ -20,16 +20,39 @@ func NewCRUDAPI[T app.Resource](s app.Store[T]) *CRUDAPI[T] {
 }
 
 func (a *CRUDAPI[T]) Bind(r *mux.Router) {
-	r.HandleFunc(a.PluralRoute(), a.GetAll).Methods(http.MethodGet)
-	r.HandleFunc(a.PluralRoute(), a.Create).Methods(http.MethodPost)
+	r.HandleFunc(a.PluralRoute(), a.handlePlural).
+		Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
 
-	r.HandleFunc(a.SingularRoute(), a.Get).Methods(http.MethodGet)
-	r.HandleFunc(a.SingularRoute(), a.Update).Methods(http.MethodPut)
-	r.HandleFunc(a.SingularRoute(), a.Delete).Methods(http.MethodDelete)
+	r.HandleFunc(a.SingularRoute(), a.handleSingle).
+		Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 }
 
 func (a *CRUDAPI[T]) Get(w http.ResponseWriter, r *http.Request) {
 	Get(w, r, a.Store)
+}
+
+func (a *CRUDAPI[T]) handlePlural(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.GetAll(w, r)
+	case http.MethodPost:
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		a.Create(w, r)
+	}
+}
+
+func (a *CRUDAPI[T]) handleSingle(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.Get(w, r)
+	case http.MethodPut:
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		a.Update(w, r)
+	case http.MethodDelete:
+		a.Delete(w, r)
+	}
 }
 
 func (a *CRUDAPI[T]) GetAll(w http.ResponseWriter, r *http.Request) {
