@@ -22,12 +22,35 @@ const getGraphs = async () => {
     return d.graphs;
 }
 
-const ListItem = ({text}) => {
+const delGraph = async (symbol) => {
+    console.log("deleting graph");
+
+    const resp = await fetch(`${BASE_URL}/graphs/${symbol}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+    });
+
+    console.log('delete graph result:', resp.status)
+
+    return resp.status === 204 
+}
+
+const ListItem = ({id}) => {
     const deleted = van.state(false)
     return () => deleted.val ? null : li(
         div(
             {class: "flex flex-row gap-4"},
-            text, a({onclick: () => deleted.val = true}, "❌"),
+            id,
+            a(
+                {
+                    onclick: () => {
+                        if (delGraph(id)) {
+                            deleted.val = true
+                        }
+                    }
+                },
+                "❌",
+            ),
         )
     )
 }
@@ -39,7 +62,7 @@ const Graphs = () => {
         (items) => {
             console.log("found %d graphs", items.length);
             
-            const listItems = items.map(x => ListItem({text: x.id}))
+            const listItems = items.map(x => ListItem({id: x.id}))
             
             van.add(listDom, listItems)
         }

@@ -35,7 +35,20 @@ const addSecurity = async (item) => {
         credentials: 'same-origin'
     });
 
-    console.log('status:', response.status)
+    console.log('add security result:', resp.status)
+}
+
+const delSecurity = async (symbol) => {
+    console.log("deleting security");
+
+    const resp = await fetch(`${BASE_URL}/securities/${symbol}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+    });
+
+    console.log('delete security result:', resp.status)
+
+    return resp.status === 204 
 }
 
 const AddForm = () => {
@@ -58,12 +71,22 @@ const AddForm = () => {
     )
 }
 
-const ListItem = ({text}) => {
+const ListItem = ({symbol}) => {
     const deleted = van.state(false)
     return () => deleted.val ? null : li(
         div(
             {class: "flex flex-row gap-4"},
-            text, a({onclick: () => deleted.val = true}, "❌"),
+            symbol,
+            a(
+                {
+                    onclick: () => {
+                        if (delSecurity(symbol)) {
+                            deleted.val = true
+                        }
+                    }
+                },
+                "❌",
+            ),
         )
     )
 }
@@ -75,7 +98,7 @@ const Securities = () => {
         (items) => {
             console.log("found %d securities", items.length);
             
-            const listItems = items.map(x => ListItem({text: x.symbol}))
+            const listItems = items.map(x => ListItem({symbol: x.symbol}))
             
             van.add(listDom, listItems)
         }
