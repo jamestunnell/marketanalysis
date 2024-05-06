@@ -51,7 +51,7 @@ func main() {
 	corsMW, err := cors.NewMiddleware(cors.Config{
 		Origins:        *origins,
 		Methods:        []string{"*"},
-		RequestHeaders: []string{"Authorization"},
+		RequestHeaders: []string{"Authorization", "Content-Type"},
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to make CORS middleware")
