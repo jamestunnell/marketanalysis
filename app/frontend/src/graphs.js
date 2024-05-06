@@ -75,7 +75,6 @@ const Graphs = () => {
     return div(
         {class: "h-screen w-screen p-4"},
         dom,
-        h3("Graphs"),
         listDom
     );
 }

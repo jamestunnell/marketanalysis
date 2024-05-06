@@ -1,4 +1,7 @@
 import van from "vanjs-core"
+import {Modal} from "vanjs-ui"
+
+import Button from './button.js'
 
 const {a, button, div, h3, input, li, option, select, ul} = van.tags
 
@@ -35,7 +38,9 @@ const addSecurity = async (item) => {
         credentials: 'same-origin'
     });
 
-    console.log('add security result:', resp.status)
+    console.log('add security result:', resp.status);
+
+    return resp.status == 204;
 }
 
 const delSecurity = async (symbol) => {
@@ -46,28 +51,42 @@ const delSecurity = async (symbol) => {
         credentials: 'same-origin'
     });
 
-    console.log('delete security result:', resp.status)
+    console.log('delete security result:', resp.status);
 
-    return resp.status === 204 
+    return resp.status === 204; 
 }
 
-const AddForm = () => {
+const AddForm = ({listDom, modalClosed}) => {
     const sym = van.state("");
     const tz = van.state("America/New_York");
     const open = van.state("09:30");
     const close = van.state("16:00");
 
     return div(
-        "Symbol: ",
-        input({type: "text", value: sym, oninput: e => sym.val = e.target.value}),
-        "Time Zone :",
-        select({oninput: e => tz.val = e.target.value, value: tz},
-            TIME_ZONES.map(x => option({value: x}, x))),
-        input({type: "text", value: open, oninput: e => open.val = e.target.value}),
-        input({type: "text", value: close, oninput: e => close.val = e.target.value}),
-        button({onclick: () => {
-            addSecurity({symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val})
-        }}, "➕"),
+        div(
+            {class: "flex flex-row"},
+            h3("Add New Security"),
+            button({onclick: () => modalClosed.val = true},"❌"),
+        ),
+        div(
+            "Symbol: ",
+            input({type: "text", value: sym, oninput: e => sym.val = e.target.value}),
+            "Time Zone :",
+            select({oninput: e => tz.val = e.target.value, value: tz},
+                TIME_ZONES.map(x => option({value: x}, x))),
+            input({type: "text", value: open, oninput: e => open.val = e.target.value}),
+            input({type: "text", value: close, oninput: e => close.val = e.target.value}),
+            button({onclick: () => {
+                const item = {symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val};
+                
+                if (addSecurity(item)) {
+                    van.add(listDom, ListItem({symbol: sym.val}))
+
+                    modalClosed.val = true
+                }
+            }}, "➕"),
+        ),
+
     )
 }
 
@@ -92,6 +111,7 @@ const ListItem = ({symbol}) => {
 }
 
 const Securities = () => {
+    const closed = van.state(true)
     const listDom = ul({class:"p-4"})
 
     getSecurities().then(
@@ -111,9 +131,16 @@ const Securities = () => {
     return div(
         {class: "h-screen w-screen p-4"},
         dom,
-        h3("Securities"),
-        AddForm(),
-        listDom
+        listDom,
+        Button({text: "Add New", onclick: () => {
+            const closed = van.state(false)
+            
+            van.add(document.body, Modal({closed},
+              div({style: "display: flex; justify-content: center;"},
+                AddForm({listDom: listDom, modalClosed: closed}),
+              ),
+            ))
+        }}),
     );
 }
 
