@@ -19,7 +19,7 @@ const NavBar = ({currentRoute}) => {
             div(
                 {class: "container flex text-gray-500 order-3 w-full"},
                 ul(
-                    {class: "flex items-center flex font-semibold flex-wrap"},
+                    {class: "flex items-center font-semibold flex-wrap"},
                     NavBarItem({text: 'Home', route: 'home', currentRoute: currentRoute}),
                     NavBarItem({text: 'Securities', route: 'securities', currentRoute: currentRoute}),
                     NavBarItem({text: 'Graphs', route: 'graphs', currentRoute: currentRoute}),

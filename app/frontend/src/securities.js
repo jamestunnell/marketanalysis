@@ -1,12 +1,14 @@
 import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
-import Button from './button.js'
+import AppError from "./apperror.js"
+import {ButtonOK, ButtonCancel} from './buttons.js'
 
-const {a, button, div, h3, input, li, option, select, ul} = van.tags
+const {a, div, h3, input, li, option, p, select, ul} = van.tags
 
 const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
-const TIME_ZONES = ["America/New_York", "America/Los_Angeles", "Greenwich"]
+const TIME_ZONES = Intl.supportedValuesOf('timeZone');
+const TZ_NEW_YORK = "America/New_York";
 
 const getSecurities = async () => {
     console.log("getting securities");
@@ -27,9 +29,7 @@ const getSecurities = async () => {
 }
 
 const addSecurity = async (item) => {
-    console.log("adding security");
-
-    const resp = await fetch(`${BASE_URL}/securities`, {
+    return await fetch(`${BASE_URL}/securities`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json; charset=utf-8'
@@ -37,10 +37,6 @@ const addSecurity = async (item) => {
         body: JSON.stringify(item),
         credentials: 'same-origin'
     });
-
-    console.log('add security result:', resp.status);
-
-    return resp.status == 204;
 }
 
 const delSecurity = async (symbol) => {
@@ -53,38 +49,77 @@ const delSecurity = async (symbol) => {
 
     console.log('delete security result:', resp.status);
 
-    return resp.status === 204; 
+    const success = resp.status === 200;
+    
+    if (!success) {
+        console.log(resp);
+    }
+
+    return success; 
 }
 
-const AddForm = ({listDom, modalClosed}) => {
+const AddSecurityInModal = ({listDom, modalClosed}) => {
     const sym = van.state("");
-    const tz = van.state("America/New_York");
+    const tz = van.state(TZ_NEW_YORK);
     const open = van.state("09:30");
     const close = van.state("16:00");
+    const errType = van.state("");
+    const errMsg = van.state("");
+    const errDetails = van.state([]);
+    const errIsVisible = van.state(false)
 
     return div(
+        {class: "space-y-6"},
+        h3({class: "text-2xl font-bold"}, "Add New Security"),
         div(
-            {class: "flex flex-row"},
-            h3("Add New Security"),
-            button({onclick: () => modalClosed.val = true},"❌"),
-        ),
-        div(
-            "Symbol: ",
-            input({type: "text", value: sym, oninput: e => sym.val = e.target.value}),
-            "Time Zone :",
-            select({oninput: e => tz.val = e.target.value, value: tz},
-                TIME_ZONES.map(x => option({value: x}, x))),
+            {class: "grid grid-cols-2 gap-4"},
+            "Symbol",
+            input({type: "text", value: sym, oninput: e => sym.val = e.target.value, placeholder: "SPY, QQQ, etc."}),
+            "Time Zone",
+            select(
+                {oninput: (e) => tz.val = e.target.value},
+                TIME_ZONES.map(x => {
+                    let props = {value: x};
+                    if (x === TZ_NEW_YORK) {
+                        props.selected = "selected";
+                    }
+                    
+                    return option(props, x)                    
+                }),
+            ),
+            "Open",
             input({type: "text", value: open, oninput: e => open.val = e.target.value}),
+            "Close",
             input({type: "text", value: close, oninput: e => close.val = e.target.value}),
-            button({onclick: () => {
+        ),
+        AppError({type: errType, msg: errMsg, details: errDetails, isVisible: errIsVisible}),
+        div(
+            {class:"mt-4 flex justify-end"},
+            ButtonCancel({text: "Cancel", onclick: () => modalClosed.val = true}),
+            ButtonOK({text: "OK", onclick: async () => {
                 const item = {symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val};
-                
-                if (addSecurity(item)) {
-                    van.add(listDom, ListItem({symbol: sym.val}))
+                const resp = await addSecurity(item);
 
-                    modalClosed.val = true
+                if (resp.status !== 204) {
+                    console.log('failed to add security', resp);
+
+                    const err = await resp.json();
+                    
+                    errType.val = err.errType;
+                    errMsg.val = err.message;
+                    errDetails.val = err.details;
+                    errIsVisible.val = true;
+                    
+                    return
                 }
-            }}, "➕"),
+            
+                console.log('added security %s', item);
+            
+                errIsVisible.val = false;
+                modalClosed.val = true;
+
+                van.add(listDom, ListItem({symbol: item.symbol}))
+            }}),
         ),
 
     )
@@ -111,7 +146,6 @@ const ListItem = ({symbol}) => {
 }
 
 const Securities = () => {
-    const closed = van.state(true)
     const listDom = ul({class:"p-4"})
 
     getSecurities().then(
@@ -132,12 +166,12 @@ const Securities = () => {
         {class: "h-screen w-screen p-4"},
         dom,
         listDom,
-        Button({text: "Add New", onclick: () => {
+        ButtonOK({text: "Add New", onclick: () => {
             const closed = van.state(false)
             
             van.add(document.body, Modal({closed},
               div({style: "display: flex; justify-content: center;"},
-                AddForm({listDom: listDom, modalClosed: closed}),
+                AddSecurityInModal({listDom: listDom, modalClosed: closed}),
               ),
             ))
         }}),
