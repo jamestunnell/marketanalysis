@@ -2,7 +2,7 @@ import van from "vanjs-core"
 
 const {a, div, h3, li, ul} = van.tags
 
-const BASE_URL = `http://localhost:4002`
+const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
 
 const getGraphs = async () => {
     console.log("getting graphs");

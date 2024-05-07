@@ -324,13 +324,6 @@ vanjs-core@^1.2.5, vanjs-core@^1.2.7, vanjs-core@^1.5.0:
   resolved "https://registry.yarnpkg.com/vanjs-core/-/vanjs-core-1.5.0.tgz#e5d4280c12c1fd81b2b0ff661899c81dbde1467b"
   integrity sha512-kOM9XVOciL9Q3Ihn3ruycTL5NCvuR5Ub7wwQIU9sZJdMBWSxesbeyN3+PWceLz57ImgHTF0eOVvhkoKJLlE3hw==
 
-vanjs-ext@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/vanjs-ext/-/vanjs-ext-0.6.0.tgz#7a2a281adba1a1d8704b5b78c12fcb008f9a3cf5"
-  integrity sha512-ifg5WxvEHuh3XwNu0dNtQq+qO9d5FERA7GdAC//EGgMhCTt+Fw+WvIUrFzRCEmQV0sJXQiVuvevwvIxXbZBL0g==
-  dependencies:
-    vanjs-core "^1.5.0"
-
 vanjs-router@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/vanjs-router/-/vanjs-router-1.2.3.tgz#dba28313a409a96acac6017180fc9fa30015aeae"

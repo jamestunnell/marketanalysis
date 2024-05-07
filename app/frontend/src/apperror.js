@@ -2,9 +2,9 @@ import van from "vanjs-core"
 
 const { div, h2, p } = van.tags
 
-const AppError = ({type, msg, details, isVisible}) => {
+const AppError = ({type, msg, details, hidden}) => {
     const divClass = van.derive(() => {
-        return `text-red-500 space-y-6 ${isVisible.val ? "visible" : "invisible"}`
+        return `text-red-500 space-y-6 ${hidden.val ? "hidden" : ""}`
     });
     const title = van.derive(() => {
         switch (type.val) {

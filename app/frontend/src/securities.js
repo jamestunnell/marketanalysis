@@ -4,9 +4,9 @@ import {Modal} from "vanjs-ui"
 import AppError from "./apperror.js"
 import {ButtonAct, ButtonCancel} from './buttons.js'
 
-const {div, h3, input, option, p, select, table, tbody, td, th, thead, tr} = van.tags
+const {button, div, input, option, label, p, select} = van.tags
 
-const BASE_URL = `http://localhost:4002`
+const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
 const TIME_ZONES = Intl.supportedValuesOf('timeZone');
 const TZ_NEW_YORK = "America/New_York";
 
@@ -28,7 +28,22 @@ const getSecurities = async () => {
     return d.securities;
 }
 
+const updateSecurity = async (item) => {
+    console.log("updating security", item);
+
+    return await fetch(`${BASE_URL}/securities/${item.symbol}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify(item),
+        credentials: 'same-origin'
+    });
+}
+
 const addSecurity = async (item) => {
+    console.log("adding new security", item);
+
     return await fetch(`${BASE_URL}/securities`, {
         method: 'POST',
         headers: {
@@ -40,151 +55,271 @@ const addSecurity = async (item) => {
 }
 
 const delSecurity = async (symbol) => {
-    console.log("deleting security");
+    console.log("deleting security %s", symbol);
 
-    const resp = await fetch(`${BASE_URL}/securities/${symbol}`, {
+    return await fetch(`${BASE_URL}/securities/${symbol}`, {
         method: 'DELETE',
         credentials: 'same-origin'
     });
-
-    console.log('delete security result:', resp.status);
-
-    const success = resp.status === 200;
-    
-    if (!success) {
-        console.log(resp);
-    }
-
-    return success; 
 }
 
-const AddSecurityInModal = ({tableBody, modalClosed}) => {
-    const sym = van.state("");
-    const tz = van.state(TZ_NEW_YORK);
-    const open = van.state("09:30");
-    const close = van.state("16:00");
+const SecurityForm = ({title, onCancel, onOK, item}) => {
+    const editing = item.symbol !== "";
+
+    const sym = van.state(item.symbol);
+    const tz = van.state(item.timeZone);
+    const open = van.state(item.open);
+    const close = van.state(item.close);
     const errType = van.state("");
     const errMsg = van.state("");
     const errDetails = van.state([]);
-    const errIsVisible = van.state(false)
+    const errHidden = van.state(true)
+
+    const makeItem = () => {
+        return {symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val};
+    }
+
+    const editBoxClass = "block w-full px-4 py-2 mt-2 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+    const symbolEditBoxClass = editBoxClass + (editing ? " bg-gray-200" : "");
 
     return div(
         {class: "space-y-6"},
-        h3({class: "text-2xl font-bold"}, "Add New Security"),
+        p({class: "text-lg font-medium font-bold"}, title),
         div(
-            {class: "grid grid-cols-2 gap-4"},
-            p({class: "text-right"}, "Symbol"),
-            input({type: "text", value: sym, oninput: e => sym.val = e.target.value, placeholder: "SPY, QQQ, etc."}),
-            p({class: "text-right"}, "Time Zone"),
-            select(
-                {oninput: (e) => tz.val = e.target.value},
-                TIME_ZONES.map(x => {
-                    let props = {value: x};
-                    if (x === TZ_NEW_YORK) {
-                        props.selected = "selected";
-                    }
-                    
-                    return option(props, x)                    
-                }),
+            {class: "grid grid-cols-1 gap-6 mt-4"},
+            div(
+                label({for: "symbol"}, "Symbol"),
+                input({id: "symbol", class: symbolEditBoxClass, type: "text", disabled: editing, value: sym, oninput: e => sym.val = e.target.value, placeholder: "SPY, QQQ, etc."}),
             ),
-            p({class: "text-right"}, "Open"),
-            input({type: "text", value: open, oninput: e => open.val = e.target.value}),
-            p({class: "text-right"}, "Close"),
-            input({type: "text", value: close, oninput: e => close.val = e.target.value}),
+            div(
+                label({for: "timeZone"}, "Time Zone"),
+                select(
+                    {id: "timeZone", class: editBoxClass, oninput: (e) => tz.val = e.target.value},
+                    TIME_ZONES.map(x => {
+                        let props = {value: x};
+                        if (x === TZ_NEW_YORK) {
+                            props.selected = "selected";
+                        }
+                        
+                        return option(props, x)                    
+                    }),
+                ),    
+            ),
+            div(
+                label({for: "open"}, "Open"),
+                input({id: "open", class: editBoxClass, type: "text", value: open, oninput: e => open.val = e.target.value}),
+            ),
+            div(
+                label({for: "close"}, "Close"),
+                input({id: "close", class: editBoxClass, type: "text", value: close, oninput: e => close.val = e.target.value}),    
+            )
         ),
-        AppError({type: errType, msg: errMsg, details: errDetails, isVisible: errIsVisible}),
+        AppError({type: errType, msg: errMsg, details: errDetails, hidden: errHidden}),
         div(
             {class:"mt-4 flex justify-end"},
-            ButtonCancel({text: "Cancel", onclick: () => modalClosed.val = true}),
-            ButtonAct({text: "OK", onclick: async () => {
-                const item = {symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val};
-                const resp = await addSecurity(item);
-
-                if (resp.status !== 204) {
-                    console.log('failed to add security', resp);
-
-                    const err = await resp.json();
+            ButtonCancel({text: "Cancel", onclick: () => onCancel()}),
+            ButtonAct({
+                text: "OK",
+                onclick: async () => {
+                    const err = await onOK(makeItem());
+                    if (err == null) {
+                        return;
+                    }
                     
                     errType.val = err.errType;
                     errMsg.val = err.message;
                     errDetails.val = err.details;
-                    errIsVisible.val = true;
-                    
-                    return
-                }
-            
-                console.log('added security %s', item);
-            
-                errIsVisible.val = false;
-                modalClosed.val = true;
-
-                van.add(tableBody, TableRow(item))
-            }}),
-        ),
-
-    )
-}
-
-const TableRow = (item) => {
-    const deleted = van.state(false)
-    return () => deleted.val ? null : tr(
-        {class: "border border-solid"},
-        td({class: "px-6 py-4 font-medium"}, item.symbol),
-        td({class: "px-6 py-4"}, item.timeZone),
-        td({class: "px-6 py-4"}, item.open),
-        td({class: "px-6 py-4"}, item.close),
-        td({class: "px-6 py-4"}, ButtonAct({
-                text: "Delete",
-                onclick: () => {
-                    if (delSecurity(item.symbol)) {
-                        deleted.val = true
-                    }
+                    errHidden.val = false;
                 },
             }),
         ),
     )
 }
 
+const AddNewButton = ({sidebar, state}) => {
+    const btn = ButtonAct({
+        text: "",
+        onclick: () => {
+            const closed = van.state(false)
+            
+            van.add(
+                document.body,
+                Modal(
+                    {closed},
+                    div({style: "display: flex; justify-content: center;"},
+                        SecurityForm({
+                            title: "New Security",
+                            item: {symbol: "", timeZone: TZ_NEW_YORK, open: "09:30", close: "16:00"},
+                            onCancel: () => {
+                                closed.val = true;
+                            },
+                            onOK: async (newItem) => {
+                                const resp = await addSecurity(newItem);
+
+                                if (resp.status !== 204) {
+                                    console.log('failed to add security', resp);
+                                
+                                    return await resp.json();
+                                }
+
+                                console.log('added security', newItem);
+
+                                state.symbol.val = newItem.symbol;
+                                state.timeZone.val = newItem.timeZone;
+                                state.open.val = newItem.open;
+                                state.close.val = newItem.close;
+                            
+                                van.add(sidebar, SidebarItem({item: newItem, state: state}))
+
+                                state.displayContent.val = true;
+
+                                closed.val = true;
+
+                                return null;
+                            },
+                        }),
+                    ),
+                ),
+            )
+        },
+    });
+
+    btn.classList.add("fa-solid");
+    btn.classList.add("fa-plus");
+    btn.classList.add("order-last");
+    
+    return btn;
+}
+
+const SidebarItem = ({item, state}) => {
+    const deleted = van.state(false);
+
+    return () => deleted.val ? null : button({
+        class: "font-semibold md:px-4 md:py-2 text-gray-500",
+        onclick: () => {
+            state.editHook.val = () => {
+                const closed = van.state(false)
+            
+                van.add(
+                    document.body,
+                    Modal(
+                        {closed},
+                        div({style: "display: flex; justify-content: center;"},
+                            SecurityForm({
+                                title: "Edit Security",
+                                item: item,
+                                onCancel: () => {
+                                    closed.val = true;
+                                },
+                                onOK: async (updatedItem) => {
+                                    const resp = await updateSecurity(updatedItem);
+    
+                                    if (resp.status !== 204) {
+                                        console.log('failed to update security', resp);
+                                    
+                                        return await resp.json();
+                                    }
+
+                                    console.log('udpated security', updatedItem);
+
+                                    state.symbol.val = updatedItem.symbol;
+                                    state.timeZone.val = updatedItem.timeZone;
+                                    state.open.val = updatedItem.open;
+                                    state.close.val = updatedItem.close;
+                                
+                                    closed.val = true;
+
+                                    return null;
+                                },
+                            }),
+                        ),
+                    ),
+                )
+            }
+            state.deleteHook.val = async () => {
+                const resp = await delSecurity(item.symbol);
+                
+                if (resp.status !== 204) {
+                    console.log('failed to delete security', resp);
+                
+                    return;
+                }
+
+                console.log('deleted security %s', item.symbol);
+
+                state.displayContent.val = false;
+
+                deleted.val = true;
+            };
+            state.symbol.val = item.symbol;
+            state.timeZone.val = item.timeZone;
+            state.open.val = item.open;
+            state.close.val = item.close;
+            state.displayContent.val = true;
+        }},
+        item.symbol,
+    );
+}
+
 const Securities = () => {
-    const tableBody = tbody({class:"table-auto"})
+    const state = {
+        displayContent: van.state(false),
+        symbol: van.state(""),
+        timeZone: van.state(TZ_NEW_YORK),
+        open: van.state("09:30"),
+        close: van.state("16:00"),
+        editHook: van.state(() => {}),
+        deleteHook: van.state(() => {}),
+    };
+    
+    const contentAreaClass = van.derive(() => {
+        return `h-screen flex flex-col px-6 py-4 ${state.displayContent.val ? "" : " hidden"}`
+    })
+
+    const sidebarArea = div(
+        {class:"flex flex-col flex-nowrap overflow-y-scroll"},
+    )
+    const editBtn = ButtonAct({
+        text: "",
+        onclick: () => state.editHook.val()
+    });
+    const deleteBtn = ButtonAct({
+        text: "",
+        onclick: () => state.deleteHook.val()
+    });
+    const contentArea = div(
+        {class: contentAreaClass},
+        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Symbol"), p(state.symbol)),
+        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Time Zone"), p(state.timeZone)),
+        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Open"), p(state.open)),
+        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Close"), p(state.close)),
+        div({class: "flex flex-row-reverse"}, editBtn, deleteBtn),
+    )
+
+    editBtn.classList.add("fa-solid");
+    editBtn.classList.add("fa-pen-to-square");
+
+    deleteBtn.classList.add("fa-solid");
+    deleteBtn.classList.add("fa-trash");
 
     getSecurities().then(
         (items) => {
             console.log("found %d securities", items.length);
-            
-            const rows = items.map(item => TableRow(item));
-            
-            van.add(tableBody, rows)
+
+            const sidebarItems = items.map(item => SidebarItem({item: item, state: state}));
+
+            van.add(sidebarArea, sidebarItems);
+            van.add(sidebarArea, AddNewButton({sidebar: sidebarArea, state: state}));
         }
     ).catch(error => {
         console.log("failed to get securities: " + error);
     });
 
+
     return div(
-        {class: "w-full p-4 space-y-6"},
-        table(
-            {class:"table-auto min-w-full text-left text-sm"},
-            thead(
-                tr(
-                    {class: "border-b border-neutral-200 font-medium"},
-                    th({class: "px-6 py-4"}, "Symbol"),
-                    th({class: "px-6 py-4"}, "Time Zone"),
-                    th({class: "px-6 py-4"}, "Open"),
-                    th({class: "px-6 py-4"}, "Close"),
-                    th({class: "px-6 py-4"}, ""),
-                ),
-            ),
-            tableBody
-        ),
-        ButtonAct({text: "Add New", onclick: () => {
-            const closed = van.state(false)
-            
-            van.add(document.body, Modal({closed},
-              div({style: "display: flex; justify-content: center;"},
-                AddSecurityInModal({tableBody: tableBody, modalClosed: closed}),
-              ),
-            ))
-        }}),
+        {class: "h-screen flex"},
+        sidebarArea,
+        contentArea,
     );
 }
 
