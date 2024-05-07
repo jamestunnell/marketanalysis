@@ -2,7 +2,7 @@ import van from "vanjs-core"
 
 const { button, div } = van.tags
 
-const ButtonOK = ({text, onclick}) => {
+const ButtonAct = ({text, onclick}) => {
     return div(
         button(
             {
@@ -26,4 +26,4 @@ const ButtonCancel = ({text, onclick}) => {
     )
 }
 
-export { ButtonOK, ButtonCancel };
+export { ButtonAct, ButtonCancel };

@@ -2,11 +2,11 @@ import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
 import AppError from "./apperror.js"
-import {ButtonOK, ButtonCancel} from './buttons.js'
+import {ButtonAct, ButtonCancel} from './buttons.js'
 
-const {a, div, h3, input, li, option, p, select, ul} = van.tags
+const {div, h3, input, option, p, select, table, tbody, td, th, thead, tr} = van.tags
 
-const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
+const BASE_URL = `http://localhost:4002`
 const TIME_ZONES = Intl.supportedValuesOf('timeZone');
 const TZ_NEW_YORK = "America/New_York";
 
@@ -58,7 +58,7 @@ const delSecurity = async (symbol) => {
     return success; 
 }
 
-const AddSecurityInModal = ({listDom, modalClosed}) => {
+const AddSecurityInModal = ({tableBody, modalClosed}) => {
     const sym = van.state("");
     const tz = van.state(TZ_NEW_YORK);
     const open = van.state("09:30");
@@ -73,9 +73,9 @@ const AddSecurityInModal = ({listDom, modalClosed}) => {
         h3({class: "text-2xl font-bold"}, "Add New Security"),
         div(
             {class: "grid grid-cols-2 gap-4"},
-            "Symbol",
+            p({class: "text-right"}, "Symbol"),
             input({type: "text", value: sym, oninput: e => sym.val = e.target.value, placeholder: "SPY, QQQ, etc."}),
-            "Time Zone",
+            p({class: "text-right"}, "Time Zone"),
             select(
                 {oninput: (e) => tz.val = e.target.value},
                 TIME_ZONES.map(x => {
@@ -87,16 +87,16 @@ const AddSecurityInModal = ({listDom, modalClosed}) => {
                     return option(props, x)                    
                 }),
             ),
-            "Open",
+            p({class: "text-right"}, "Open"),
             input({type: "text", value: open, oninput: e => open.val = e.target.value}),
-            "Close",
+            p({class: "text-right"}, "Close"),
             input({type: "text", value: close, oninput: e => close.val = e.target.value}),
         ),
         AppError({type: errType, msg: errMsg, details: errDetails, isVisible: errIsVisible}),
         div(
             {class:"mt-4 flex justify-end"},
             ButtonCancel({text: "Cancel", onclick: () => modalClosed.val = true}),
-            ButtonOK({text: "OK", onclick: async () => {
+            ButtonAct({text: "OK", onclick: async () => {
                 const item = {symbol: sym.val, timeZone: tz.val, open: open.val, close: close.val};
                 const resp = await addSecurity(item);
 
@@ -118,60 +118,70 @@ const AddSecurityInModal = ({listDom, modalClosed}) => {
                 errIsVisible.val = false;
                 modalClosed.val = true;
 
-                van.add(listDom, ListItem({symbol: item.symbol}))
+                van.add(tableBody, TableRow(item))
             }}),
         ),
 
     )
 }
 
-const ListItem = ({symbol}) => {
+const TableRow = (item) => {
     const deleted = van.state(false)
-    return () => deleted.val ? null : li(
-        div(
-            {class: "flex flex-row gap-4"},
-            symbol,
-            a(
-                {
-                    onclick: () => {
-                        if (delSecurity(symbol)) {
-                            deleted.val = true
-                        }
+    return () => deleted.val ? null : tr(
+        {class: "border border-solid"},
+        td({class: "px-6 py-4 font-medium"}, item.symbol),
+        td({class: "px-6 py-4"}, item.timeZone),
+        td({class: "px-6 py-4"}, item.open),
+        td({class: "px-6 py-4"}, item.close),
+        td({class: "px-6 py-4"}, ButtonAct({
+                text: "Delete",
+                onclick: () => {
+                    if (delSecurity(item.symbol)) {
+                        deleted.val = true
                     }
                 },
-                "❌",
-            ),
-        )
+            }),
+        ),
     )
 }
 
 const Securities = () => {
-    const listDom = ul({class:"p-4"})
+    const tableBody = tbody({class:"table-auto"})
 
     getSecurities().then(
         (items) => {
             console.log("found %d securities", items.length);
             
-            const listItems = items.map(x => ListItem({symbol: x.symbol}))
+            const rows = items.map(item => TableRow(item));
             
-            van.add(listDom, listItems)
+            van.add(tableBody, rows)
         }
     ).catch(error => {
         console.log("failed to get securities: " + error);
     });
 
-    const dom = div();
-
     return div(
-        {class: "h-screen w-screen p-4"},
-        dom,
-        listDom,
-        ButtonOK({text: "Add New", onclick: () => {
+        {class: "w-full p-4 space-y-6"},
+        table(
+            {class:"table-auto min-w-full text-left text-sm"},
+            thead(
+                tr(
+                    {class: "border-b border-neutral-200 font-medium"},
+                    th({class: "px-6 py-4"}, "Symbol"),
+                    th({class: "px-6 py-4"}, "Time Zone"),
+                    th({class: "px-6 py-4"}, "Open"),
+                    th({class: "px-6 py-4"}, "Close"),
+                    th({class: "px-6 py-4"}, ""),
+                ),
+            ),
+            tableBody
+        ),
+        ButtonAct({text: "Add New", onclick: () => {
             const closed = van.state(false)
             
             van.add(document.body, Modal({closed},
               div({style: "display: flex; justify-content: center;"},
-                AddSecurityInModal({listDom: listDom, modalClosed: closed}),
+                AddSecurityInModal({tableBody: tableBody, modalClosed: closed}),
               ),
             ))
         }}),
