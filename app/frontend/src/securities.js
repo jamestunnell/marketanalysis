@@ -97,7 +97,7 @@ const SecurityForm = ({title, onCancel, onOK, item}) => {
                     {id: "timeZone", class: editBoxClass, oninput: (e) => tz.val = e.target.value},
                     TIME_ZONES.map(x => {
                         let props = {value: x};
-                        if (x === TZ_NEW_YORK) {
+                        if (x === item.timeZone) {
                             props.selected = "selected";
                         }
                         
@@ -141,7 +141,7 @@ const AddNewButton = ({sidebar, state}) => {
         text: "",
         onclick: () => {
             const closed = van.state(false)
-            
+
             van.add(
                 document.body,
                 Modal(
@@ -164,14 +164,14 @@ const AddNewButton = ({sidebar, state}) => {
 
                                 console.log('added security', newItem);
 
+                                van.add(sidebar, SidebarItem({item: newItem, state: state}))
+
                                 state.symbol.val = newItem.symbol;
                                 state.timeZone.val = newItem.timeZone;
                                 state.open.val = newItem.open;
                                 state.close.val = newItem.close;
-                            
-                                van.add(sidebar, SidebarItem({item: newItem, state: state}))
-
                                 state.displayContent.val = true;
+                                state.selectedSymbol.val = newItem.symbol;
 
                                 closed.val = true;
 
@@ -193,12 +193,27 @@ const AddNewButton = ({sidebar, state}) => {
 
 const SidebarItem = ({item, state}) => {
     const deleted = van.state(false);
+    const itemState = {
+        symbol: van.state(item.symbol),
+        timeZone: van.state(item.timeZone),
+        open: van.state(item.open),
+        close: van.state(item.close),
+    }
+
+    const itemClass = van.derive(() => {
+        const isSelected = state.selectedSymbol.val == itemState.symbol.val;
+
+        return `font-semibold md:px-4 md:py-2 ${isSelected ? "text-indigo-500" : "text-gray-500"}`
+    });
 
     return () => deleted.val ? null : button({
-        class: "font-semibold md:px-4 md:py-2 text-gray-500",
+        class: itemClass,
         onclick: () => {
+            state.selectedSymbol.val = itemState.symbol.val;
             state.editHook.val = () => {
-                const closed = van.state(false)
+                console.log("editing security %s", itemState.symbol.val);
+
+                const closed = van.state(false);
             
                 van.add(
                     document.body,
@@ -207,7 +222,12 @@ const SidebarItem = ({item, state}) => {
                         div({style: "display: flex; justify-content: center;"},
                             SecurityForm({
                                 title: "Edit Security",
-                                item: item,
+                                item: {
+                                    symbol: itemState.symbol.val,
+                                    timeZone: itemState.timeZone.val,
+                                    open: itemState.open.val,
+                                    close: itemState.close.val,
+                                },
                                 onCancel: () => {
                                     closed.val = true;
                                 },
@@ -226,6 +246,11 @@ const SidebarItem = ({item, state}) => {
                                     state.timeZone.val = updatedItem.timeZone;
                                     state.open.val = updatedItem.open;
                                     state.close.val = updatedItem.close;
+
+                                    itemState.symbol.val = updatedItem.symbol;
+                                    itemState.timeZone.val = updatedItem.timeZone;
+                                    itemState.open.val = updatedItem.open;
+                                    itemState.close.val = updatedItem.close;
                                 
                                     closed.val = true;
 
@@ -251,10 +276,10 @@ const SidebarItem = ({item, state}) => {
 
                 deleted.val = true;
             };
-            state.symbol.val = item.symbol;
-            state.timeZone.val = item.timeZone;
-            state.open.val = item.open;
-            state.close.val = item.close;
+            state.symbol.val = itemState.symbol.val;
+            state.timeZone.val = itemState.timeZone.val;
+            state.open.val = itemState.open.val;
+            state.close.val = itemState.close.val;
             state.displayContent.val = true;
         }},
         item.symbol,
@@ -270,11 +295,15 @@ const Securities = () => {
         close: van.state("16:00"),
         editHook: van.state(() => {}),
         deleteHook: van.state(() => {}),
+        selectedSymbol: van.state(""),
     };
-    
+
+    const coreHours = van.derive(() => {
+        return `${state.open.val} - ${state.close.val}`;
+    });
     const contentAreaClass = van.derive(() => {
-        return `h-screen flex flex-col px-6 py-4 ${state.displayContent.val ? "" : " hidden"}`
-    })
+        return `h-screen flex flex-col px-6 py-4 ${state.displayContent.val ? "" : " hidden"}`;
+    });
 
     const sidebarArea = div(
         {class:"flex flex-col flex-nowrap overflow-y-scroll"},
@@ -291,8 +320,7 @@ const Securities = () => {
         {class: contentAreaClass},
         div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Symbol"), p(state.symbol)),
         div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Time Zone"), p(state.timeZone)),
-        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Open"), p(state.open)),
-        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Close"), p(state.close)),
+        div({class: "flex flex-row"}, p({class: "flex grow font-semibold"}, "Core Hours"), p(coreHours)),
         div({class: "flex flex-row-reverse"}, editBtn, deleteBtn),
     )
 
