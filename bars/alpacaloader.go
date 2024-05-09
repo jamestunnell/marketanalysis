@@ -13,21 +13,27 @@ import (
 )
 
 type AlpacaLoader struct {
-	security *models.Security
-	loc      *time.Location
+	symbol string
+	loc    *time.Location
 }
 
-func NewAlpacaLoader(s *models.Security) Loader {
+func NewAlpacaLoader(symbol string) *AlpacaLoader {
 	return &AlpacaLoader{
-		security: s,
-		loc:      nil,
+		symbol: symbol,
+		loc:    nil,
 	}
 }
 
+const (
+	alpacaExchangesClose = "16:00"
+	alpacaExchangesOpen  = "09:30"
+	alpacaExchangesTZ    = "America/New_York"
+)
+
 func (l *AlpacaLoader) Init() error {
-	loc, err := time.LoadLocation(l.security.TimeZone)
+	loc, err := time.LoadLocation(alpacaExchangesTZ)
 	if err != nil {
-		return fmt.Errorf("time zone '%s' is invalid: %w", l.security.TimeZone, err)
+		return fmt.Errorf("time zone '%s' is invalid: %w", alpacaExchangesTZ, err)
 	}
 
 	l.loc = loc
@@ -35,8 +41,12 @@ func (l *AlpacaLoader) Init() error {
 	return nil
 }
 
+func (l *AlpacaLoader) GetLoc() *time.Location {
+	return l.loc
+}
+
 func (l *AlpacaLoader) GetBars(ts timespan.TimeSpan) (models.Bars, error) {
-	return GetAlpacaBars(ts, l.security.Symbol, l.loc)
+	return GetAlpacaBars(ts, l.symbol, l.loc)
 }
 
 func (l *AlpacaLoader) GetDayBars(d date.Date) (models.Bars, error) {
@@ -63,7 +73,7 @@ func (l *AlpacaLoader) GetRunBars(
 	}
 
 	// runs begin at open time-of-day
-	startStr := fmt.Sprintf("%sT%s", d, l.security.Open)
+	startStr := fmt.Sprintf("%sT%s", d, alpacaExchangesOpen)
 	start, err := time.ParseInLocation(layout, startStr, l.loc)
 	if err != nil {
 		err = fmt.Errorf("failed to parse start time %s: %w", startStr, err)
@@ -72,7 +82,7 @@ func (l *AlpacaLoader) GetRunBars(
 	}
 
 	// runs ends at close time-of-day
-	endStr := fmt.Sprintf("%sT%s", d, l.security.Close)
+	endStr := fmt.Sprintf("%sT%s", d, alpacaExchangesClose)
 	end, err := time.ParseInLocation(layout, endStr, l.loc)
 	if err != nil {
 		err = fmt.Errorf("failed to parse end time %s: %w", endStr, err)
@@ -130,16 +140,11 @@ func compareBarByTimestamp(b *models.Bar, tgt time.Time) int {
 }
 
 func (l *AlpacaLoader) getDayBars(d date.Date) (models.Bars, error) {
-	loc, err := time.LoadLocation(l.security.TimeZone)
-	if err != nil {
-		return models.Bars{}, fmt.Errorf("time zone '%s' is invalid: %w", l.security.TimeZone, err)
-	}
-
-	start := d.In(loc)
-	end := d.Add(1).In(loc).Add(-time.Minute)
+	start := d.In(l.loc)
+	end := d.Add(1).In(l.loc).Add(-time.Minute)
 	ts := timespan.NewTimeSpan(start, end)
 
-	bars, err := GetAlpacaBars(ts, l.security.Symbol, l.loc)
+	bars, err := GetAlpacaBars(ts, l.symbol, l.loc)
 	if err != nil {
 		return models.Bars{}, err
 	}

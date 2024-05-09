@@ -13,6 +13,7 @@ import (
 type CSV struct {
 	writer     *csv.Writer
 	loc        *time.Location
+	localTZ    string
 	valNames   []string
 	record     []string
 	notFlushed int
@@ -20,10 +21,11 @@ type CSV struct {
 
 const timeCol = "time"
 
-func NewCSV(w io.Writer, loc *time.Location) *CSV {
+func NewCSV(w io.Writer, localTZ string) *CSV {
 	return &CSV{
 		writer:     csv.NewWriter(w),
-		loc:        loc,
+		loc:        nil,
+		localTZ:    localTZ,
 		valNames:   []string{},
 		record:     []string{},
 		notFlushed: 0,
@@ -31,6 +33,15 @@ func NewCSV(w io.Writer, loc *time.Location) *CSV {
 }
 
 func (rec *CSV) Init(valNames []string) error {
+	if rec.localTZ != "" {
+		loc, err := time.LoadLocation(rec.localTZ)
+		if err != nil {
+			return fmt.Errorf("failed to load location from local time zone '%s': %w", rec.localTZ, err)
+		}
+
+		rec.loc = loc
+	}
+
 	rec.valNames = valNames
 	rec.record = make([]string, 1+len(valNames))
 
@@ -47,7 +58,11 @@ func (rec *CSV) Init(valNames []string) error {
 }
 
 func (rec *CSV) Record(t time.Time, vals map[string]float64) {
-	rec.record[0] = t.In(rec.loc).String()
+	if rec.loc != nil {
+		t = t.In(rec.loc)
+	}
+
+	rec.record[0] = t.String()
 
 	missing := []string{}
 	for i, valName := range rec.valNames {

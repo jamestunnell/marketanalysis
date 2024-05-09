@@ -3,9 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -25,22 +23,6 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	security, appErr := a.securities.Store.Get(r.Context(), runReq.Symbol)
-	if appErr != nil {
-		handleAppErr(w, appErr)
-
-		return
-	}
-
-	loc, err := time.LoadLocation(security.TimeZone)
-	if err != nil {
-		action := fmt.Sprintf("load location from time zone '%s'", security.TimeZone)
-
-		handleAppErr(w, app.NewErrActionFailed(action, err.Error()))
-
-		return
-	}
-
 	keyVal := mux.Vars(r)[a.Store.GetInfo().KeyName]
 
 	cfg, appErr := a.Store.Get(r.Context(), keyVal)
@@ -50,11 +32,11 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	barsLoader := bars.NewAlpacaLoader(security)
+	barsLoader := bars.NewAlpacaLoader(runReq.Symbol)
 	buf := bytes.NewBuffer([]byte{})
-	recorder := recorders.NewCSV(buf, loc)
+	recorder := recorders.NewCSV(buf, runReq.LocalTZ)
 
-	err = graph.RunDay(security, runReq.Date, cfg, barsLoader, recorder)
+	err := graph.RunDay(runReq.Date, cfg, barsLoader, recorder)
 	if err != nil {
 		appErr := app.NewErrActionFailed("run graph", err.Error())
 
