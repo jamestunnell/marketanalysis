@@ -49,6 +49,11 @@ func main() {
 		return handlers.LoggingHandler(os.Stdout, next)
 	}
 
+	// router.Use(handlers.CORS(
+	// 	handlers.AllowedOrigins([]string{"*"}),
+	// 	handlers.AllowedMethods([]string{"*"}),
+	// 	handlers.AllowedHeaders([]string{"Authorization", "Content-Type"}),
+	// ))
 	router.Use(mux.MiddlewareFunc(loggingMiddleware))
 
 	api.BindAll(srv.GetRouter(), client.Database(DBName))

@@ -1,12 +1,20 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = '/api';
 
 const Delete = async (route) => {
-    return fetch(BASE_URL + route, {method: "DELETE"});
+    const url = BASE_URL + route;
+
+    console.log("fetch DELETE %s", url);
+
+    return fetch(url, {method: "DELETE"});
 }
 
 const Get = async (route) => {
+    const url = BASE_URL + route;
+
+    console.log("fetch GET %s", url);
+
     return fetch(
-        BASE_URL + route,
+        url,
         {
             method: "GET",
             headers: {
@@ -17,8 +25,12 @@ const Get = async (route) => {
 }
 
 const Post = async ({route, content}) => {
+    const url = BASE_URL + route;
+
+    console.log("fetch POST %s", url);
+
     return fetch(
-        BASE_URL + route,
+        url,
         {
             method: "POST",
             headers: {
@@ -30,8 +42,12 @@ const Post = async ({route, content}) => {
 }
 
 const Put = async ({route, content}) => {
+    const url = BASE_URL + route;
+
+    console.log("fetch PUT %s", url);
+
     return fetch(
-        BASE_URL + route,
+        url,
         {
             method: "PUT",
             headers: {

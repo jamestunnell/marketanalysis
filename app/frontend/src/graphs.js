@@ -1,13 +1,13 @@
 import van from "vanjs-core"
 
-const {a, div, h3, li, ul} = van.tags
+import {Get} from './backend.js'
 
-const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
+const {a, div, li, ul} = van.tags
 
 const getGraphs = async () => {
     console.log("getting graphs");
 
-    const resp = await fetch(`${BASE_URL}/graphs`, {credentials: 'same-origin'});
+    const resp = await Get('/graphs');
 
     if (!resp.ok) {
         console.log("non-ok get graphs response %d: %s", resp.status, resp.text());

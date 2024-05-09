@@ -3,21 +3,21 @@ import context from "../context";
 
 const routes = [
   {
-    path: "/",
+    path: "",
     action: async (context) => {
       const { default: page } = await import("./home");
       return page(context);
     },
   },
   {
-    path: "/securities",
+    path: "securities",
     action: async (context) => {
       const { default: page } = await import("./securities");
       return page(context);
     },
   },
   {
-    path: "/graphs",
+    path: "graphs",
     action: async (context) => {
       const { default: page } = await import("./graphs");
       return page(context);

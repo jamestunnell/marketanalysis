@@ -7,7 +7,6 @@ import {ButtonAct, ButtonCancel} from './buttons.js'
 
 const {button, div, input, option, label, p, select} = van.tags
 
-const BASE_URL = `https://4002-debug-jamestunnel-marketanaly-7v91pin8jv5.ws-us110.gitpod.io`
 const TIME_ZONES = Intl.supportedValuesOf('timeZone');
 const TZ_NEW_YORK = "America/New_York";
 
@@ -34,7 +33,7 @@ const getSecurities = async () => {
 const updateSecurity = async (updatedItem) => {
     console.log("updating security", updatedItem);
 
-    const resp = await Put(`/securities/${updatedItem.symbol}`, updatedItem);
+    const resp = await Put({route: `/securities/${updatedItem.symbol}`, content: updatedItem});
     
     if (resp.status !== 204) {
         const errData = await resp.json();
@@ -55,7 +54,7 @@ const updateSecurity = async (updatedItem) => {
 const addSecurity = async (newItem) => {
     console.log("adding new security", newItem);
 
-    const resp = await Post('/securities', newItem);
+    const resp = await Post({route: '/securities', content: newItem});
 
     if (resp.status !== 204) {
         const errData = await resp.json();
@@ -76,7 +75,7 @@ const addSecurity = async (newItem) => {
 const delSecurity = async (symbol) => {
     console.log("deleting security %s", symbol);
 
-    const resp = await Delete(`/securities/${item.symbol}`);
+    const resp = await Delete(`/securities/${symbol}`);
                 
     if (resp.status !== 204) {
         console.log('failed to delete security', await resp.json());
@@ -87,7 +86,7 @@ const delSecurity = async (symbol) => {
     // Avoid Fetch failed loading
     await resp.text();
 
-    console.log('deleted security %s', item.symbol);
+    console.log('deleted security %s', symbol);
 
     return true;
 }
@@ -256,7 +255,7 @@ const SidebarItem = ({item, state}) => {
                                     closed.val = true;
                                 },
                                 onOK: async (updatedItem) => {
-                                    errData = await updateSecurity(updatedItem);
+                                    const errData = await updateSecurity(updatedItem);
                                     if (errData) {
                                         return errData;
                                     }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/app"
 )
@@ -21,10 +22,10 @@ func NewCRUDAPI[T app.Resource](s app.Store[T]) *CRUDAPI[T] {
 
 func (a *CRUDAPI[T]) Bind(r *mux.Router) {
 	r.HandleFunc(a.PluralRoute(), a.handlePlural).
-		Methods(http.MethodGet, http.MethodPost)
+		Methods(http.MethodGet, http.MethodPost) //, http.MethodOptions)
 
 	r.HandleFunc(a.SingularRoute(), a.handleSingle).
-		Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+		Methods(http.MethodGet, http.MethodPut, http.MethodDelete) //, http.MethodOptions)
 }
 
 func (a *CRUDAPI[T]) Get(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +38,8 @@ func (a *CRUDAPI[T]) handlePlural(w http.ResponseWriter, r *http.Request) {
 		a.GetAll(w, r)
 	case http.MethodPost:
 		a.Create(w, r)
+	default:
+		log.Error().Msgf("unexpected HTTP method %s", r.Method)
 	}
 }
 
@@ -48,6 +51,8 @@ func (a *CRUDAPI[T]) handleSingle(w http.ResponseWriter, r *http.Request) {
 		a.Update(w, r)
 	case http.MethodDelete:
 		a.Delete(w, r)
+	default:
+		log.Error().Msgf("unexpected HTTP method %s", r.Method)
 	}
 }
 
