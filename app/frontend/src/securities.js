@@ -2,6 +2,7 @@ import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
 import AppError from "./apperror.js"
+import {Delete, Get, Put, Post} from './backend.js'
 import {ButtonAct, ButtonCancel} from './buttons.js'
 
 const {button, div, input, option, label, p, select} = van.tags
@@ -13,54 +14,82 @@ const TZ_NEW_YORK = "America/New_York";
 const getSecurities = async () => {
     console.log("getting securities");
 
-    const resp = await fetch(`${BASE_URL}/securities`, {credentials: 'same-origin'});
+    const resp = await Get('/securities');
 
-    if (!resp.ok) {
-        console.log("non-ok get securities response %d: %s", resp.status, resp.text());
+    const d = await resp.json()
+
+    if (resp.status != 200) {
+        console.log("failed to get securities", d);
 
         return []
     }
+
+    const securities = d.securities;
+
+    console.log("received %d securities", securities.length);
+
+    return securities;
+}
+
+const updateSecurity = async (updatedItem) => {
+    console.log("updating security", updatedItem);
+
+    const resp = await Put(`/securities/${updatedItem.symbol}`, updatedItem);
     
-    const d = await resp.json()
+    if (resp.status !== 204) {
+        const errData = await resp.json();
 
-    console.log("get securities response JSON: %o", d)
+        console.log('failed to update security', errData);
+    
+        return errData;
+    }
 
-    return d.securities;
+    // Avoid Fetch failed loading
+    await resp.text();
+
+    console.log('udpated security', updatedItem);
+
+    return null;
 }
 
-const updateSecurity = async (item) => {
-    console.log("updating security", item);
+const addSecurity = async (newItem) => {
+    console.log("adding new security", newItem);
 
-    return await fetch(`${BASE_URL}/securities/${item.symbol}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json; charset=utf-8'
-        },
-        body: JSON.stringify(item),
-        credentials: 'same-origin'
-    });
-}
+    const resp = await Post('/securities', newItem);
 
-const addSecurity = async (item) => {
-    console.log("adding new security", item);
+    if (resp.status !== 204) {
+        const errData = await resp.json();
 
-    return await fetch(`${BASE_URL}/securities`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json; charset=utf-8'
-        },
-        body: JSON.stringify(item),
-        credentials: 'same-origin'
-    });
+        console.log('failed to add security', errData);
+    
+        return errData;
+    }
+
+    // Avoid Fetch failed loading
+    await resp.text();
+
+    console.log('added security', newItem);
+
+    return null
 }
 
 const delSecurity = async (symbol) => {
     console.log("deleting security %s", symbol);
 
-    return await fetch(`${BASE_URL}/securities/${symbol}`, {
-        method: 'DELETE',
-        credentials: 'same-origin'
-    });
+    const resp = await Delete(`/securities/${item.symbol}`);
+                
+    if (resp.status !== 204) {
+        console.log('failed to delete security', await resp.json());
+    
+        return false;
+    }
+
+    // Avoid Fetch failed loading
+    await resp.text();
+
+    console.log('deleted security %s', item.symbol);
+
+    return true;
 }
 
 const SecurityForm = ({title, onCancel, onOK, item}) => {
@@ -154,15 +183,10 @@ const AddNewButton = ({sidebar, state}) => {
                                 closed.val = true;
                             },
                             onOK: async (newItem) => {
-                                const resp = await addSecurity(newItem);
-
-                                if (resp.status !== 204) {
-                                    console.log('failed to add security', resp);
-                                
-                                    return await resp.json();
+                                const errData = await addSecurity(newItem);
+                                if (errData) {
+                                    return errData
                                 }
-
-                                console.log('added security', newItem);
 
                                 van.add(sidebar, SidebarItem({item: newItem, state: state}))
 
@@ -232,15 +256,10 @@ const SidebarItem = ({item, state}) => {
                                     closed.val = true;
                                 },
                                 onOK: async (updatedItem) => {
-                                    const resp = await updateSecurity(updatedItem);
-    
-                                    if (resp.status !== 204) {
-                                        console.log('failed to update security', resp);
-                                    
-                                        return await resp.json();
+                                    errData = await updateSecurity(updatedItem);
+                                    if (errData) {
+                                        return errData;
                                     }
-
-                                    console.log('udpated security', updatedItem);
 
                                     state.symbol.val = updatedItem.symbol;
                                     state.timeZone.val = updatedItem.timeZone;
@@ -262,19 +281,11 @@ const SidebarItem = ({item, state}) => {
                 )
             }
             state.deleteHook.val = async () => {
-                const resp = await delSecurity(item.symbol);
-                
-                if (resp.status !== 204) {
-                    console.log('failed to delete security', resp);
-                
-                    return;
+                if (await delSecurity(item.symbol)) {
+                    state.displayContent.val = false;
+
+                    deleted.val = true;
                 }
-
-                console.log('deleted security %s', item.symbol);
-
-                state.displayContent.val = false;
-
-                deleted.val = true;
             };
             state.symbol.val = itemState.symbol.val;
             state.timeZone.val = itemState.timeZone.val;
@@ -332,16 +343,12 @@ const Securities = () => {
 
     getSecurities().then(
         (items) => {
-            console.log("found %d securities", items.length);
-
             const sidebarItems = items.map(item => SidebarItem({item: item, state: state}));
 
             van.add(sidebarArea, sidebarItems);
             van.add(sidebarArea, AddNewButton({sidebar: sidebarArea, state: state}));
         }
-    ).catch(error => {
-        console.log("failed to get securities: " + error);
-    });
+    );
 
 
     return div(
