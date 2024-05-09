@@ -15,19 +15,17 @@ const getSecurities = async () => {
 
     const resp = await Get('/securities');
 
-    const d = await resp.json()
-
     if (resp.status != 200) {
-        console.log("failed to get securities", d);
+        console.log("failed to get securities", await resp.json());
 
         return []
     }
 
-    const securities = d.securities;
+    const d = await resp.json();
+    
+    console.log("received %d securities", d.securities.length);
 
-    console.log("received %d securities", securities.length);
-
-    return securities;
+    return d.securities;
 }
 
 const updateSecurity = async (updatedItem) => {
