@@ -2,6 +2,7 @@ import van from "vanjs-core"
 import { Route } from 'vanjs-router'
 import Securities from './src/securities.js'
 import Graphs from './src/graphs.js'
+import Graph from './src/graph.js'
 import NavBar from './src/navbar.js'
 
 const { div } = van.tags
@@ -15,10 +16,34 @@ const App = () => {
             NavBar({currentRoute: 'securities'}),
             Securities(),
         ),
-        Route({ name: 'graphs' },
-            NavBar({currentRoute: 'graphs'}),
-            Graphs(),
-        ),
+        () => {
+            const graphID = van.state('');
+            return Route(
+                {
+                    name: 'graphs',
+                    onFirst() {
+
+                    },
+                    onLoad(route) {
+                        if (route.args.length == 0) {
+                            return
+                        }
+
+                        graphID.val = route.args[0]
+                    }
+                },
+                NavBar({currentRoute: 'graphs'}),
+                () => {
+                    if (graphID.val === '') {
+                        return Graphs()
+                    }
+                    
+                    console.log(`graph ID set to ${graphID.val}`)
+
+                    return Graph(graphID.val)
+                }
+            )
+        },
     )
 }
 

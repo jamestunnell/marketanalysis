@@ -3,12 +3,12 @@ import { routeTo } from 'vanjs-router'
 
 const {  button, div, li, nav, ul } = van.tags
 
-const NavBarItem = ({text, route, currentRoute}) => {
+const NavBarItem = ({text, route, routeArgs, currentRoute}) => {
     const textCls = route === currentRoute ? "text-indigo-500": "hover:text-indigo-400";
     
     return li(
         {class: `md:px-4 md:py-2 ${textCls}`},
-        button({onclick: () => { routeTo(route) }}, text),
+        button({onclick: () => { routeTo(route, routeArgs) }}, text),
     )
 }
 
@@ -20,9 +20,9 @@ const NavBar = ({currentRoute}) => {
                 {class: "container flex text-gray-500 order-3 w-full"},
                 ul(
                     {class: "flex items-center font-semibold flex-wrap"},
-                    NavBarItem({text: 'Home', route: 'home', currentRoute: currentRoute}),
-                    NavBarItem({text: 'Securities', route: 'securities', currentRoute: currentRoute}),
-                    NavBarItem({text: 'Graphs', route: 'graphs', currentRoute: currentRoute}),
+                    NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute: currentRoute}),
+                    NavBarItem({text: 'Securities', route: 'securities', routeArgs: [], currentRoute: currentRoute}),
+                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [""], currentRoute: currentRoute}),
                 )
             )
         )
