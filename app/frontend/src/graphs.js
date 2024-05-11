@@ -4,7 +4,7 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
 
-import {Table, TableRow} from './table.js'
+import {Table} from './table.js'
 import {ButtonAct, ButtonCancel} from './buttons.js'
 import {Delete, Get, Post} from './backend.js'
 
