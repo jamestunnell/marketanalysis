@@ -64,12 +64,31 @@ const Graph = (id) => {
     const blockTableBody = tbody({class:"table-auto"});
     const connTableBody = tbody({class:"table-auto"});
 
+    const addBlockBtn = ButtonAct({
+        text: "Add Block",
+        onclick: () => {
+
+        },
+    })
+    
+    const addConnBtn = ButtonAct({
+        text: "Add Connection",
+        onclick: () => {
+
+        },
+    })
+
     const graphArea = div(
         {class: "p-6 w-full flex flex-col"},
         p({class: "text-2xl font-medium font-bold mb-4"}, name),
-        p({class: "text-lg font-medium mb-2"}, "Blocks"),
+        div(
+            {class: "flex flex-row-reverse p-4"},
+            addBlockBtn,
+            addConnBtn,
+        ),
+        p({class: "text-lg font-medium"}, "Blocks"),
         Table({columnNames: ["Name", "Type", "Param Vals", ""], tableBody: blockTableBody}),
-        p({class: "text-lg font-medium mb-2"}, "Connections"),
+        p({class: "text-lg font-medium"}, "Connections"),
         Table({columnNames: ["Source", "Target", ""], tableBody: connTableBody}),
     )
 

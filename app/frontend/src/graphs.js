@@ -188,7 +188,10 @@ const Graphs = () => {
     });
 
     return div(
-        addGraphBtn,
+        div(
+            {class: "flex flex-row-reverse p-4"},
+            addGraphBtn,
+        ),
         Table({columnNames: columnNames, tableBody: tableBody}),
     )
 }
