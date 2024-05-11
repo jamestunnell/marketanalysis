@@ -4,10 +4,11 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
 
+import {Table, TableRow} from './table.js'
 import {ButtonAct, ButtonCancel} from './buttons.js'
-import {Get, Post} from './backend.js'
+import {Delete, Get, Post} from './backend.js'
 
-const {button, div, h2, input, label, p} = van.tags
+const {div, input, label, p, tbody, td, tr} = van.tags
 
 const getGraphs = async () => {
     console.log("getting graphs");
@@ -38,68 +39,40 @@ const createGraph = async (item) => {
         return false
     }
 
+    // Avoid Fetch failed loading
+    await resp.text();
+
     console.log(`created graph %s`, item.id);
 
     return true;
 }
 
-// const delGraph = async (symbol) => {
-//     console.log("deleting graph");
+const deleteGraph = async (id) => {
+    console.log("deleting graph %s", id);
 
-//     const resp = await fetch(`${BASE_URL}/graphs/${symbol}`, {
-//         method: 'DELETE',
-//         credentials: 'same-origin'
-//     });
+    const resp = await Delete(`/graphs/${id}`);
 
-//     console.log('delete graph result:', resp.status)
+    if (resp.status != 204) {
+        console.log("failed to delete graph", await resp.json());
 
-//     return resp.status === 204 
-// }
+        return false
+    }
 
+    // Avoid Fetch failed loading
+    await resp.text();
 
-const Btn = ({onclick}) => {
-    return button(
-        {
-            class: "block rounded-lg p-6 border h-100 w-100",
-            onclick: onclick,
-        },
-    );
+    console.log(`deleted graph %s`, id);
+
+    return true;
 }
 
-const GraphCard = ({id, name}) => {
-    const deleted = van.state(false);
-    const viewBtn = ButtonAct({
-        text: "",
-        onclick: () => routeTo('graphs', [id]),
-    });
-    const deleteBtn = ButtonAct({
-        text: "",
-        onclick: () => deleted.val = true,
-    });
-
-    viewBtn.classList.add("fa-regular");
-    viewBtn.classList.add("fa-eye");
-
-    deleteBtn.classList.add("fa-solid");
-    deleteBtn.classList.add("fa-trash");
-
-    return () => deleted.val ? null : div(
-        {class: "block rounded-lg p-6 border h-250 w-250"},
-        p({class: "text-lg font-medium font-bold text-center mb-6"}, name),
-        viewBtn,
-        deleteBtn,
-    )
-}
-
-// const ID_PREVIEW_LEN = 8;
-
-// const truncateString = (id, len) => {
-//     if (id.length > len) {
-//         return id.substring(0, len) + "..."
-//     }
+const truncateString = (id, len) => {
+    if (id.length > len) {
+        return id.substring(0, len) + "..."
+    }
     
-//     return id
-// }
+    return id
+}
 
 const RandomName = () => {
     return uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] });
@@ -137,20 +110,55 @@ const GraphNameForm = ({onOK, onCancel}) => {
     )
 }
 
-const Graphs = () => {
-    const cardsArea = div(
-        {class:"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-10"},
+const GraphTableRow = ({id, name}) => {
+    const deleted = van.state(false)
+
+    const viewBtn = ButtonAct({
+        text: "",
+        onclick: () => routeTo('graphs', [id]),
+    });
+    const deleteBtn = ButtonAct({
+        text: "",
+        onclick: () => {
+            deleteGraph(id).then(ok => {
+                if (ok) {
+                    deleted.val = true
+                }
+            })
+        },
+    });
+
+    viewBtn.classList.add("fa-regular");
+    viewBtn.classList.add("fa-eye");
+
+    deleteBtn.classList.add("fa-solid");
+    deleteBtn.classList.add("fa-trash");
+
+    return () => deleted.val ? null : tr(
+        {class: "border border-solid"},
+        td({class: "px-6 py-4"}, truncateString(id, 8)),
+        td({class: "px-6 py-4"}, name),
+        td(
+            {class: "px-6 py-4"},
+            div({class:"flex flex-row"}, viewBtn, deleteBtn)
+        ),
     )
-    
+}
+
+const Graphs = () => {
+    const columnNames = ["ID", "Name", ""]
+    const tableBody = tbody({class:"table-auto"});
+
     getGraphs().then(
         (items) => {
-            const cards = items.map(item => GraphCard({id: item.id, name: item.name}));
+            const rows = items.map(item => GraphTableRow({id: item.id, name: item.name}));
 
-            van.add(cardsArea, cards);
+            van.add(tableBody, rows);
         }
     );
 
-    const addGraphBtn = Btn({
+    const addGraphBtn = ButtonAct({
+        text: "Add New",
         onclick: () => {
             const closed = van.state(false)
 
@@ -164,7 +172,7 @@ const Graphs = () => {
 
                             createGraph(graphItem).then((ok) => {
                                 if (ok) {
-                                    van.add(cardsArea, GraphCard({id: id, name: name}));
+                                    van.add(tableBody, GraphTableRow({id: id, name: name, }));
                                     
                                     closed.val = true;
                                 }
@@ -179,11 +187,10 @@ const Graphs = () => {
         },
     });
 
-    addGraphBtn.classList.add("fa-solid");
-    addGraphBtn.classList.add("fa-plus");
-    addGraphBtn.classList.add("order-last");
-
-    return van.add(cardsArea, addGraphBtn);
+    return div(
+        addGraphBtn,
+        Table({columnNames: columnNames, tableBody: tableBody}),
+    )
 }
 
 export default Graphs;
