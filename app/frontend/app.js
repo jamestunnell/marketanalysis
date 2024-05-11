@@ -13,6 +13,7 @@ const App = () => {
         ),
         () => {
             const graphID = van.state('');
+            
             return Route(
                 {
                     name: 'graphs',
@@ -21,13 +22,21 @@ const App = () => {
                     },
                     onLoad(route) {
                         if (route.args.length == 0) {
+                            graphID.val = '';
+
                             return
                         }
 
                         graphID.val = route.args[0]
                     }
                 },
-                NavBar({currentRoute: 'graphs'}),
+                () => {
+                    if (graphID.val === '') {
+                        return NavBar({currentRoute: 'graphs'})
+                    }
+
+                    return NavBar({currentRoute: `graphs/${graphID.val}`})
+                },
                 () => {
                     if (graphID.val === '') {
                         return Graphs()

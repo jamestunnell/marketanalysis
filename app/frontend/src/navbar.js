@@ -21,7 +21,7 @@ const NavBar = ({currentRoute}) => {
                 ul(
                     {class: "flex items-center font-semibold flex-wrap"},
                     NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute: currentRoute}),
-                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [""], currentRoute: currentRoute}),
+                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute: currentRoute}),
                 )
             )
         )
