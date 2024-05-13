@@ -1,12 +1,51 @@
 import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
+import { Get } from './backend.js'
 import {ButtonAct, ButtonCancel} from './buttons.js';
 
-const {div, input, label, p} = van.tags
+const {div, input, label, option, p, select} = van.tags
+
+const getBlockInfos = async () => {
+    console.log("getting block infos");
+
+    const resp = await Get('/blocks');
+
+    if (resp.status != 200) {
+        console.log("failed to get block infos", await resp.json());
+
+        return []
+    }
+
+    const d = await resp.json();
+
+    console.log(`received ${d.blocks.length} block infos`, d.blocks);
+
+    return d.blocks;
+}
 
 const BlockForm = ({name, type, onOK, onCancel}) => {
     const inputClass = "block px-5 py-5 mt-2 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+
+    const typeSelect = select({
+        id: "type",
+        class: inputClass,
+        oninput: (e) => type.val = e.target.value,
+    });
+    
+    getBlockInfos().then(blockInfos => {
+        van.add(typeSelect, blockInfos.map(info => {
+            const t = info.type;
+            
+            let props = {value: t}
+            
+            if (t === type.val) {
+                props.selected = "selected";
+            }
+
+            return option(props, t)
+        }))
+    });
 
     return div(
         {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
@@ -23,14 +62,7 @@ const BlockForm = ({name, type, onOK, onCancel}) => {
                     oninput: e => name.val = e.target.value,
                 }),
                 label({for: "type"}, "Type"),
-                input({
-                    id: "type",
-                    class: inputClass,
-                    type: "text",
-                    value: type,
-                    placeholder: "Valid block type",
-                    oninput: e => type.val = e.target.value,
-                }),
+                typeSelect,
             ),
         ),
         div(
