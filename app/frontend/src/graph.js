@@ -1,4 +1,5 @@
 import van from "vanjs-core"
+import { v4 as uuidv4 } from 'uuid';
 
 import {Get} from './backend.js'
 import {ButtonAct} from './buttons.js'
@@ -24,7 +25,7 @@ const getGraph = async (id) => {
     return d;
 }
 
-const BlockTableRow = ({name, type, paramVals, onDelete}) => {
+const BlockTableRow = ({name, type, onDelete}) => {
     const deleted = van.state(false);
     // const viewBtn = ButtonAct({
     //     text: "",
@@ -32,7 +33,11 @@ const BlockTableRow = ({name, type, paramVals, onDelete}) => {
     // });
     const deleteBtn = ButtonAct({
         text: "",
-        onclick: onDelete,
+        onclick: () => {
+            deleted.val = true;
+
+            onDelete();
+        },
     });
 
     // viewBtn.classList.add("fa-regular");
@@ -41,27 +46,25 @@ const BlockTableRow = ({name, type, paramVals, onDelete}) => {
     deleteBtn.classList.add("fa-solid");
     deleteBtn.classList.add("fa-trash");
 
-    return deleted.val ? null : tr(
-        {class: "border border-solid"},
-        td({class: "px-6 py-4"}, name),
-        td({class: "px-6 py-4"}, type),
-        td({class: "px-6 py-4"}, van.derive(() => JSON.stringify(paramVals.val))),
-        td(
-            {class: "px-6 py-4"},
-            div({class:"flex flex-row"}, deleteBtn)
-        ),
-    )
+    const buttons = div({class:"flex flex-row"}, deleteBtn);
+    const rowItems = [name, type, buttons]
+
+    return () => deleted.val ? null : TableRow(rowItems);
 }
 
-
 const ConnTableRow = ({source, target, onDelete}) => {
+    const deleted = van.state(false);
     // const viewBtn = ButtonAct({
     //     text: "",
     //     onclick: () => routeTo('graphs', [id]),
     // });
     const deleteBtn = ButtonAct({
         text: "",
-        onclick: onDelete,
+        onclick: () => {
+            deleted.val = true;
+
+            onDelete();
+        },
     });
 
     // viewBtn.classList.add("fa-regular");
@@ -69,19 +72,12 @@ const ConnTableRow = ({source, target, onDelete}) => {
 
     deleteBtn.classList.add("fa-solid");
     deleteBtn.classList.add("fa-trash");
+    
+    const buttons = div({class:"flex flex-row"}, deleteBtn);
+    const rowItems = [source, target, buttons];
 
-    return tr(
-        {class: "border border-solid"},
-        td({class: "px-6 py-4"}, name),
-        td({class: "px-6 py-4"}, type),
-        td({class: "px-6 py-4"}, paramVals ? paramVals.stringify(): ""),
-        td(
-            {class: "px-6 py-4"},
-            div({class:"flex flex-row"}, deleteBtn)
-        ),
-    )
+    return () => deleted.val ? null : TableRow(rowItems);
 }
-
 
 
 const Graph = (id) => {
@@ -117,7 +113,7 @@ const Graph = (id) => {
             addConnBtn,
         ),
         p({class: "text-lg font-medium"}, "Blocks"),
-        Table({columnNames: ["Name", "Type", "Param Vals", ""], tableBody: blockTableBody}),
+        Table({columnNames: ["Name", "Type", ""], tableBody: blockTableBody}),
         p({class: "text-lg font-medium"}, "Connections"),
         Table({columnNames: ["Source", "Target", ""], tableBody: connTableBody}),
     )
@@ -132,30 +128,38 @@ const Graph = (id) => {
         graph.name.val = g.name;
         graph.id.val = g.id;
 
-        for (var blkName in g.blocks) {
+        const blockRows = Object.keys(g.blocks).map(blkName => {
             const blk = van.state(Object.assign({}, g.blocks[blkName], {name: blkName}));
             const name = van.derive(() => blk.val.name);
-            const row = BlockTableRow({
+            
+            graph.blocks[blkName] = blk
+            
+            return BlockTableRow({
                 name: name,
                 type: van.derive(() => blk.val.type),
-                paramVals: van.derive(() => blk.val.paramVals || {}),
-                onDelete: () => {
-                    delete graph.blocks[name.val]
-                }
-            })
-
-            graph.blocks[blkName] = blk
-    
-            van.add(blockTableBody, row);
-        }
+                onDelete: () => delete graph.blocks[name.val],
+            });
+        });
         
-        for (var conn in g.connections) {
-            // conn.key = uuidv4();
+        const connRows = g.connections.map(c => {
+            console.log("found graph connection", c);
 
-            // console.log("adding conn to conns state", conn);
+            const id = uuidv4();
+            const conn = van.state(c);
             
-            // graph.connections[key] = van.state(conn);
-        }
+            graph.connections[id] = conn;
+
+            return ConnTableRow({
+                source: van.derive(() => conn.val.source),
+                target: van.derive(() => conn.val.target),
+                onDelete: () => delete graph.connections[id],
+            })
+        });
+
+        console.log("found %d graph connections", connRows.length);
+
+        van.add(blockTableBody, blockRows);
+        van.add(connTableBody, connRows);
     });
     
     return graphArea

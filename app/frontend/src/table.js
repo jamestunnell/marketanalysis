@@ -3,8 +3,7 @@ import van from "vanjs-core"
 const {div, table, td, th, thead, tr} = van.tags
 
 const TableRow = (rowItems) => {
-    const deleted = van.state(false)
-    return () => deleted.val ? null : tr(
+    return tr(
         {class: "border border-solid"},
         rowItems.map(x => td({class: "px-6 py-4"}, x)),
     )

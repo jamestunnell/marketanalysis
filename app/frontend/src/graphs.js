@@ -4,7 +4,7 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
 
-import {Table} from './table.js'
+import {Table, TableRow} from './table.js'
 import {ButtonAct, ButtonCancel} from './buttons.js'
 import {Delete, Get, Post} from './backend.js'
 
@@ -134,31 +134,24 @@ const GraphTableRow = ({id, name}) => {
     deleteBtn.classList.add("fa-solid");
     deleteBtn.classList.add("fa-trash");
 
-    return () => deleted.val ? null : tr(
-        {class: "border border-solid"},
-        td({class: "px-6 py-4"}, truncateString(id, 8)),
-        td({class: "px-6 py-4"}, name),
-        td(
-            {class: "px-6 py-4"},
-            div({class:"flex flex-row"}, viewBtn, deleteBtn)
-        ),
-    )
+    const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
+    const rowItems = [name, truncateString(id, 8), buttons];
+
+    return () => deleted.val ? null : TableRow(rowItems);
 }
 
 const Graphs = () => {
-    const columnNames = ["ID", "Name", ""]
+    const columnNames = ["Name", "ID", ""]
     const tableBody = tbody({class:"table-auto"});
 
-    getGraphs().then(
-        (items) => {
-            const rows = items.map(item => GraphTableRow({id: item.id, name: item.name}));
+    getGraphs().then((graphs) => {
+        const rows = graphs.map(g => GraphTableRow({id: g.id, name: g.name}));
 
-            van.add(tableBody, rows);
-        }
-    );
+        van.add(tableBody, rows);
+    });
 
-    const addGraphBtn = ButtonAct({
-        text: "Add New",
+    const newGraphBtn = ButtonAct({
+        text: "New Graph",
         onclick: () => {
             const closed = van.state(false)
 
@@ -190,7 +183,7 @@ const Graphs = () => {
     return div(
         div(
             {class: "flex flex-row-reverse p-4"},
-            addGraphBtn,
+            newGraphBtn,
         ),
         Table({columnNames: columnNames, tableBody: tableBody}),
     )
