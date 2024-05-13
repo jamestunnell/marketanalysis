@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "node-fetch": "^3.3.2",
+    "object-hash": "^3.0.0",
     "unique-names-generator": "^4.7.1",
     "uuid": "^9.0.1",
     "vanjs-core": "^1.5.0",

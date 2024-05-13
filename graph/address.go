@@ -61,6 +61,12 @@ func (addr *Address) Parse(s string) error {
 		return fmt.Errorf("'%s' not formated as <A>.<B>", s)
 	}
 
+	for _, sub := range substrings {
+		if sub == "" {
+			return fmt.Errorf("address contains empty substring")
+		}
+	}
+
 	addr.A = substrings[0]
 
 	if n == 2 {

@@ -8,7 +8,7 @@ import {Table, TableRow} from './table.js'
 import {ButtonAct, ButtonCancel} from './buttons.js'
 import {Delete, Get, Post} from './backend.js'
 
-const {div, input, label, p, tbody, td, tr} = van.tags
+const {div, input, label, p, tbody} = van.tags
 
 const getGraphs = async () => {
     console.log("getting graphs");
@@ -82,7 +82,7 @@ const GraphNameForm = ({onOK, onCancel}) => {
     const name = van.state(RandomName())
 
     return div(
-        {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-200 rounded-md"},
+        {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Name"),
         div(
             div(
@@ -161,7 +161,7 @@ const Graphs = () => {
                     GraphNameForm({
                         onOK: ({name})=> {
                             const id  = uuidv4();
-                            const graphItem = {id: id, name: name, blocks: {}, connections: []};
+                            const graphItem = {id: id, name: name, blocks: [], connections: []};
 
                             createGraph(graphItem).then((ok) => {
                                 if (ok) {

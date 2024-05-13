@@ -1,36 +1,31 @@
 import van from "vanjs-core"
+import {Modal} from "vanjs-ui"
 
-const { div, h2, p } = van.tags
+import { ButtonAct } from "./buttons"
 
-const AppError = ({type, msg, details, hidden}) => {
-    const divClass = van.derive(() => {
-        return `text-red-500 space-y-6 ${hidden.val ? "hidden" : ""}`
-    });
-    const title = van.derive(() => {
-        switch (type.val) {
-            case "InvalidInput":
-                return "Invalid Input Error"
-            case "NotFound":
-                return "Not Found Error"
-            case "ActionFailed":
-                return "Server Action Error"
-        }
+const { div, p } = van.tags
 
-        return "Unknown Error"
-    });
-    const detailsCombined = van.derive(() => details.val.join(", "));
-
-    return div(
-        {class: divClass},
-        h2({class: "text-2xl font-bold"}, title),
-        div(
-            {class: "grid grid-cols-2 gap-4"},
-            "Message",
-            p(msg),
-            "Details",
-            p(detailsCombined),
+const DoAppErrorModal = (appErr) => {
+    const closed = van.state(false)
+    
+    van.add(
+        document.body,
+        Modal({closed},
+            div(
+                {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
+                p({class: "text-2xl font-medium font-bold text-center"}, `Error: ${appErr.title}`),
+                p({class: "text-lg font-medium"}, appErr.message),
+                div(
+                    {class: "flex flex-col overflow-auto p-3"},
+                    appErr.details.map(detail => p(detail)),
+                ),
+                div(
+                    {class:"mt-4 flex justify-center"},
+                    ButtonAct({text: "OK", onclick: ()=>closed.val = true}),
+                ),
+            )
         ),
-    )
-};
+    );
+}
 
-export default AppError;
+export {DoAppErrorModal};
