@@ -25,19 +25,14 @@ const getGraph = async (id) => {
 }
 
 const BlockTableRow = ({name, type, paramVals, onDelete}) => {
-    const deleted = van.state(false)
-
+    const deleted = van.state(false);
     // const viewBtn = ButtonAct({
     //     text: "",
     //     onclick: () => routeTo('graphs', [id]),
     // });
     const deleteBtn = ButtonAct({
         text: "",
-        onclick: () => {
-            onDelete()
-            
-            deleted.val = true
-        },
+        onclick: onDelete,
     });
 
     // viewBtn.classList.add("fa-regular");
@@ -46,7 +41,36 @@ const BlockTableRow = ({name, type, paramVals, onDelete}) => {
     deleteBtn.classList.add("fa-solid");
     deleteBtn.classList.add("fa-trash");
 
-    return () => deleted.val ? null : tr(
+    return deleted.val ? null : tr(
+        {class: "border border-solid"},
+        td({class: "px-6 py-4"}, name),
+        td({class: "px-6 py-4"}, type),
+        td({class: "px-6 py-4"}, van.derive(() => JSON.stringify(paramVals.val))),
+        td(
+            {class: "px-6 py-4"},
+            div({class:"flex flex-row"}, deleteBtn)
+        ),
+    )
+}
+
+
+const ConnTableRow = ({source, target, onDelete}) => {
+    // const viewBtn = ButtonAct({
+    //     text: "",
+    //     onclick: () => routeTo('graphs', [id]),
+    // });
+    const deleteBtn = ButtonAct({
+        text: "",
+        onclick: onDelete,
+    });
+
+    // viewBtn.classList.add("fa-regular");
+    // viewBtn.classList.add("fa-eye");
+
+    deleteBtn.classList.add("fa-solid");
+    deleteBtn.classList.add("fa-trash");
+
+    return tr(
         {class: "border border-solid"},
         td({class: "px-6 py-4"}, name),
         td({class: "px-6 py-4"}, type),
@@ -59,8 +83,14 @@ const BlockTableRow = ({name, type, paramVals, onDelete}) => {
 }
 
 
+
 const Graph = (id) => {
-    const name = van.state("");
+    const graph = {
+        id: van.state(id),
+        name: van.state(""),
+        connections: {},
+        blocks: {},
+    };
     const blockTableBody = tbody({class:"table-auto"});
     const connTableBody = tbody({class:"table-auto"});
 
@@ -94,44 +124,38 @@ const Graph = (id) => {
 
     console.log(`viewing graph ${id}`)
 
-    getGraph(id).then(graph => {
-        if (!graph) {
+    getGraph(id).then(g => {
+        if (!g) {
             return
         }
 
-        name.val = graph.name;
+        graph.name.val = g.name;
+        graph.id.val = g.id;
 
-        if (graph.blocks) {
-            for (var blkName in graph.blocks) {
-                const blk = graph.blocks[blkName];
-                const row = BlockTableRow({
-                    name: blkName,
-                    type: blk.type,
-                    paramVals: blk.paramVals,
-                    onDelete: () => {
+        for (var blkName in g.blocks) {
+            const blk = van.state(Object.assign({}, g.blocks[blkName], {name: blkName}));
+            const name = van.derive(() => blk.val.name);
+            const row = BlockTableRow({
+                name: name,
+                type: van.derive(() => blk.val.type),
+                paramVals: van.derive(() => blk.val.paramVals || {}),
+                onDelete: () => {
+                    delete graph.blocks[name.val]
+                }
+            })
 
-                    }
-                });
-
-                van.add(blockTableBody, row);
-            }
+            graph.blocks[blkName] = blk
+    
+            van.add(blockTableBody, row);
         }
         
-        for (var conn in graph.connections) {
-            const row = ConnTableRow({
-                source: conn.source,
-                target: conn.target,
-                onDelete: () => {
+        for (var conn in g.connections) {
+            // conn.key = uuidv4();
 
-                }
-            });
-
-            van.add(connTableBody, row);
+            // console.log("adding conn to conns state", conn);
+            
+            // graph.connections[key] = van.state(conn);
         }
-
-        // if (graph.connections) {
-        //     connCount = graph.connections.length;
-        // }
     });
     
     return graphArea
