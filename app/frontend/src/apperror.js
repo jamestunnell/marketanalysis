@@ -1,7 +1,7 @@
 import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
-import { ButtonAct } from "./buttons"
+import { Button } from "./buttons"
 
 const { div, p } = van.tags
 
@@ -21,7 +21,7 @@ const DoAppErrorModal = (appErr) => {
                 ),
                 div(
                     {class:"mt-4 flex justify-center"},
-                    ButtonAct({text: "OK", onclick: ()=>closed.val = true}),
+                    Button({child: "OK", onclick: ()=>closed.val = true}),
                 ),
             )
         ),

@@ -2,11 +2,12 @@ import van from "vanjs-core"
 import { routeTo } from 'vanjs-router'
 import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
-import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
+import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
-import {Table, TableRow} from './table.js'
-import {ButtonAct, ButtonCancel, ButtonDelete, ButtonView} from './buttons.js'
 import {Delete, Get, Post} from './backend.js'
+import { Button, ButtonCancel, ButtonDanger } from "./buttons.js";
+import {IconDelete, IconView} from './icons.js'
+import {Table, TableRow} from './table.js'
 
 const {div, input, label, p, tbody} = van.tags
 
@@ -75,7 +76,7 @@ const truncateString = (id, len) => {
 }
 
 const RandomName = () => {
-    return uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] });
+    return uniqueNamesGenerator({ dictionaries: [adjectives, animals] });
 }
 
 const GraphNameForm = ({onOK, onCancel}) => {
@@ -95,13 +96,8 @@ const GraphNameForm = ({onOK, onCancel}) => {
         }),
         div(
             {class:"mt-4 flex justify-center"},
-            ButtonCancel({text: "Cancel", onclick: () => onCancel()}),
-            ButtonAct({
-                text: "OK",
-                onclick: async () => {
-                    onOK({name: name.val})
-                },
-            }),
+            ButtonCancel({child: "Cancel", onclick: onCancel}),
+            Button({child: "OK", onclick: ()=> onOK({name: name.val})}),
         ),
     )
 }
@@ -109,20 +105,20 @@ const GraphNameForm = ({onOK, onCancel}) => {
 const GraphTableRow = ({id, name}) => {
     const deleted = van.state(false)
 
-    const viewBtn = ButtonView(() => routeTo('graphs', [id]));
-    const deleteBtn = ButtonDelete(() => {
-        deleteGraph(id).then(ok => {
-            if (ok) {
-                deleted.val = true
-            }
-        })
+    const viewBtn = Button({
+        child: IconView(),
+        onclick: () => routeTo('graphs', [id]),
     });
-
-    viewBtn.classList.add("fa-regular");
-    viewBtn.classList.add("fa-eye");
-
-    deleteBtn.classList.add("fa-solid");
-    deleteBtn.classList.add("fa-trash");
+    const deleteBtn = ButtonDanger({
+        child: IconDelete(),
+        onclick: () => {
+            deleteGraph(id).then(ok => {
+                if (ok) {
+                    deleted.val = true
+                }
+            })
+        },
+    });
 
     const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
     const rowItems = [name, truncateString(id, 8), buttons];
@@ -140,8 +136,8 @@ const Graphs = () => {
         van.add(tableBody, rows);
     });
 
-    const newGraphBtn = ButtonAct({
-        text: "New Graph",
+    const newGraphBtn = Button({
+        child: "New Graph",
         onclick: () => {
             const closed = van.state(false)
 
@@ -172,7 +168,7 @@ const Graphs = () => {
 
     return div(
         div(
-            {class: "flex flex-row-reverse p-4"},
+            {class: "container flex flex-row-reverse p-4"},
             newGraphBtn,
         ),
         Table({columnNames: columnNames, tableBody: tableBody}),

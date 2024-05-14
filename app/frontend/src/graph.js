@@ -2,12 +2,15 @@ import van from "vanjs-core"
 import { v4 as uuidv4 } from 'uuid';
 import hash from 'object-hash';
 
-import { Get, Put } from './backend.js';
 import { DoAppErrorModal} from './apperror.js';
+import { Get, Put } from './backend.js';
 import { DoBlockModal } from "./block.js";
-import { ButtonAdd, ButtonDelete, ButtonSave, ButtonView } from './buttons.js';
+import { Button, ButtonDanger } from "./buttons.js";
 import { DoConnectionModal } from "./connection.js";
+import { DownloadJSON } from "./download.js";
+import { IconAdd, IconDelete, IconExport, IconImport, IconSave, IconView } from "./icons.js";
 import { Table, TableRow } from './table.js';
+import { UploadJSON } from "./upload.js";
 
 const {div, p, tbody} = van.tags
 
@@ -29,34 +32,43 @@ const getGraph = async (id) => {
     return d;
 }
 
-const putGraph = async (graph) => {
+const putGraph = async ({graph, onSuccess, onErr}) => {
     console.log("saving graph", graph);
 
-    const resp = await Put({route:`/graphs/${graph.id}`, content: graph});
+    try {
+        const resp = await Put({route:`/graphs/${graph.id}`, content: graph});
 
-    if (resp.status != 204) {
-        const appErr = await resp.json()
+        if (resp.status != 204) {
+            const appErr = await resp.json()
+            
+            console.log("failed to save graph", appErr);
+
+            onErr(appErr);
+
+            return;
+        }
+
+        // Avoid Fetch failed loading
+        await resp.text();
         
-        console.log("failed to save graph", appErr);
+        console.log("saved graph", graph);
 
-        return appErr;
+        onSuccess();
+    } catch(err) {
+        console.log("failed to complete fetch", err)
     }
-
-    // Avoid Fetch failed loading
-    await resp.text();
-    
-    console.log("saved graph", graph);
-
-    return null;
 }
 
 const BlockTableRow = ({name, type, onView, onDelete}) => {
     const deleted = van.state(false);
-    const viewBtn = ButtonView(onView);
-    const deleteBtn = ButtonDelete(() => {
-        deleted.val = true;
+    const viewBtn = Button({child: IconView(), onclick: onView});
+    const deleteBtn = ButtonDanger({
+        child: IconDelete(),
+        onclick: () => {
+            deleted.val = true;
 
-        onDelete();
+            onDelete();
+        },
     });
 
     const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
@@ -67,15 +79,15 @@ const BlockTableRow = ({name, type, onView, onDelete}) => {
 
 const ConnTableRow = ({source, target, onView, onDelete}) => {
     const deleted = van.state(false);
-    const viewBtn = ButtonView(onView);
-    const deleteBtn = ButtonDelete(() => {
-        deleted.val = true;
+    const viewBtn = Button({child: IconView(), onclick: onView});
+    const deleteBtn = ButtonDanger({
+        child: IconDelete(),
+        onclick: () => {
+            deleted.val = true;
 
-        onDelete();
+            onDelete();
+        },
     });
-
-    viewBtn.classList.add("fa-regular","fa-eye");
-    deleteBtn.classList.add("fa-solid","fa-trash");
     
     const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
     const rowItems = [source, target, buttons];
@@ -88,6 +100,7 @@ const Graph = (id) => {
         name: van.state(""),
         connections: {},
         blocks: {},
+        changed: van.state(false),
     };
     const blockTableBody = tbody({class:"table-auto"});
     const connTableBody = tbody({class:"table-auto"});
@@ -101,18 +114,20 @@ const Graph = (id) => {
         return BlockTableRow({
             name: van.derive(() => blk.val.name),
             type: van.derive(() => blk.val.type),
-            onDelete: () => delete graph.blocks[id],
+            onDelete: () => {
+                delete graph.blocks[id]
+
+                graph.changed.val = true;
+            },
             onView: () => {
                 DoBlockModal({
                     block: blk.val,
                     handleResult: (block2) => {
                         if (hash(blk.val) === hash(block2)) {
-                            console.log('no block change detected');
-
                             return
                         }
 
-                        console.log('updating block', block2);
+                        graph.changed.val = true
 
                         blk.val = block2;
                     },
@@ -129,18 +144,20 @@ const Graph = (id) => {
         return ConnTableRow({
             source: van.derive(() => conn.val.source),
             target: van.derive(() => conn.val.target),
-            onDelete: () => delete graph.connections[id],
+            onDelete: () => {
+                delete graph.connections[id]
+
+                graph.changed.val = true;
+            },
             onView: () => {
                 DoConnectionModal({
                     connection: conn.val,
                     handleResult: (connection2) => {
                         if (hash(conn.val) === hash(connection2)) {
-                            console.log('no connection change detected');
-
                             return
                         }
 
-                        console.log('updating connection', connection2);
+                        graph.changed.val = true
 
                         conn.val = connection2;
                     },
@@ -148,61 +165,133 @@ const Graph = (id) => {
             },
         });
     }
-    
-    const addBlockBtn = ButtonAdd(() => {
-        DoBlockModal({
-            block: {name: "", type: "", paramVals: {}, recording: []},
-            handleResult: (b) => {
-                van.add(blockTableBody, makeBlockRow(b));
-            },
-        });
-    });
-    const addConnBtn = ButtonAdd(() => {
-        DoConnectionModal({
-            connection: {source: "", target: ""},
-            handleResult: (c) => {
-                console.log('adding new connection', c);
-
-                van.add(connTableBody, makeConnRow(c));
-            },
-        });
-    });
-
-    const saveBtn = ButtonSave(() => {
+    const makeGraph = () => {
         const blocks = Object.keys(graph.blocks).map(id => graph.blocks[id].val)
         const conns = Object.keys(graph.connections).map(id => graph.connections[id].val);
-        const g = {
+        
+        return {
             id: id,
             name: graph.name.val,
             blocks: blocks,
             connections: conns,
         }
+    }
+    const loadGraph = (g) => {
+        if (hash(g) === hash(makeGraph())) {
+            console.log('loaded graph is identical to existing, ignoring')
 
-        putGraph(g).then(appErr => {
-            if (appErr) {
-                DoAppErrorModal(appErr);
-            }
-        });
+            return
+        }
+
+        graph.name.val = g.name;
+
+        // clear existing block & connection rows
+        while (blockTableBody.firstChild) {
+            blockTableBody.removeChild(blockTableBody.firstChild)
+        }
+
+        while (connTableBody.firstChild) {
+            connTableBody.removeChild(connTableBody.firstChild)
+        }
+
+        graph.blocks = {}
+        graph.connections = {}
+
+        van.add(blockTableBody, g.blocks.map(b => makeBlockRow(b)));
+        van.add(connTableBody, g.connections.map(c => makeConnRow(c)));
+        
+        graph.changed.val = true
+    }
+
+    const addBlockBtn = Button({
+        child: IconAdd(),
+        onclick: () => {
+            DoBlockModal({
+                block: {name: "", type: "", paramVals: {}, recording: []},
+                handleResult: (b) => {
+                    graph.changed.val = true
+
+                    van.add(blockTableBody, makeBlockRow(b));
+                },
+            });
+        },
+    });
+    const addConnBtn = Button({
+        child: IconAdd(),
+        onclick: () => {
+            DoConnectionModal({
+                connection: {source: "", target: ""},
+                handleResult: (c) => {
+                    graph.changed.val = true
+
+                    van.add(connTableBody, makeConnRow(c));
+                },
+            });        
+        },
+    });
+    const saveBtn = Button({
+        child: IconSave(),
+        disabled: van.derive(() => !graph.changed.val),
+        onclick: () => {
+            putGraph({
+                graph: makeGraph(),
+                onErr: (appErr) => DoAppErrorModal(appErr),
+                onSuccess: () => graph.changed.val = false,
+            });
+        },
+    });
+    const exportBtn = Button({
+        child: IconExport(),
+        onclick: () => DownloadJSON({obj: makeGraph(), name: graph.name.val}),
+    });
+    const importBtn = Button({
+        child: IconImport(),
+        onclick: () => {
+            UploadJSON({
+                onSuccess: (g) => {
+                    console.log("file imported successfully")
+
+                    if (g.id === id) {
+                        loadGraph(g)
+
+                        return
+                    }
+                        
+                    DoAppErrorModal({
+                        title: "Invalid Input",
+                        message: "Graph IDs do not match",
+                        details: ["Go to the Graphs page to import as a different graph."],
+                    })
+                },
+                onErr: (appErr) => DoAppErrorModal(appErr),
+            })
+        }
     });
 
     const graphArea = div(
-        {class: "p-6 w-full flex flex-col"},
+        {class: "container p-6 w-full flex flex-col"},
         div(
-            {class: "flex flex-row p-4"},
-            p({class: "text-2xl font-medium font-bold mb-4"}, graph.name),
-            saveBtn,
-            // exportBtn,
-            // importBtn,
+            {class: "grid grid-cols-2"},
+            div(
+                {class: "flex flex-row p-4"},
+                p({class: "text-2xl font-medium font-bold"}, graph.name),
+            ),
+            div(
+                {class: "flex flex-row-reverse p-4"},
+                exportBtn,
+                saveBtn,
+                importBtn,
+            ),
         ),
         div(
             {class: "flex flex-row p-4"},
-            p({class: "text-lg font-medium"}, "Blocks"),
+            p({class: "text-xl font-medium"}, "Blocks"),
             addBlockBtn,
         ),
         Table({columnNames: ["Name", "Type", ""], tableBody: blockTableBody}),
         div(
             {class: "flex flex-row p-4"},
-            p({class: "text-lg font-medium"}, "Connections"),
+            p({class: "text-xl font-medium"}, "Connections"),
             addConnBtn,
         ),
         Table({columnNames: ["Source", "Target", ""], tableBody: connTableBody}),
@@ -215,10 +304,9 @@ const Graph = (id) => {
             return
         }
 
-        graph.name.val = g.name;
+        loadGraph(g);
 
-        van.add(blockTableBody, g.blocks.map(b => makeBlockRow(b)));
-        van.add(connTableBody, g.connections.map(c => makeConnRow(c)));
+        graph.changed.val = false
     });
     
     return graphArea

@@ -2,72 +2,47 @@ import van from "vanjs-core"
 
 const { button } = van.tags
 
-const ButtonAdd = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-solid", "fa-plus");
-
-    return btn;
+const Button = ({child, onclick, disabled}) => {
+    return buttonDisableable({
+        child: child,
+        onclick: onclick,
+        disabled: disabled,
+        classNormal: 'rounded-md p-3 m-1 text-white bg-indigo-500 hover:bg-indigo-600',
+        classDisabled: 'rounded-md p-3 m-1 text-white bg-indigo-300 cursor-not-allowed',
+    })
 }
 
-const ButtonDelete = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-solid", "fa-trash");
-
-    return btn;
+const ButtonDanger = ({child, onclick, disabled}) => {
+    return buttonDisableable({
+        child: child,
+        onclick: onclick,
+        disabled: disabled,
+        classNormal: 'rounded-md p-3 m-1 text-white bg-pink-500 hover:bg-pink-600',
+        classDisabled: 'rounded-md p-3 m-1 text-white bg-pink-300 cursor-not-allowed',
+    })
 }
 
-const ButtonExport = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-solid", "fa-file-export");
-
-    return btn;
-}
-
-const ButtonImport = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-solid", "fa-file-import");
-
-    return btn;
-}
-
-const ButtonSave = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-solid", "fa-floppy-disk");
-
-    return btn
-}
-
-const ButtonView = (onclick) => {
-    const btn = ButtonAct({text: "", onclick: onclick});
-
-    btn.classList.add("fa-regular", "fa-eye");
-    
-    return btn
-}
-
-const ButtonAct = ({text, onclick}) => {
+const ButtonCancel = ({child, onclick}) => {
     return button(
         {
-            class: `bg-indigo-500 p-3 m-1 rounded-md text-white hover:bg-indigo-400`,
+            class: 'rounded-md p-3 m-1 text-black bg-gray-200 hover:bg-gray-300',
             onclick: onclick,
         },
-        text,
+        child,
     );
 }
 
-const ButtonCancel = ({text, onclick}) => {
+const buttonDisableable = ({child, onclick, disabled, classNormal, classDisabled}) => {
     return button(
         {
-            class: "bg-gray-100 p-3 m-1 rounded-md text-black hover:bg-gray-200",
+            class: van.derive(() => {
+                return disabled ? (disabled.val ? classDisabled : classNormal) : classNormal
+            }),
             onclick: onclick,
+            disabled: disabled,
         },
-        text,
-    )
+        child,
+    );
 }
 
-export { ButtonAdd, ButtonDelete, ButtonExport, ButtonImport, ButtonSave, ButtonView, ButtonAct, ButtonCancel };
+export { Button, ButtonDanger, ButtonCancel };

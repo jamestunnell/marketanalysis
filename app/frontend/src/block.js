@@ -2,7 +2,7 @@ import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
 import { Get } from './backend.js'
-import {ButtonAct, ButtonCancel} from './buttons.js';
+import {Button, ButtonCancel} from './buttons.js';
 
 const {div, input, label, option, p, select} = van.tags
 
@@ -63,8 +63,8 @@ const BlockForm = ({name, type, onOK, onCancel}) => {
         typeSelect,
         div(
             {class:"mt-4 flex justify-center"},
-            ButtonCancel({text: "Cancel", onclick: onCancel}),
-            ButtonAct({text: "OK", onclick: onOK}),
+            ButtonCancel({onclick: onCancel, child: "Cancel"}),
+            Button({onclick: onOK, child: "OK"}),
         ),
     )
 }

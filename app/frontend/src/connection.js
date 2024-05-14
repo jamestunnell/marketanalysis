@@ -1,7 +1,7 @@
 import van from "vanjs-core"
 import {Modal} from "vanjs-ui"
 
-import {ButtonAct, ButtonCancel} from './buttons.js';
+import {Button, ButtonCancel} from './buttons.js';
 
 const {div, input, label, p} = van.tags
 
@@ -31,8 +31,8 @@ const ConnectionForm = ({source, target, onOK, onCancel}) => {
         }),
         div(
             {class:"mt-4 flex justify-center"},
-            ButtonCancel({text: "Cancel", onclick: onCancel}),
-            ButtonAct({text: "OK", onclick: onOK}),
+            ButtonCancel({onclick: onCancel, child: "Cancel"}),
+            Button({onclick: onOK, child: "OK"}),
         ),
     )
 }
