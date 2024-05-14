@@ -25,7 +25,7 @@ const getBlockInfos = async () => {
 }
 
 const BlockForm = ({name, type, onOK, onCancel}) => {
-    const inputClass = "block px-5 py-5 mt-2 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+    const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
 
     const typeSelect = select({
         id: "type",
@@ -48,23 +48,19 @@ const BlockForm = ({name, type, onOK, onCancel}) => {
     });
 
     return div(
-        {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
+        {class: "flex flex-col rounded-md space-y-4"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Block"),
-        div(
-            div(
-                label({for: "name"}, "Name"),
-                input({
-                    id: "name",
-                    class: inputClass,
-                    type: "text",
-                    value: name,
-                    placeholder: "Non-empty, unique",
-                    oninput: e => name.val = e.target.value,
-                }),
-                label({for: "type"}, "Type"),
-                typeSelect,
-            ),
-        ),
+        label({for: "name"}, "Name"),
+        input({
+            id: "name",
+            class: inputClass,
+            type: "text",
+            value: name,
+            placeholder: "Non-empty, unique",
+            oninput: e => name.val = e.target.value,
+        }),
+        label({for: "type"}, "Type"),
+        typeSelect,
         div(
             {class:"mt-4 flex justify-center"},
             ButtonCancel({text: "Cancel", onclick: onCancel}),

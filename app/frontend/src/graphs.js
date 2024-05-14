@@ -82,21 +82,17 @@ const GraphNameForm = ({onOK, onCancel}) => {
     const name = van.state(RandomName())
 
     return div(
-        {class: "flex flex-col drop-shadow hover:drop-shadow-lg rounded-md"},
+        {class: "flex flex-col rounded-md space-y-4"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Name"),
-        div(
-            div(
-                label({for: "name"}, "Name"),
-                input({
-                    id: "name",
-                    class: "block px-5 py-5 mt-2 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring",
-                    type: "text",
-                    value: name,
-                    placeholder: "Unique, non-empty name",
-                    oninput: e => name.val = e.target.value,
-                }),
-            ),
-        ),
+        label({for: "name"}, "Name"),
+        input({
+            id: "name",
+            class: "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring",
+            type: "text",
+            value: name,
+            placeholder: "Unique, non-empty name",
+            oninput: e => name.val = e.target.value,
+        }),
         div(
             {class:"mt-4 flex justify-center"},
             ButtonCancel({text: "Cancel", onclick: () => onCancel()}),

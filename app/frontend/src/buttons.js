@@ -6,6 +6,8 @@ const ButtonAdd = (onclick) => {
     const btn = ButtonAct({text: "", onclick: onclick});
 
     btn.classList.add("fa-solid", "fa-plus");
+
+    return btn;
 }
 
 const ButtonDelete = (onclick) => {
@@ -13,19 +15,23 @@ const ButtonDelete = (onclick) => {
 
     btn.classList.add("fa-solid", "fa-trash");
 
-    return btn
+    return btn;
 }
 
 const ButtonExport = (onclick) => {
     const btn = ButtonAct({text: "", onclick: onclick});
 
     btn.classList.add("fa-solid", "fa-file-export");
+
+    return btn;
 }
 
 const ButtonImport = (onclick) => {
     const btn = ButtonAct({text: "", onclick: onclick});
 
     btn.classList.add("fa-solid", "fa-file-import");
+
+    return btn;
 }
 
 const ButtonSave = (onclick) => {

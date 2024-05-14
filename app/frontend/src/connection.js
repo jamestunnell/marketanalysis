@@ -6,33 +6,29 @@ import {ButtonAct, ButtonCancel} from './buttons.js';
 const {div, input, label, p} = van.tags
 
 const ConnectionForm = ({source, target, onOK, onCancel}) => {
-    const inputClass = "block px-5 py-5 mt-2 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+    const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
 
     return div(
-        {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
+        {class: "flex flex-col rounded-md space-y-4"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Connection"),
-        div(
-            div(
-                label({for: "source"}, "Source Address"),
-                input({
-                    id: "source",
-                    class: inputClass,
-                    type: "text",
-                    value: source,
-                    placeholder: "<block.output>",
-                    oninput: e => source.val = e.target.value,
-                }),
-                label({for: "target"}, "Target Address"),
-                input({
-                    id: "target",
-                    class: inputClass,
-                    type: "text",
-                    value: target,
-                    placeholder: "<block.input>",
-                    oninput: e => target.val = e.target.value,
-                }),
-            ),
-        ),
+        label({for: "source"}, "Source Address"),
+        input({
+            id: "source",
+            class: inputClass,
+            type: "text",
+            value: source,
+            placeholder: "<block.output>",
+            oninput: e => source.val = e.target.value,
+        }),
+        label({for: "target"}, "Target Address"),
+        input({
+            id: "target",
+            class: inputClass,
+            type: "text",
+            value: target,
+            placeholder: "<block.input>",
+            oninput: e => target.val = e.target.value,
+        }),
         div(
             {class:"mt-4 flex justify-center"},
             ButtonCancel({text: "Cancel", onclick: onCancel}),
