@@ -18,6 +18,10 @@ const IconImport = () => {
     return i({class: "fa-solid fa-file-import"});
 }
 
+const IconPlay = () => {
+    return i({class: "fa-solid fa-play"});
+}
+
 const IconSave = () => {
     return i({class: "fa-solid fa-floppy-disk"});
 }
@@ -26,4 +30,4 @@ const IconView = () => {
     return i({class: "fa-solid fa-eye"});
 }
 
-export {IconAdd, IconDelete, IconExport, IconImport, IconSave, IconView};
+export {IconAdd, IconDelete, IconExport, IconImport, IconPlay, IconSave, IconView};

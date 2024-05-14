@@ -7,12 +7,14 @@ import { Get, Put } from './backend.js';
 import { DoBlockModal } from "./block.js";
 import { Button, ButtonDanger } from "./buttons.js";
 import { DoConnectionModal } from "./connection.js";
-import { DownloadJSON } from "./download.js";
-import { IconAdd, IconDelete, IconExport, IconImport, IconSave, IconView } from "./icons.js";
+import { DownloadCSV, DownloadJSON } from "./download.js";
+import { IconAdd, IconDelete, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
+import { RunGraph } from './rungraph.js'
 import { Table, TableRow } from './table.js';
 import { UploadJSON } from "./upload.js";
+import { Modal } from "vanjs-ui";
 
-const {div, p, tbody} = van.tags
+const {div, input, p, tbody} = van.tags
 
 const getGraph = async (id) => {
     console.log(`getting graph ${id}`);
@@ -229,6 +231,11 @@ const Graph = (id) => {
             });        
         },
     });
+    const runBtn = Button({
+        child: IconPlay(),
+        disabled: van.derive(() => graph.changed.val),
+        onclick: () => RunGraph(makeGraph()),
+    });
     const saveBtn = Button({
         child: IconSave(),
         disabled: van.derive(() => !graph.changed.val),
@@ -279,6 +286,7 @@ const Graph = (id) => {
             div(
                 {class: "flex flex-row-reverse p-4"},
                 exportBtn,
+                runBtn,
                 saveBtn,
                 importBtn,
             ),

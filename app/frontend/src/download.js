@@ -2,11 +2,8 @@ import van from "vanjs-core"
 
 const {a} = van.tags
 
-const DownloadJSON = ({name, obj}) => {
-    const d = JSON.stringify(obj, null, 2)
-    const blob = new Blob([d], {type: 'application/json; charset=utf-8;'})
+const Download = ({filename, blob}) => {
     const url = URL.createObjectURL(blob);
-    const filename = name + ".json";
     const link = a({href: url, download: filename})
 
     van.add(document.body, link);
@@ -16,6 +13,22 @@ const DownloadJSON = ({name, obj}) => {
     link.remove();
 
     URL.revokeObjectURL(url);
-}
+};
 
-export {DownloadJSON};
+const DownloadCSV = ({name, data}) => {
+    Download({
+        filename: name + ".csv",
+        blob: new Blob([data], {type: 'text/csv'}),
+    })
+};
+
+const DownloadJSON = ({name, obj}) => {
+    const jsonStr = JSON.stringify(obj, null, 2)
+
+    Download({
+        filename: name + ".json",
+        blob: new Blob([jsonStr], {type: 'application/json; charset=utf-8;'}),
+    })
+};
+
+export {Download, DownloadCSV, DownloadJSON};

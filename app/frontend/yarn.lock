@@ -334,6 +334,11 @@ uuid@^9.0.1:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
 
+vanillajs-datepicker@^1.3.4:
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/vanillajs-datepicker/-/vanillajs-datepicker-1.3.4.tgz#69b42f9106e944c248b7479249889ee1fd8465ef"
+  integrity sha512-waOyp2Ay+K1VA/B5cNlFgSNzFR9efCVKaoyMyNEAhAwmKLzMB9nCJs6Vqmo6HuHWA98VEHXbgz5thZ7hH/uohA==
+
 vanjs-core@^1.2.5, vanjs-core@^1.2.7, vanjs-core@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/vanjs-core/-/vanjs-core-1.5.0.tgz#e5d4280c12c1fd81b2b0ff661899c81dbde1467b"

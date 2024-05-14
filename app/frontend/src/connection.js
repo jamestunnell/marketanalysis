@@ -49,11 +49,7 @@ const DoConnectionModal = ({connection, handleResult}) => {
                 source: source,
                 target: target,
                 onOK: ()=> {
-                    console.log("pressed OK")
-
                     handleResult({source: source.val, target: target.val});
-
-                    console.log("closing modal")
 
                     closed.val = true;
                 },
