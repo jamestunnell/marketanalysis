@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
 
 import {Table, TableRow} from './table.js'
-import {ButtonAct, ButtonCancel} from './buttons.js'
+import {ButtonAct, ButtonCancel, ButtonDelete, ButtonView} from './buttons.js'
 import {Delete, Get, Post} from './backend.js'
 
 const {div, input, label, p, tbody} = van.tags
@@ -82,7 +82,7 @@ const GraphNameForm = ({onOK, onCancel}) => {
     const name = van.state(RandomName())
 
     return div(
-        {class: "flex flex-col drop-shadow hover:drop-shadow-lg w-300 rounded-md"},
+        {class: "flex flex-col drop-shadow hover:drop-shadow-lg rounded-md"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Name"),
         div(
             div(
@@ -113,19 +113,13 @@ const GraphNameForm = ({onOK, onCancel}) => {
 const GraphTableRow = ({id, name}) => {
     const deleted = van.state(false)
 
-    const viewBtn = ButtonAct({
-        text: "",
-        onclick: () => routeTo('graphs', [id]),
-    });
-    const deleteBtn = ButtonAct({
-        text: "",
-        onclick: () => {
-            deleteGraph(id).then(ok => {
-                if (ok) {
-                    deleted.val = true
-                }
-            })
-        },
+    const viewBtn = ButtonView(() => routeTo('graphs', [id]));
+    const deleteBtn = ButtonDelete(() => {
+        deleteGraph(id).then(ok => {
+            if (ok) {
+                deleted.val = true
+            }
+        })
     });
 
     viewBtn.classList.add("fa-regular");
