@@ -22,14 +22,20 @@ import (
 )
 
 const (
-	DBName      = "marketanalysis"
-	DefaultPort = 4002
+	DBName       = "marketanalysis"
+	DefaultPort  = 4002
+	DefaultDebug = false
 )
 
 type AppVariables struct {
-	Debug  bool
-	Port   int
-	DBConn string
+	Debug                  bool
+	Port                   int
+	DBConn, DBUser, DBPass string
+}
+
+type VarCandidate[T comparable] struct {
+	Source string
+	Value  T
 }
 
 func main() {
@@ -41,7 +47,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	client := connectToLocalDB(vars.DBConn)
+	client := connectToLocalDB(vars)
 
 	srv, router := server.New(vars.Port)
 
@@ -73,6 +79,8 @@ func loadAppVars() *AppVariables {
 	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Default("0").Int()
 	dbConn := app.Flag("dbconn", "Database connection").Default("").String()
+	dbUser := app.Flag("dbuser", "Database user").Default("").String()
+	dbPass := app.Flag("dbpass", "Database password").Default("").String()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -83,63 +91,88 @@ func loadAppVars() *AppVariables {
 
 	log.Info().Interface("values", envvals).Msg("loaded env values")
 
-	var portSource string
+	vars.Port = loadAppVar[int]("port",
+		newVarCandidate(*port, "CLI"),
+		newVarCandidate(envvals.Port, "env"),
+		newVarCandidate(DefaultPort, "default"))
 
-	switch {
-	case *port != 0:
-		portSource = "CLI"
+	vars.Debug = loadAppVar[bool]("debug",
+		newVarCandidate(*debug, "CLI"),
+		newVarCandidate(envvals.Debug, "env"),
+		newVarCandidate(DefaultDebug, "default"))
 
-		vars.Port = *port
-	case envvals.Port != 0:
-		portSource = "env"
+	vars.DBConn = loadAppVar[string]("dbconn",
+		newVarCandidate(*dbConn, "CLI"),
+		newVarCandidate(envvals.DBConn, "env"))
 
-		vars.Port = envvals.Port
-	default:
-		portSource = "default"
+	vars.DBUser = loadAppVar[string]("dbuser",
+		newVarCandidate(*dbUser, "CLI"),
+		newVarCandidate(envvals.DBUser, "env"))
 
-		vars.Port = DefaultPort
-	}
-
-	var dbConnSource string
-
-	switch {
-	case *dbConn != "":
-		dbConnSource = "CLI"
-
-		vars.DBConn = *dbConn
-	case envvals.DBConn != "":
-		dbConnSource = "env"
-
-		vars.DBConn = envvals.DBConn
-	default:
-		log.Fatal().Msg("dbconn not set through CLI or env")
-	}
-
-	var debugSource string
-
-	switch {
-	case *debug:
-		debugSource = "CLI"
-
-		vars.Debug = true
-	case envvals.Debug:
-		debugSource = "env"
-
-		vars.Debug = true
-	}
-
-	log.Info().Int("port", vars.Port).Msgf("port assigned from %s value", portSource)
-	log.Info().Str("dbconn", vars.DBConn).Msgf("dbconn assigned from %s value", dbConnSource)
-	log.Info().Bool("debug", vars.Debug).Msgf("debug set in %s", debugSource)
+	vars.DBPass = loadAppVar[string]("dbpass",
+		newVarCandidate(*dbPass, "CLI"),
+		newVarCandidate(envvals.DBPass, "env"))
 
 	return vars
 }
 
-func connectToLocalDB(uri string) *mongo.Client {
+func loadAppVar[T comparable](
+	name string,
+	first *VarCandidate[T],
+	more ...*VarCandidate[T]) T {
+	var zero T
+	allSources := []string{}
+	candidates := append([]*VarCandidate[T]{first}, more...)
+
+	var source string
+	var value T
+
+	for _, c := range candidates {
+		if c.Value != zero {
+			value = c.Value
+			source = c.Source
+
+			break
+		}
+
+		allSources = append(allSources, c.Source)
+	}
+
+	if value == zero {
+		log.Fatal().
+			Str("name", name).
+			Strs("sources", allSources).
+			Msg("app var not found")
+	}
+
+	log.Info().
+		Str("name", name).
+		Str("source", source).
+		Msgf("loaded app var")
+
+	return value
+}
+
+func newVarCandidate[T comparable](val T, source string) *VarCandidate[T] {
+	return &VarCandidate[T]{
+		Source: source,
+		Value:  val,
+	}
+}
+
+func connectToLocalDB(vars *AppVariables) *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	var cred options.Credential
+
+	cred.AuthSource = "admin"
+	cred.Username = vars.DBUser
+	cred.Password = vars.DBPass
+
+	uri := vars.DBConn
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(cred))
 	if err != nil {
 		log.Fatal().Err(err).Str("uri", uri).Msg("failed to connect to local mongo server")
 	}

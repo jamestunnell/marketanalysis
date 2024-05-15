@@ -13,6 +13,8 @@ type ErrInvalid struct {
 
 const (
 	NameDBConn = "BACKEND_DBCONN"
+	NameDBUser = "BACKEND_DBUSER"
+	NameDBPass = "BACKEND_DBPASS"
 	NameDebug  = "BACKEND_DEBUG"
 	NamePort   = "BACKEND_PORT"
 )
@@ -22,6 +24,14 @@ func LoadValues() (*Values, error) {
 
 	if val := os.Getenv(NameDBConn); val != "" {
 		vals.DBConn = val
+	}
+
+	if val := os.Getenv(NameDBUser); val != "" {
+		vals.DBUser = val
+	}
+
+	if val := os.Getenv(NameDBPass); val != "" {
+		vals.DBPass = val
 	}
 
 	if val, err := LoadOptionalBool(NameDebug, false); err != nil {
