@@ -4,6 +4,8 @@ import Graphs from './src/graphs.js'
 import Graph from './src/graph.js'
 import NavBar from './src/navbar.js'
 
+import './index.css';
+
 const { div } = van.tags
 
 const App = () => {

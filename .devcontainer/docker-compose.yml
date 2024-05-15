@@ -12,21 +12,17 @@ services:
       - ..:/workspace:cached
     environment:
         BACKEND_DBCONN: mongodb://db:27017
-        BACKEND_DBUSER: root
-        BACKEND_DBPASS: AdLjmUkCqRBzyJ2
         BACKEND_DEBUG: true
         BACKEND_PORT: 4002
     command: sleep infinity
 
   db:
     image: mongo:latest
-    environment:
-    # provide your credentials here
-    - MONGO_INITDB_ROOT_USERNAME=root
-    - MONGO_INITDB_ROOT_PASSWORD=AdLjmUkCqRBzyJ2
     restart: unless-stopped
+    command: ["mongod", "--config", "/etc/mongo/mongod.conf"]
     volumes:
       - db-data:/var/lib/mongodb/data
+      - ../.devcontainer/mongo:/etc/mongo/
 
 volumes:
   db-data:

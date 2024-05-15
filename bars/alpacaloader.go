@@ -92,11 +92,9 @@ func (l *AlpacaLoader) GetRunBars(
 
 	endIdx, found := slices.BinarySearchFunc(bars, end, compareBarByTimestamp)
 	if found || endIdx > 0 {
-		nTrim := endIdx - len(bars)
+		log.Debug().Msgf("alpacaloader: trimming %d bars from end", len(bars)-endIdx)
 
 		bars = bars[:endIdx]
-
-		log.Debug().Msgf("alpacaloader: trimed %d bars at end", nTrim)
 	} else if endIdx == 0 {
 		err = fmt.Errorf("end time %s is less than all loaded bars", end)
 
@@ -129,7 +127,11 @@ func (l *AlpacaLoader) GetRunBars(
 
 	// truncate the slice if we have enough bars for warmup
 	if startIdx >= wuPeriod {
-		bars = bars[startIdx-wuPeriod:]
+		firstBarIdx := startIdx - wuPeriod
+
+		log.Debug().Msgf("alpacaloader: trimming %d bars from start", firstBarIdx)
+
+		bars = bars[firstBarIdx:]
 	}
 
 	return bars, nil

@@ -38,7 +38,7 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
     console.log("saving graph", graph);
 
     try {
-        const resp = await Put({route:`/graphs/${graph.id}`, content: graph});
+        const resp = await Put({route:`/graphs/${graph.id}`, object: graph});
 
         if (resp.status != 204) {
             const appErr = await resp.json()

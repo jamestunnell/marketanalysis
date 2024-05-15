@@ -28,9 +28,10 @@ const (
 )
 
 type AppVariables struct {
-	Debug                  bool
-	Port                   int
-	DBConn, DBUser, DBPass string
+	Debug  bool
+	Port   int
+	DBConn string
+	// DBUser, DBPass string
 }
 
 type VarCandidate[T comparable] struct {
@@ -79,8 +80,8 @@ func loadAppVars() *AppVariables {
 	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Default("0").Int()
 	dbConn := app.Flag("dbconn", "Database connection").Default("").String()
-	dbUser := app.Flag("dbuser", "Database user").Default("").String()
-	dbPass := app.Flag("dbpass", "Database password").Default("").String()
+	// dbUser := app.Flag("dbuser", "Database user").Default("").String()
+	// dbPass := app.Flag("dbpass", "Database password").Default("").String()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -105,13 +106,13 @@ func loadAppVars() *AppVariables {
 		newVarCandidate(*dbConn, "CLI"),
 		newVarCandidate(envvals.DBConn, "env"))
 
-	vars.DBUser = loadAppVar[string]("dbuser",
-		newVarCandidate(*dbUser, "CLI"),
-		newVarCandidate(envvals.DBUser, "env"))
+	// vars.DBUser = loadAppVar[string]("dbuser",
+	// 	newVarCandidate(*dbUser, "CLI"),
+	// 	newVarCandidate(envvals.DBUser, "env"))
 
-	vars.DBPass = loadAppVar[string]("dbpass",
-		newVarCandidate(*dbPass, "CLI"),
-		newVarCandidate(envvals.DBPass, "env"))
+	// vars.DBPass = loadAppVar[string]("dbpass",
+	// 	newVarCandidate(*dbPass, "CLI"),
+	// 	newVarCandidate(envvals.DBPass, "env"))
 
 	return vars
 }
@@ -164,15 +165,17 @@ func connectToLocalDB(vars *AppVariables) *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var cred options.Credential
+	// var cred options.Credential
 
-	cred.AuthSource = "admin"
-	cred.Username = vars.DBUser
-	cred.Password = vars.DBPass
+	// cred.AuthSource = "admin"
+	// // cred.AuthMechanism = "SCRAM-SHA-256"
+	// cred.Username = vars.DBUser
+	// cred.Password = vars.DBPass
 
 	uri := vars.DBConn
+	opts := options.Client().ApplyURI(uri) //.SetAuth(cred)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(cred))
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		log.Fatal().Err(err).Str("uri", uri).Msg("failed to connect to local mongo server")
 	}

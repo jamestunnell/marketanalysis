@@ -24,10 +24,11 @@ const Get = async (route) => {
     );
 }
 
-const Post = async ({route, content}) => {
+const PostJSON = async ({route, object, options={}}) => {
     const url = BASE_URL + route;
+    const body = JSON.stringify(object);
 
-    console.log("fetch POST %s", url);
+    console.log("fetch POST %s with JSON %s", url, body);
 
     return fetch(
         url,
@@ -36,12 +37,13 @@ const Post = async ({route, content}) => {
             headers: {
                 'Content-Type': 'application/json; charset=utf-8'
             },
-            body: JSON.stringify(content),
+            body: body,
+            ...options,
         },
     );
 }
 
-const Put = async ({route, content}) => {
+const Put = async ({route, object}) => {
     const url = BASE_URL + route;
 
     console.log("fetch PUT %s", url);
@@ -53,9 +55,9 @@ const Put = async ({route, content}) => {
             headers: {
                 'Content-Type': 'application/json; charset=utf-8'
             },
-            body: JSON.stringify(content),
+            body: JSON.stringify(object),
         },
     );
 }
 
-export {Delete, Get, Post, Put};
+export {Delete, Get, PostJSON, Put};

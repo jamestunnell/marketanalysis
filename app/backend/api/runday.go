@@ -23,6 +23,8 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Debug().Interface("request", runReq).Msg("received run-day request")
+
 	keyVal := mux.Vars(r)[a.Store.GetInfo().KeyName]
 
 	cfg, appErr := a.Store.Get(r.Context(), keyVal)

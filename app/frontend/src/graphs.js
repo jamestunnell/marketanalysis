@@ -4,7 +4,7 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
-import {Delete, Get, Post} from './backend.js'
+import {Delete, Get, PostJSON} from './backend.js'
 import { Button, ButtonCancel, ButtonDanger } from "./buttons.js";
 import {IconDelete, IconView} from './icons.js'
 import {Table, TableRow} from './table.js'
@@ -32,7 +32,7 @@ const getGraphs = async () => {
 const createGraph = async (item) => {
     console.log("creating graph", item);
 
-    const resp = await Post({route: '/graphs', content: item});
+    const resp = await PostJSON({route: '/graphs', object: item});
 
     if (resp.status != 204) {
         console.log("failed to create graph", await resp.json());
