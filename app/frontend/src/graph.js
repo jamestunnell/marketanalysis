@@ -1,10 +1,11 @@
 import van from "vanjs-core"
 import { v4 as uuidv4 } from 'uuid';
 import hash from 'object-hash';
+import { Tooltip } from "vanjs-ui"
 
-import { DoAppErrorModal} from './apperror.js';
+import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
-import { DoBlockModal } from "./block.js";
+import { BlockWorkflow } from "./block.js";
 import { Button, ButtonDanger } from "./buttons.js";
 import { DoConnectionModal } from "./connection.js";
 import { DownloadCSV, DownloadJSON } from "./download.js";
@@ -16,22 +17,66 @@ import { Modal } from "vanjs-ui";
 
 const {div, input, p, tbody} = van.tags
 
-const getGraph = async (id) => {
-    console.log(`getting graph ${id}`);
+const getGraph = (id) => {
+    return new Promise((resolve, reject) => {
+        console.log(`getting graph ${id}`);
 
-    const resp = await Get(`/graphs/${id}`);
+        Get(`/graphs/${id}`).then(resp => {
+            if (resp.status != 200) {
+                resp.json().then(appErr => {
+                    console.log("failed to get graph", appErr);
 
-    if (resp.status != 200) {
-        console.log("failed to get graph", await resp.json());
+                    reject(appErr)
+                })
+        
+                return;
+            }
 
-        return null;
-    }
+            resp.json().then(data => {
+                console.log("received graph", data);
 
-    const d = await resp.json();
+                resolve(data);
+            })    
+        }).catch(err => {
+            reject({
+                title: "Action Failed",
+                message: "failed to make get graph requst",
+                details: [err.message],
+            })
+        })
+    })
+}
 
-    console.log("received graph", d);
+const getAllBlockInfo = () => {
+    return new Promise((resolve, reject) => {
+        console.log("getting block infos");
 
-    return d;
+        Get('/blocks').
+            then(resp => {
+                if (resp.status != 200) {
+                    resp.json().then(appErr => {
+                        console.log("failed to get block infos", appErr);
+
+                        reject(appErr)
+                    })
+                    
+                    return
+                }
+
+                resp.json().then(data => {
+                    console.log(`received block infos`, data.blocks)
+
+                    resolve(data.blocks)
+                })
+            }).
+            catch(err => {
+                reject({
+                    title: "Action Failed",
+                    message: "failed to make get blocks request",
+                    details: [err.message],
+                })
+            })
+    })
 }
 
 const putGraph = async ({graph, onSuccess, onErr}) => {
@@ -61,9 +106,18 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
     }
 }
 
-const BlockTableRow = ({name, type, onView, onDelete}) => {
+const BlockTableRow = ({name, type, info, onView, onDelete}) => {
+    const infoMissing = van.derive(() => !info)
     const deleted = van.state(false);
-    const viewBtn = Button({child: IconView(), onclick: onView});
+    
+    const viewBtn = Button({
+        child: [
+            IconView(),
+            Tooltip({text: `Disabled because ${type} block info is missing`, show: infoMissing}),
+        ],
+        onclick: onView,
+        disabled: infoMissing,
+    });
     const deleteBtn = ButtonDanger({
         child: IconDelete(),
         onclick: () => {
@@ -104,26 +158,31 @@ const Graph = (id) => {
         blocks: {},
         changed: van.state(false),
     };
+    const infoByType = van.state({})
     const blockTableBody = tbody({class:"table-auto"});
     const connTableBody = tbody({class:"table-auto"});
 
     const makeBlockRow = (block) => {
         const id = uuidv4();
         const blk = van.state(block);
+        const blockInfo = van.derive(() => infoByType.val[blk.val.type])
 
         graph.blocks[id] = blk;
 
         return BlockTableRow({
             name: van.derive(() => blk.val.name),
             type: van.derive(() => blk.val.type),
+            info: blockInfo,
             onDelete: () => {
                 delete graph.blocks[id]
 
                 graph.changed.val = true;
             },
             onView: () => {
-                DoBlockModal({
+                const wf = new BlockWorkflow({
                     block: blk.val,
+                    infoByType: infoByType.val,
+                    existingNames: Object.values(graph.blocks).map(b => b.val.name),
                     handleResult: (block2) => {
                         if (hash(blk.val) === hash(block2)) {
                             return
@@ -134,6 +193,8 @@ const Graph = (id) => {
                         blk.val = block2;
                     },
                 });
+
+                wf.start();
             },
         });
     }
@@ -208,14 +269,18 @@ const Graph = (id) => {
     const addBlockBtn = Button({
         child: IconAdd(),
         onclick: () => {
-            DoBlockModal({
+            const wf = new BlockWorkflow({
                 block: {name: "", type: "", paramVals: {}, recording: []},
+                infoByType: infoByType.val,
+                existingNames: Object.values(graph.blocks).map(b => b.val.name),
                 handleResult: (b) => {
                     graph.changed.val = true
 
                     van.add(blockTableBody, makeBlockRow(b));
                 },
             });
+
+            wf.start();
         },
     });
     const addConnBtn = Button({
@@ -242,7 +307,7 @@ const Graph = (id) => {
         onclick: () => {
             putGraph({
                 graph: makeGraph(),
-                onErr: (appErr) => DoAppErrorModal(appErr),
+                onErr: (appErr) => AppErrorAlert(appErr),
                 onSuccess: () => graph.changed.val = false,
             });
         },
@@ -264,13 +329,13 @@ const Graph = (id) => {
                         return
                     }
                         
-                    DoAppErrorModal({
+                    AppErrorAlert({
                         title: "Invalid Input",
                         message: "Graph IDs do not match",
                         details: ["Go to the Graphs page to import as a different graph."],
                     })
                 },
-                onErr: (appErr) => DoAppErrorModal(appErr),
+                onErr: (appErr) => AppErrorAlert(appErr),
             })
         }
     });
@@ -315,8 +380,12 @@ const Graph = (id) => {
         loadGraph(g);
 
         graph.changed.val = false
-    });
+    }).catch(appErr => AppErrorAlert(appErr))
     
+    getAllBlockInfo().then(allBlockInfo => {
+        infoByType.val = Object.fromEntries(allBlockInfo.map(info => [info.type, info]));
+    }).catch(appErr => AppErrorAlert(appErr))
+
     return graphArea
 }
 

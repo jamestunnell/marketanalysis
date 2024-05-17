@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type IntEnum struct {
@@ -16,15 +17,13 @@ func (p *IntEnum) GetDefault() any {
 	return p.Default
 }
 
-func (p *IntEnum) GetSchema() map[string]any {
-	return map[string]any{
-		"type": "number",
-		"enum": p.Enum,
-	}
+func (p *IntEnum) GetLimits() []any {
+	return sliceutils.Map(
+		p.Enum, func(s int) any { return s })
 }
 
 func (p *IntEnum) GetType() string {
-	return "int"
+	return "IntEnum"
 }
 
 func (p *IntEnum) GetVal() any {

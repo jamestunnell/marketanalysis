@@ -1,106 +1,223 @@
 import van from "vanjs-core"
-import {Modal} from "vanjs-ui"
 
 import { Get } from './backend.js'
-import {Button, ButtonCancel} from './buttons.js';
+import capitalize from './capitalize.js';
+import { ModalWorkflow, WorkflowStep } from "./workflow.js";
+import { ParamValItem, validateParamVal } from './paramvals.js'
 
-const {div, input, label, option, p, select} = van.tags
+const {div, input, label, li, ul, option, select, span} = van.tags
 
-const getBlockInfos = async () => {
-    console.log("getting block infos");
+const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
 
-    const resp = await Get('/blocks');
+class BlockWorkflow {
+    constructor({block, infoByType, existingNames, handleResult}) {
+        console.log("making block workflow", infoByType)
 
-    if (resp.status != 200) {
-        console.log("failed to get block infos", await resp.json());
+        this.infoByType = infoByType
+        this.otherNames = existingNames.filter(name => name !== block.name)
+        this.handleResult = handleResult
 
-        return []
+        this.name = block.name;
+        this.type = block.type;
+        this.paramVals = block.paramVals;
+        this.recording = block.recording;
     }
 
-    const d = await resp.json();
+    start() {
+        console.log("starting block workflow", this.infoByType)
+        
+        const onComplete = () => {
+            this.handleResult({
+                name: this.name,
+                type: this.type,
+                paramVals: this.paramVals,
+                recording: this.recording,
+            })
 
-    console.log(`received ${d.blocks.length} block infos`, d.blocks);
-
-    return d.blocks;
-}
-
-const BlockForm = ({name, type, onOK, onCancel}) => {
-    const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
-
-    const typeSelect = select({
-        id: "type",
-        class: inputClass,
-        oninput: (e) => type.val = e.target.value,
-    });
+            console.log("completed block workflow")
+        }
+        const onCancel = () => {
+            console.log("canceled block workflow")
+        };
+        const stepFns = [
+            () => this.makeNameStep(),
+            () => this.makeTypeStep(),
+            () => this.makeParamValsStep(),
+            () => this.makeRecordingStep(),
+        ]
+        
+        ModalWorkflow({stepFns, onComplete, onCancel})
+    }
     
-    getBlockInfos().then(blockInfos => {
-        van.add(typeSelect, blockInfos.map(info => {
-            const t = info.type;
-            
-            let props = {value: t}
-            
-            if (t === type.val) {
-                props.selected = "selected";
-            }
+    makeNameStep() {
+        const name = van.state(this.name)
 
-            return option(props, t)
-        }))
-    });
-
-    return div(
-        {class: "flex flex-col rounded-md space-y-4"},
-        p({class: "text-lg font-medium font-bold text-center"}, "Graph Block"),
-        label({for: "name"}, "Name"),
-        input({
-            id: "name",
-            class: inputClass,
-            type: "text",
-            value: name,
-            placeholder: "Non-empty, unique",
-            oninput: e => name.val = e.target.value,
-        }),
-        label({for: "type"}, "Type"),
-        typeSelect,
-        div(
-            {class:"mt-4 flex justify-center"},
-            ButtonCancel({onclick: onCancel, child: "Cancel"}),
-            Button({onclick: onOK, child: "OK"}),
-        ),
-    )
-}
-
-const DoBlockModal = ({block, handleResult}) => {
-    const closed = van.state(false)
-
-    const name = van.state(block.name);
-    const type = van.state(block.type);
-    const paramVals = van.state(block.paramVals);
-    const recording = van.state(block.recording);
-
-    van.add(
-        document.body,
-        Modal({closed},
-            BlockForm({
-                name: name,
-                type: type,
-                // paramVals: paramVals,
-                // recording: recording,
-                onOK: ()=> {
-                    handleResult({
-                        name: name.val,
-                        type: type.val,
-                        paramVals: paramVals.val,
-                        recording: recording.val,
-                    });
-
-                    closed.val = true;
-                },
-                onCancel: () => {
-                    closed.val = true;
+        return new WorkflowStep({
+            title: "Name",
+            makeElements: () => {
+                return [
+                    label({for: "name"}, "Name"),
+                    input({
+                        id: "name",
+                        class: inputClass,
+                        type: "text",
+                        value: this.name,
+                        placeholder: "Non-empty, unique",
+                        oninput: e => name.val = e.target.value,
+                    }),
+                ]
+            },
+            consumeInput: () => {
+                if (name.val.length === 0) {
+                    return new Error("Name is empty")
+                } else if (this.otherNames.indexOf(name.val) >= 0) {
+                    return new Error(`Name '${name.val}' is not unique`)
                 }
-            }),
-        ),
-    );
+
+                this.name = name.val
+
+                console.log("consumed name input: %s", name.val, this.infoByType)
+
+                return null
+            },
+        });
+    }
+
+    makeTypeStep() {
+        const type = van.state(this.type)
+
+        return new WorkflowStep({
+            title: "Type",
+            makeElements: () => {
+                console.log("making elements for type step", this)
+    
+                const options = Object.keys(this.infoByType).map((t,i) => {
+                    const props = {value: t}
+                    if (t === this.type) {
+                        props.selected = "selected"
+                    }
+
+                    return option(props, t);
+                })
+    
+                const selectType = select(
+                    { id: "type", class: inputClass, onchange: (e) => type.val = e.target.value },
+                    options,
+                )
+    
+                return [selectType]
+            },
+            consumeInput: () => {
+                if (type.val === "") {
+                    new Error("not type selected")
+                }
+    
+                this.type = type.val
+    
+                return null
+            },
+        });
+    }
+
+    makeParamValsStep() {
+        const info = this.infoByType[this.type]
+
+        console.log("making param vals step for type %s", this.type, info)
+
+        const values = {}
+        
+        Object.entries(this.paramVals).forEach(([name,value]) => {
+            if (info.params.find(p => p.name == name)) {
+                console.log("param %s has existing value %s", name, value)
+                
+                values[name] = van.state(value)
+            }
+        })
+
+        return new WorkflowStep({
+            title: "Parameter Values",
+            makeElements: () => {
+                const items = info.params.map(p => ParamValItem(p, values))
+
+                return [ ul(items) ]
+            },
+            consumeInput: () => {
+                const paramVals = {}
+                const errs = []
+
+                console.log("consuming param vals input", values)
+
+                info.params.forEach(p => {
+                    const v = values[p.name]
+                    if (!v) {
+                        console.log("no value found for param %s", p.name)
+
+                        return
+                    }
+                    
+                    const err = validateParamVal(p, v.val)
+
+                    if (err) {
+                        errs.push(err)
+                    } else {
+                        paramVals[p.name] = v.val
+                    }
+                })
+
+                if (errs.length > 0) {
+                    return errs[0]
+                }
+
+                this.paramVals = paramVals;
+
+                return null
+            },
+        })
+    }
+
+    makeRecordingStep() {
+        const info = this.infoByType[this.type]
+        const recordingFlags = info.outputs.map((o) => {
+            return van.state(this.recording.indexOf(o.name) >= 0)
+        });
+        
+        return new WorkflowStep({
+            title: "Recorded Outputs",
+            makeElements: () => {
+                const items = info.outputs.map((out, i) => {
+                    const props = {
+                        id: out.name,
+                        type: "checkbox",
+                        onchange: e => recordingFlags[i].val = e.target.checked,
+                    }
+
+                    if (recordingFlags[i].val) {
+                        props.checked = "checked"
+                    }
+
+                    return li(
+                        input(props, capitalize(out.name)),
+                        span(out.name),
+                    )
+                });
+
+                return [ ul(items) ]
+            },
+            consumeInput: () => {
+                const recording = [];
+
+                info.outputs.forEach((o, i) => {
+                    if (recordingFlags[i].val) {
+                        recording.push(o.name)
+                    }
+                })
+
+                this.recording = recording
+
+                return null
+            },
+        })
+    }
 }
 
-export {DoBlockModal};
+export {BlockWorkflow};

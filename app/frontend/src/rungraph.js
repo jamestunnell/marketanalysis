@@ -1,6 +1,6 @@
 import van from "vanjs-core"
 
-import { DoAppErrorModal} from './apperror.js';
+import { AppErrorAlert} from './apperror.js';
 import { Button, ButtonCancel } from "./buttons.js";
 import { IconPlay } from './icons.js';
 import { DownloadCSV } from "./download.js";
@@ -90,7 +90,7 @@ const RunGraph = (graph) => {
                         child: [IconPlay, "Run"],
                         onclick: () => {
                             if (date.val === "") {
-                                DoAppErrorModal({
+                                AppErrorAlert({
                                     title: "Invalid Input",
                                     message: "date is empty",
                                     details: [],
@@ -112,7 +112,7 @@ const RunGraph = (graph) => {
 
                                 closed.val = true;
                             }).catch(appErr => {
-                                DoAppErrorModal(appErr)
+                                AppErrorAlert(appErr)
                             })
                         },
                     }),

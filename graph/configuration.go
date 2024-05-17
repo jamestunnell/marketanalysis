@@ -3,8 +3,6 @@ package graph
 import (
 	"fmt"
 
-	"github.com/xeipuuv/gojsonschema"
-
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
@@ -78,32 +76,10 @@ func (cfg *Configuration) Validate() []error {
 				continue
 			}
 
-			l := gojsonschema.NewGoLoader(param.GetSchema())
-
-			schema, err := gojsonschema.NewSchema(l)
-			if err != nil {
-				err := fmt.Errorf("block %s: failed to compile schema for param %s: %w", b.Name, name, err)
+			if err := param.SetVal(val); err != nil {
+				err = fmt.Errorf("block %s: param %s: value %v is invalid: %w", b.Name, name, val, err)
 
 				errs = append(errs, err)
-
-				continue
-			}
-
-			result, err := schema.Validate(gojsonschema.NewGoLoader(val))
-			if err != nil {
-				err := fmt.Errorf("block %s: failed to validate value %v for param %s: %w", b.Name, val, name, err)
-
-				errs = append(errs, err)
-
-				continue
-			}
-
-			if !result.Valid() {
-				for _, resultErr := range result.Errors() {
-					err = fmt.Errorf("block %s: param %s: value %v is invalid: %s", b.Name, name, val, resultErr)
-
-					errs = append(errs, err)
-				}
 			}
 		}
 	}

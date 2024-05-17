@@ -14,16 +14,12 @@ func (p *FltRange) GetDefault() any {
 	return p.Default
 }
 
-func (p *FltRange) GetSchema() map[string]any {
-	return map[string]any{
-		"type":    "number",
-		"minimum": p.Min,
-		"maximum": p.Max,
-	}
+func (p *FltRange) GetLimits() []any {
+	return []any{p.Min, p.Max}
 }
 
 func (p *FltRange) GetType() string {
-	return "float64"
+	return "FltRange"
 }
 
 func (p *FltRange) GetVal() any {
