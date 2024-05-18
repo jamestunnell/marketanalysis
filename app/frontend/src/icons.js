@@ -6,6 +6,10 @@ const IconAdd = () => {
     return i({class: "fa-solid fa-plus"});
 }
 
+const IconCheck = () => {
+    return i({class: "fa-solid fa-check"});
+}
+
 const IconError = () => {
     return i({class: "fa-solid fa-triangle-exclamation"});
 }
@@ -34,4 +38,4 @@ const IconView = () => {
     return i({class: "fa-solid fa-eye"});
 }
 
-export {IconAdd, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView};
+export {IconAdd, IconCheck, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView};

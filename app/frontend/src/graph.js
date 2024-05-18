@@ -1,51 +1,21 @@
 import van from "vanjs-core"
 import { v4 as uuidv4 } from 'uuid';
 import hash from 'object-hash';
+import { nanoid } from 'nanoid'
 import { Tooltip } from "vanjs-ui"
 
 import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
-import { BlockWorkflow } from "./block.js";
+import { SelectBlockTypeModal, ConfigureBlockModal } from "./block.js";
 import { Button, ButtonDanger } from "./buttons.js";
 import { DoConnectionModal } from "./connection.js";
-import { DownloadCSV, DownloadJSON } from "./download.js";
-import { IconAdd, IconDelete, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
+import { DownloadJSON } from "./download.js";
+import { IconAdd, IconCheck, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
 import { RunGraph } from './rungraph.js'
 import { Table, TableRow } from './table.js';
 import { UploadJSON } from "./upload.js";
-import { Modal } from "vanjs-ui";
 
 const {div, input, p, tbody} = van.tags
-
-const getGraph = (id) => {
-    return new Promise((resolve, reject) => {
-        console.log(`getting graph ${id}`);
-
-        Get(`/graphs/${id}`).then(resp => {
-            if (resp.status != 200) {
-                resp.json().then(appErr => {
-                    console.log("failed to get graph", appErr);
-
-                    reject(appErr)
-                })
-        
-                return;
-            }
-
-            resp.json().then(data => {
-                console.log("received graph", data);
-
-                resolve(data);
-            })    
-        }).catch(err => {
-            reject({
-                title: "Action Failed",
-                message: "failed to make get graph requst",
-                details: [err.message],
-            })
-        })
-    })
-}
 
 const getAllBlockInfo = () => {
     return new Promise((resolve, reject) => {
@@ -76,6 +46,36 @@ const getAllBlockInfo = () => {
                     details: [err.message],
                 })
             })
+    })
+}
+
+const getGraph = (id) => {
+    return new Promise((resolve, reject) => {
+        console.log(`getting graph ${id}`);
+
+        Get(`/graphs/${id}`).then(resp => {
+            if (resp.status != 200) {
+                resp.json().then(appErr => {
+                    console.log("failed to get graph", appErr);
+
+                    reject(appErr)
+                })
+        
+                return;
+            }
+
+            resp.json().then(data => {
+                console.log("received graph", data);
+
+                resolve(data);
+            })    
+        }).catch(err => {
+            reject({
+                title: "Action Failed",
+                message: "failed to make get graph requst",
+                details: [err.message],
+            })
+        })
     })
 }
 
@@ -133,7 +133,7 @@ const BlockTableRow = ({name, type, info, onView, onDelete}) => {
     return () => deleted.val ? null : TableRow(rowItems);
 }
 
-const ConnTableRow = ({source, target, onView, onDelete}) => {
+const ConnTableRow = ({source, target, validateErr, onView, onDelete}) => {
     const deleted = van.state(false);
     const viewBtn = Button({child: IconView(), onclick: onView});
     const deleteBtn = ButtonDanger({
@@ -144,109 +144,180 @@ const ConnTableRow = ({source, target, onView, onDelete}) => {
             onDelete();
         },
     });
-    
-    const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
+
+    const showTooltip = van.state(false)
+    const statusBtn = div(
+        {
+            class: "rounded-md p-3 m-1 relative",
+            onmouseenter: () => showTooltip.val = true,
+            onmouseleave: () => showTooltip.val = false,
+        },
+        () => validateErr.val ? IconError() : IconCheck(),
+        Tooltip({
+            text: van.derive(() => validateErr.val ? `Connection is invalid: ${validateErr.val.message}` : "Connection is valid"),
+            show: showTooltip,
+        }),
+    );
+
+    const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn, statusBtn);
     const rowItems = [source, target, buttons];
 
     return () => deleted.val ? null : TableRow(rowItems);
 }
 
-const Graph = (id) => {
-    const graph = {
-        name: van.state(""),
-        connections: {},
-        blocks: {},
-        changed: van.state(false),
-    };
-    const infoByType = van.state({})
+const pageContent = ({graph, infoByType}) => {
+    const graphID = graph.id
+    const name = van.state(graph.name)
+    const changed = van.state(false)
+    
     const blockTableBody = tbody({class:"table-auto"});
     const connTableBody = tbody({class:"table-auto"});
 
-    const makeBlockRow = (block) => {
-        const id = uuidv4();
-        const blk = van.state(block);
-        const blockInfo = van.derive(() => infoByType.val[blk.val.type])
+    const initialBlocksWithIDs = graph.blocks.map(b => Object.assign(b, {id: nanoid()}))
+    const initialConnsWithIDs = graph.connections.map(c => Object.assign(c, {id: nanoid()}))
 
-        graph.blocks[id] = blk;
+    const blocks = van.state([].concat(initialBlocksWithIDs))
+    const connections = van.state([].concat(initialConnsWithIDs))
+
+    const makeBlockRow = (block) => {
+        const id = block.id
+        const name = van.state(block.name)
+        const digest = van.state(hash(block))
+        const info = infoByType[block.type]
 
         return BlockTableRow({
-            name: van.derive(() => blk.val.name),
-            type: van.derive(() => blk.val.type),
-            info: blockInfo,
+            name: name,
+            type: block.type,
+            info: info,
             onDelete: () => {
-                delete graph.blocks[id]
-
-                graph.changed.val = true;
+                blocks.val = blocks.val.filter(b => b.id !== id)
+                changed.val = true;
             },
             onView: () => {
-                const wf = new BlockWorkflow({
-                    block: blk.val,
-                    infoByType: infoByType.val,
-                    existingNames: Object.values(graph.blocks).map(b => b.val.name),
-                    handleResult: (block2) => {
-                        if (hash(blk.val) === hash(block2)) {
+                ConfigureBlockModal({
+                    info,
+                    block: blocks.val.find(b => b.id === id),
+                    otherNames: blocks.val.map(b => b.name).filter(n => n != name.val),
+                    handleResult: (b) => {
+                        const resultDigest = hash(b)
+                        if (resultDigest === digest.val) {
                             return
                         }
 
-                        graph.changed.val = true
-
-                        blk.val = block2;
+                        blocks.val = blocks.val.map(blk => blk.id === block.id ? b : blk)
+                        name.val = b.name
+                        digest.val = resultDigest
+                        changed.val = true
                     },
-                });
-
-                wf.start();
+                })
             },
         });
     }
     const makeConnRow = (connection) => {
-        const id = uuidv4();
-        const conn = van.state(connection);
-
-        graph.connections[id] = conn;
+        const id = connection.id
+        const source = van.state(connection.source)
+        const target = van.state(connection.target)
+        const digest = van.state(hash(connection))
 
         return ConnTableRow({
-            source: van.derive(() => conn.val.source),
-            target: van.derive(() => conn.val.target),
-            onDelete: () => {
-                delete graph.connections[id]
+            source: source,
+            target: target,
+            validateErr: van.derive(() => {
+                const srcParts = source.val.split(".")
+                const tgtParts = target.val.split(".")
 
-                graph.changed.val = true;
+                if (srcParts.length !== 2) {
+                    return new Error(`source ${source.val} not formatted as <A>.<B>`)
+                }
+
+                if (tgtParts.length !== 2) {
+                    return new Error(`target ${target.val} not formatted as <A>.<B>`)
+                }
+
+                const blks = Object.values(blocks.val)
+
+                console.log("working with blocks", blks)
+
+                const src = blks.find(blk => blk.name === srcParts[0])
+                const tgt = blks.find(blk => blk.name === tgtParts[0])
+
+                if (!src) {
+                    return new Error(`source block ${srcParts[0]} not found`)
+                }
+                
+                const srcInfo = infoByType[src.type]
+
+                console.log(`found source`, src, srcInfo)
+
+                if (!tgt) {
+                    return new Error(`target block ${tgtParts[0]} not found`)
+                }
+
+                const tgtInfo = infoByType[tgt.type]
+
+                console.log(`found target`, tgt, tgtInfo)
+                
+                if (!srcInfo.outputs.find(o => o.name === srcParts[1])) {
+                    return new Error(`source block ${srcParts[0]} does not have output ${srcParts[1]}`)
+                }
+                
+                if (!tgtInfo.inputs.find(i => i.name === tgtParts[1])) {
+                    return new Error(`target block ${tgtParts[0]} does not have input ${tgtParts[1]}`)
+                }
+
+                return null
+            }),
+            onDelete: () => {
+                connections.val = connections.val.filter(c => c.id !== id)
+                changed.val = true;
             },
             onView: () => {
                 DoConnectionModal({
-                    connection: conn.val,
-                    handleResult: (connection2) => {
-                        if (hash(conn.val) === hash(connection2)) {
+                    connection: {source: source.val, target: target.val},
+                    handleResult: (c) => {
+                        const resultDigest = hash(c)
+                        if (resultDigest === digest.val) {
                             return
                         }
 
-                        graph.changed.val = true
-
-                        conn.val = connection2;
+                        connections.val = connections.val.map(conn => conn.id === id ? c : conn)
+                        source.val = c.source
+                        target.val = c.target
+                        digest.val = resultDigest
+                        changed.val = true
                     },
                 });
             },
         });
     }
     const makeGraph = () => {
-        const blocks = Object.keys(graph.blocks).map(id => graph.blocks[id].val)
-        const conns = Object.keys(graph.connections).map(id => graph.connections[id].val);
-        
-        return {
-            id: id,
-            name: graph.name.val,
-            blocks: blocks,
-            connections: conns,
+        const g = {
+            id: graphID,
+            name: name.val,
+            blocks: blocks.val.map(b => {
+                const { id: _, ...blkWithoutID } = b
+
+                return blkWithoutID
+            }),
+            connections: connections.val.map(c => {
+                const { id: _, ...connWithoutID } = c
+
+                return connWithoutID
+            }),
         }
+
+        console.log("made graph", g)
+
+        return g
     }
-    const loadGraph = (g) => {
+    const importGraph = (g) => {
         if (hash(g) === hash(makeGraph())) {
-            console.log('loaded graph is identical to existing, ignoring')
+            console.log('graph is identical to existing, skipping loading')
 
             return
         }
 
-        graph.name.val = g.name;
+        name.val = g.name;
 
         // clear existing block & connection rows
         while (blockTableBody.firstChild) {
@@ -257,30 +328,42 @@ const Graph = (id) => {
             connTableBody.removeChild(connTableBody.firstChild)
         }
 
-        graph.blocks = {}
-        graph.connections = {}
-
-        van.add(blockTableBody, g.blocks.map(b => makeBlockRow(b)));
-        van.add(connTableBody, g.connections.map(c => makeConnRow(c)));
+        const blocksWithIDs = graph.blocks.map(b => Object.assign(b, {id: nanoid()}))
+        const connsWithIDs = graph.connections.map(c => Object.assign(c, {id: nanoid()}))
         
-        graph.changed.val = true
+        van.add(blockTableBody, blocksWithIDs.map(makeBlockRow))
+        van.add(connTableBody, connsWithIDs.map(makeConnRow))
+        
+        blocks.val = blocksWithIDs
+        connections.val = connsWithIDs
+       
+        changed.val = true
     }
-
     const addBlockBtn = Button({
         child: IconAdd(),
         onclick: () => {
-            const wf = new BlockWorkflow({
-                block: {name: "", type: "", paramVals: {}, recording: []},
-                infoByType: infoByType.val,
-                existingNames: Object.values(graph.blocks).map(b => b.val.name),
-                handleResult: (b) => {
-                    graph.changed.val = true
+            SelectBlockTypeModal({
+                types: Object.keys(infoByType),
+                handleResult: (selectedType) => {
+                    const info = infoByType[selectedType]
 
-                    van.add(blockTableBody, makeBlockRow(b));
+                    console.log(`adding ${selectedType} block`, info)
+
+                    ConfigureBlockModal({
+                        info: info,
+                        block: {type: selectedType, name: nanoid(), paramVals: {}, recording: []},
+                        otherNames: Object.values(blocks.val).map(b => b.name),
+                        handleResult: (block) => {
+                            block.id = nanoid()
+
+                            van.add(blockTableBody, makeBlockRow(block))
+
+                            blocks.val = [].concat(blocks.val, [block])
+                            changed.val = true
+                        },
+                    })
                 },
-            });
-
-            wf.start();
+            })
         },
     });
     const addConnBtn = Button({
@@ -289,46 +372,49 @@ const Graph = (id) => {
             DoConnectionModal({
                 connection: {source: "", target: ""},
                 handleResult: (c) => {
-                    graph.changed.val = true
+                    c.id = nanoid()
 
-                    van.add(connTableBody, makeConnRow(c));
+                    van.add(connTableBody, makeConnRow(c))
+                    
+                    connections.val = [].concat(connections.val, [c])
+                    changed.val = true
                 },
             });        
         },
     });
     const runBtn = Button({
         child: IconPlay(),
-        disabled: van.derive(() => graph.changed.val),
+        disabled: van.derive(() => changed.val),
         onclick: () => RunGraph(makeGraph()),
     });
     const saveBtn = Button({
         child: IconSave(),
-        disabled: van.derive(() => !graph.changed.val),
+        disabled: van.derive(() => !changed.val),
         onclick: () => {
             putGraph({
                 graph: makeGraph(),
                 onErr: (appErr) => AppErrorAlert(appErr),
-                onSuccess: () => graph.changed.val = false,
+                onSuccess: () => changed.val = false,
             });
         },
     });
     const exportBtn = Button({
         child: IconExport(),
-        onclick: () => DownloadJSON({obj: makeGraph(), name: graph.name.val}),
+        onclick: () => DownloadJSON({obj: makeGraph(), name: name.val}),
     });
     const importBtn = Button({
         child: IconImport(),
         onclick: () => {
             UploadJSON({
                 onSuccess: (g) => {
-                    console.log("file imported successfully")
+                    if (g.id === graphID) {
+                        importGraph(g)
 
-                    if (g.id === id) {
-                        loadGraph(g)
+                        console.log("imported graph file")
 
                         return
                     }
-                        
+                    
                     AppErrorAlert({
                         title: "Invalid Input",
                         message: "Graph IDs do not match",
@@ -337,16 +423,16 @@ const Graph = (id) => {
                 },
                 onErr: (appErr) => AppErrorAlert(appErr),
             })
-        }
+        },
+        disabled: van.derive(() => Object.keys(infoByType).length == 0),
     });
-
     const graphArea = div(
         {class: "container p-6 w-full flex flex-col"},
         div(
             {class: "grid grid-cols-2"},
             div(
                 {class: "flex flex-row p-4"},
-                p({class: "text-2xl font-medium font-bold"}, graph.name),
+                p({class: "text-2xl font-medium font-bold"}, name),
             ),
             div(
                 {class: "flex flex-row-reverse p-4"},
@@ -370,23 +456,35 @@ const Graph = (id) => {
         Table({columnNames: ["Source", "Target", ""], tableBody: connTableBody}),
     )
 
-    console.log(`viewing graph ${id}`)
+    van.add(blockTableBody, initialBlocksWithIDs.map(makeBlockRow))
+    van.add(connTableBody, initialConnsWithIDs.map(makeConnRow))
 
-    getGraph(id).then(g => {
-        if (!g) {
-            return
-        }
-
-        loadGraph(g);
-
-        graph.changed.val = false
-    }).catch(appErr => AppErrorAlert(appErr))
-    
-    getAllBlockInfo().then(allBlockInfo => {
-        infoByType.val = Object.fromEntries(allBlockInfo.map(info => [info.type, info]));
-    }).catch(appErr => AppErrorAlert(appErr))
+    console.log(`viewing graph ${graphID}`)
 
     return graphArea
 }
 
-export default Graph;
+const GraphPage = (id) => {
+    const page = div()
+    
+    Promise.all([
+        getAllBlockInfo(),
+        getGraph(id),
+    ]).then(values => {
+        const allBlockInfo = values[0]
+        const graph = values[1]
+        const infoByType = Object.fromEntries(allBlockInfo.map(info => [info.type, info]));
+
+        console.log("got all block info", infoByType)
+        
+        van.add(page, pageContent({id, graph, infoByType}))
+    }).catch(appErr => {
+        console.log("failed to resolve all promises", appErr)
+
+        AppErrorAlert(appErr)
+    })
+
+    return page
+}
+
+export default GraphPage;

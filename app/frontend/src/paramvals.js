@@ -13,97 +13,89 @@ function computeStep(min, max) {
     return (ratio / minSteps) / Math.pow(10.0, Math.ceil(Math.log10(ratio)))
 }
 
-const RangeParamVal = ({paramDef, values, step}) => {
-    let value = values[paramDef.name]
-    if (!value) {
-        value = van.state(paramDef.default);
-    }
-
-    const min = paramDef.limits[0]
-    const max = paramDef.limits[1]
-    const labelText = `${capitalize(paramDef.name)}: (${min}-${max}):`;
+const RangeParamVal = ({param, value, step}) => {
+    const min = param.limits[0]
+    const max = param.limits[1]
+    const labelText = `${capitalize(param.name)}: (${min}-${max}):`;
 
     return div(
         {class: "flex flex-col"},
-        label({for: paramDef.name}, labelText),
+        label({for: param.name}, labelText),
         input({
-            id: paramDef.name,
+            id: param.name,
             type: "number",
             class: inputClass,
             value: value.val,
             min: min,
             max: max,
             step: step,
-            onchange: e => value.val = e.target.value,
+            onchange: e => value.val = Number(e.target.value),
         }),
     )
 }
 
-const IntRangeParamVal = ({paramDef, values}) => {
-    return RangeParamVal({paramDef, values, step: 1})
+const IntRangeParamVal = ({param, value}) => {
+    return RangeParamVal({param, value, step: 1})
 }
 
-const FltRangeParamVal = ({paramDef, values}) => {
-    const step = computeStep(paramDef.limits[0], paramDef.limits[1])
+const FltRangeParamVal = ({param, value}) => {
+    const step = computeStep(param.limits[0], param.limits[1])
 
-    return RangeParamVal({paramDef, values, step})
+    return RangeParamVal({param, value, step})
 }
 
-const EnumParamVal = ({paramDef, values}) => {
-    let value = values[paramDef.name]
-    if (!value) {
-        value = van.state(paramDef.default);
-    }
-
-    const options = paramDef.limits.map(allowedStr => {
-        let props = {value: allowedStr};
+const EnumParamVal = ({param, currentVal, updateVal}) => {
+    const options = param.limits.map(allowedVal => {
+        let props = {value: allowedVal};
         
-        if (allowedStr === value.val) {
+        if (allowedVal === currentVal) {
             props.selected = "selected";
         }
 
-        return option(props, allowedStr);
+        return option(props, allowedVal);
     });
 
     return li(
-        label({for: paramDef.name}, capitalize(paramDef.name)),
+        label({for: param.name}, capitalize(param.name)),
         select({
-            id: paramDef.name,
+            id: param.name,
             class: inputClass,
-            oninput: e => value.val = e.target.value,
+            oninput: e => updateVal(e.target.value),
         }, options),
     )
 }
 
-const ParamValItem = (paramDef, values) => {
-    switch (paramDef.type) {
+const ParamValItem = (param, value) => {
+    switch (param.type) {
     case "IntEnum":
+        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = parseInt(strVal)})
     case "FltEnum":
+        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = parseFloat(strVal)})
     case "StrEnum":
-        return EnumParamVal({paramDef, values})
+        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = strVal})
     case "IntRange":
-        return IntRangeParamVal({paramDef, values})
+        return IntRangeParamVal({param, value})
     case "FltRange":
-        return FltRangeParamVal({paramDef, values})
+        return FltRangeParamVal({param, value})
     }
     
-    console.log(`unknown param type ${paramDef.type}`)
+    console.log(`unknown param type ${param.type}`)
 
     return null;
 }
 
-function validateParamVal(paramDef, value) {
-    switch (paramDef.type) {
+function validateParamVal(param, value) {
+    switch (param.type) {
     case "IntEnum":
     case "FltEnum":
     case "StrEnum":
-        if (paramDef.limits.indexOf(value) == -1) {
-            return new Error(`invalid value ${value} for param ${paramDef.name}: not one of enum values ${paramDef.limits}`)
+        if (param.limits.indexOf(value) == -1) {
+            return new Error(`invalid value ${value} for param ${param.name}: not one of enum values ${param.limits}`)
         }
     case "IntRange":
     case "FltRange":
-        if (value < paramDef.limits[0] || value > paramDef.limits[1]) {
-            return new Error(`invalid value ${value} for param ${paramDef.name}: not in range [${paramDef.limits[0]}, ${paramDef.limits[1]}]`)
+        if (value < param.limits[0] || value > param.limits[1]) {
+            return new Error(`invalid value ${value} for param ${param.name}: not in range [${param.limits[0]}, ${param.limits[1]}]`)
         }
     }
         

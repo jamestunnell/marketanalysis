@@ -126,7 +126,7 @@ const GraphTableRow = ({id, name}) => {
     return () => deleted.val ? null : TableRow(rowItems);
 }
 
-const Graphs = () => {
+const GraphsPage = () => {
     const columnNames = ["Name", "ID", ""]
     const tableBody = tbody({class:"table-auto"});
 
@@ -175,4 +175,4 @@ const Graphs = () => {
     )
 }
 
-export default Graphs;
+export default GraphsPage;

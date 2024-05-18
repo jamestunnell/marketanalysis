@@ -1,5 +1,7 @@
 import van from "vanjs-core"
 
+import {AlertError} from './alerts.js'
+
 const { li, p, ul } = van.tags
 
 // const DoAppErrorModal = (appErr) => {
@@ -26,6 +28,8 @@ const { li, p, ul } = van.tags
 // }
 
 const AppErrorAlert = (appErr) => {
+    console.log("adding app error alert", appErr)
+
     const substance = [
         p(appErr.message),
         ul(
