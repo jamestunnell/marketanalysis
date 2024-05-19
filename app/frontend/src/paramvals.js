@@ -13,7 +13,7 @@ function computeStep(min, max) {
     return (ratio / minSteps) / Math.pow(10.0, Math.ceil(Math.log10(ratio)))
 }
 
-const RangeParamVal = ({param, value, step}) => {
+const RangeParamVal = ({param, value, step, onChange}) => {
     const min = param.limits[0]
     const max = param.limits[1]
     const labelText = `${capitalize(param.name)}: (${min}-${max}):`;
@@ -29,19 +29,25 @@ const RangeParamVal = ({param, value, step}) => {
             min: min,
             max: max,
             step: step,
-            onchange: e => value.val = Number(e.target.value),
+            onchange: e => {
+                const newVal = Number(e.target.value)
+
+                value.val = newVal
+
+                onChange(newVal)
+            },
         }),
     )
 }
 
-const IntRangeParamVal = ({param, value}) => {
-    return RangeParamVal({param, value, step: 1})
+const IntRangeParamVal = ({param, value, onChange}) => {
+    return RangeParamVal({param, value, step: 1, onChange})
 }
 
-const FltRangeParamVal = ({param, value}) => {
+const FltRangeParamVal = ({param, value, onChange}) => {
     const step = computeStep(param.limits[0], param.limits[1])
 
-    return RangeParamVal({param, value, step})
+    return RangeParamVal({param, value, step, onChange})
 }
 
 const EnumParamVal = ({param, currentVal, updateVal}) => {
@@ -65,18 +71,44 @@ const EnumParamVal = ({param, currentVal, updateVal}) => {
     )
 }
 
-const ParamValItem = (param, value) => {
+const ParamValItem = ({param, value, onChange}) => {
     switch (param.type) {
     case "IntEnum":
-        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = parseInt(strVal)})
+        return EnumParamVal({
+            param,
+            currentVal: value.val,
+            updateVal: (strVal) => {
+                const newVal = parseInt(strVal)
+                value.val = newVal
+
+                onChange(newVal)
+            },
+        })
     case "FltEnum":
-        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = parseFloat(strVal)})
+        return EnumParamVal({
+            param,
+            currentVal: value.val,
+            updateVal: (strVal) => {
+                const newVal = parseFloat(strVal)
+                value.val = newVal
+
+                onChange(newVal)
+            }
+        })
     case "StrEnum":
-        return EnumParamVal({param, currentVal: value.val, updateVal: (strVal) => value.val = strVal})
+        return EnumParamVal({
+            param,
+            currentVal: value.val,
+            updateVal: (strVal) => {
+                value.val = strVal
+
+                onChange(strVal)
+            },
+        })
     case "IntRange":
-        return IntRangeParamVal({param, value})
+        return IntRangeParamVal({param, value, onChange})
     case "FltRange":
-        return FltRangeParamVal({param, value})
+        return FltRangeParamVal({param, value, onChange})
     }
     
     console.log(`unknown param type ${param.type}`)

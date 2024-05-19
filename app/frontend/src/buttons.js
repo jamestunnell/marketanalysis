@@ -1,4 +1,5 @@
 import van from "vanjs-core"
+import { Tooltip } from 'vanjs-ui'
 
 const { button } = van.tags
 
@@ -22,6 +23,49 @@ const ButtonDanger = ({child, onclick, disabled}) => {
     })
 }
 
+const iconClassNormal = 'rounded-md p-3 m-1 text-gray-700 hover:text-black'
+
+const ButtonIconDisableable = ({icon, disabled, onclick}) => {
+    return button(
+        {
+            class: van.derive(() => {
+                return disabled.val ? 'rounded-md p-3 m-1 text-gray-400' : iconClassNormal
+            }),
+            disabled: disabled,
+            onclick: onclick,
+        },
+        icon,
+    )
+}
+
+const ButtonIcon = ({icon, onclick}) => {
+    return button(
+        {
+            class: iconClassNormal,
+            onclick: onclick,
+        },
+        icon,
+    )
+}
+
+const ButtonIconTooltip = ({icon, tooltipText}) => {
+    const showTooltip = van.state(false)
+    
+    return button(
+        {
+            style: "position: relative;",
+            class: iconClassNormal,
+            onmouseenter: () => showTooltip.val = true,
+            onmouseleave: () => showTooltip.val = false,
+        },
+        icon,
+        Tooltip({
+            text: tooltipText,
+            show: showTooltip,
+        }),
+    )
+}
+
 const ButtonCancel = ({child, onclick}) => {
     return button(
         {
@@ -38,6 +82,8 @@ const buttonDisableable = ({child, onclick, disabled, classNormal, classDisabled
             class: van.derive(() => {
                 return disabled ? (disabled.val ? classDisabled : classNormal) : classNormal
             }),
+            onmouseenter: () => showTooltip.val = true,
+            onmouseleave: () => showTooltip.val = false,
             onclick: onclick,
             disabled: disabled,
         },
@@ -45,4 +91,4 @@ const buttonDisableable = ({child, onclick, disabled, classNormal, classDisabled
     );
 }
 
-export { Button, ButtonDanger, ButtonCancel };
+export { Button, ButtonDanger, ButtonCancel, ButtonIcon, ButtonIconDisableable, ButtonIconTooltip };

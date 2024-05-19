@@ -4,8 +4,13 @@ const {div, table, td, th, thead, tr} = van.tags
 
 const TableRow = (rowItems) => {
     return tr(
-        {class: "border border-solid"},
-        rowItems.map(x => td({class: "px-6 py-4"}, x)),
+        {class: "border border-solid align-top"},
+        rowItems.map(x => {
+            return td(
+                {class: "px-6 py-4"},
+                x,
+            )
+        }),
     )
 }
 
