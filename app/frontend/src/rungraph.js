@@ -1,14 +1,26 @@
 import van from "vanjs-core"
+import Datepicker from 'flowbite-datepicker/Datepicker';
+import convertCSVToArray from 'convert-csv-to-array'
 
 import { AppErrorAlert} from './apperror.js';
-import { Button, ButtonCancel } from "./buttons.js";
-import { IconPlay } from './icons.js';
-import { Download } from "./download.js";
 import { PostJSON } from './backend.js';
+import { Button, ButtonCancel } from "./buttons.js";
+// import { ChartModal, MakeChartConfig } from "./chart.js";
+import { Download } from "./download.js";
+import { IconPlay } from './icons.js';
 import { ModalBackground, ModalForeground } from './modal.js';
-import Datepicker from 'flowbite-datepicker/Datepicker';
 
 const {div, input, p, label} = van.tags
+
+function makeCSVChartData(text) {
+    const records = convertCSVToArray(text, {header: true, separator: ",", type: "object"})
+
+    console.log(`parsed ${records.length} CSV records`)
+}
+
+function makeNDJSONChartData(text) {
+
+}
 
 const runGraph = ({id, date, symbol, format}) => {
     return new Promise((resolve, reject) => {
@@ -151,19 +163,31 @@ const RunGraph = (graph) => {
                                 console.log("run graph succeeded")
 
                                 const basename = `${graph.name}_${date.val}`
-
+                                
+                                let chartData;
+                                
                                 switch (format.val) {
                                 case "csv":
                                     Download({
                                         filename: basename + ".csv",
                                         blob: new Blob([text], {type: 'text/csv'}),
                                     })
+
+                                    chartData = makeCSVChartData(text)
+
+                                    break
                                 case "ndjson":
                                     Download({
                                         filename: basename + ".ndjson",
                                         blob: new Blob([text], {type: 'application/x-ndjson'}),
                                     })
+
+                                    chartData = makeNDJSONChartData(text)
+
+                                    break
                                 }
+
+                                // ChartModal(MakeChartConfig(chartData))
 
                                 closed.val = true;
                             }).catch(appErr => {

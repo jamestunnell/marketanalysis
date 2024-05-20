@@ -124,11 +124,13 @@ function validateParamVal(param, value) {
         if (param.limits.indexOf(value) == -1) {
             return new Error(`invalid value ${value} for param ${param.name}: not one of enum values ${param.limits}`)
         }
+        break
     case "IntRange":
     case "FltRange":
         if (value < param.limits[0] || value > param.limits[1]) {
             return new Error(`invalid value ${value} for param ${param.name}: not in range [${param.limits[0]}, ${param.limits[1]}]`)
         }
+        break
     }
         
     return null;
