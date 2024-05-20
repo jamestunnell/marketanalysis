@@ -11,6 +11,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/bars"
+	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/graph"
 	"github.com/jamestunnell/marketanalysis/recorders"
 )
@@ -36,9 +37,26 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 
 	barsLoader := bars.NewAlpacaLoader(runReq.Symbol)
 	buf := bytes.NewBuffer([]byte{})
-	recorder := recorders.NewCSV(buf, runReq.LocalTZ)
 
-	err := graph.RunDay(runReq.Date, cfg, barsLoader, recorder)
+	var rec blocks.Recorder
+	var contentType string
+
+	switch runReq.Format {
+	case "csv":
+		rec = recorders.NewCSV(buf, runReq.LocalTZ)
+		contentType = "text/csv"
+	case "ndjson":
+		rec = recorders.NewNDJSON(buf, runReq.LocalTZ)
+		contentType = "application/x-ndjson"
+	default:
+		appErr := app.NewErrInvalidInput("request", "format is missing or unknown")
+
+		handleAppErr(w, appErr)
+
+		return
+	}
+
+	err := graph.RunDay(runReq.Date, cfg, barsLoader, rec)
 	if err != nil {
 		appErr := app.NewErrActionFailed("run graph", err.Error())
 
@@ -47,7 +65,7 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Type", contentType)
 
 	w.WriteHeader(http.StatusOK)
 

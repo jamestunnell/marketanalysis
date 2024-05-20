@@ -19,7 +19,7 @@ type CSV struct {
 	notFlushed int
 }
 
-const timeCol = "time"
+const timeCol = "timestamp"
 
 func NewCSV(w io.Writer, localTZ string) *CSV {
 	return &CSV{

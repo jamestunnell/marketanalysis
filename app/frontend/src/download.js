@@ -15,20 +15,15 @@ const Download = ({filename, blob}) => {
     URL.revokeObjectURL(url);
 };
 
-const DownloadCSV = ({name, data}) => {
-    Download({
-        filename: name + ".csv",
-        blob: new Blob([data], {type: 'text/csv'}),
-    })
-};
-
-const DownloadJSON = ({name, obj}) => {
+const DownloadJSON = ({basename, obj}) => {
     const jsonStr = JSON.stringify(obj, null, 2)
 
+    console.log(`downloading JSON ${basename}`)
+
     Download({
-        filename: name + ".json",
+        filename: basename + ".json",
         blob: new Blob([jsonStr], {type: 'application/json; charset=utf-8;'}),
     })
 };
 
-export {Download, DownloadCSV, DownloadJSON};
+export {Download, DownloadJSON};

@@ -32,6 +32,8 @@ function validateConnection({connection, findBlockInfo}) {
         return new Error(`target block ${tgtParts[0]} not found`)
     }
 
+    console.log(`found info for target block ${tgtParts[0]}`)
+
     if (!srcInfo.outputs.find(o => o.name === srcParts[1])) {
         return new Error(`source block ${srcParts[0]} does not have output ${srcParts[1]}`)
     }

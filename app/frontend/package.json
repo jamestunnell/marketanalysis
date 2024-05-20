@@ -13,6 +13,7 @@
   "dependencies": {
     "@themesberg/tailwind-datepicker": "^1.1.0",
     "autoprefixer": "^10.4.19",
+    "chartjs": "^0.3.24",
     "flowbite": "^2.3.0",
     "flowbite-datepicker": "^1.2.6",
     "node-fetch": "^3.3.2",

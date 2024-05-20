@@ -109,6 +109,7 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
 class PageContent {
     constructor({graph, infoByType}) {
         this.id = graph.id
+        this.digest = hash(graph)
         this.name = van.state(graph.name)
         this.changed = van.state(false)
         this.infoByType = infoByType
@@ -178,6 +179,14 @@ class PageContent {
 
     render() {
         console.log("rendering graph page content")
+        
+        const needsSaved = van.derive(() => { 
+            if (!this.changed.val) {
+                return false
+            }
+
+            return this.digest !== hash(this.makeGraph())
+        })
 
         const addBlockBtn = ButtonIcon({
             icon: IconAdd(),
@@ -215,23 +224,28 @@ class PageContent {
         });
         const runBtn = ButtonIconDisableable({
             icon: IconPlay(),
-            disabled: van.derive(() => this.changed.val),
+            disabled: needsSaved,
             onclick: () => RunGraph(this.makeGraph()),
         });
         const saveBtn = ButtonIconDisableable({
             icon: IconSave(),
-            disabled: van.derive(() => !this.changed.val),
+            disabled: van.derive(() => !needsSaved.val),
             onclick: () => {
+                const graph = this.makeGraph()
+
                 putGraph({
-                    graph: this.makeGraph(),
+                    graph: graph,
                     onErr: (appErr) => AppErrorAlert(appErr),
-                    onSuccess: () => this.changed.val = false,
+                    onSuccess: () => {
+                        this.changed.val = false
+                        this.digest = hash(graph)
+                    }
                 });
             },
         });
         const exportBtn = ButtonIcon({
             icon: IconExport(),
-            onclick: () => DownloadJSON({obj: this.makeGraph(), name: this.name.val}),
+            onclick: () => DownloadJSON({obj: this.makeGraph(), basename: this.name.val}),
         });
         const importBtn = ButtonIcon({
             icon: IconImport(),

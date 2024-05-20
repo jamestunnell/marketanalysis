@@ -82,8 +82,6 @@ const buttonDisableable = ({child, onclick, disabled, classNormal, classDisabled
             class: van.derive(() => {
                 return disabled ? (disabled.val ? classDisabled : classNormal) : classNormal
             }),
-            onmouseenter: () => showTooltip.val = true,
-            onmouseleave: () => showTooltip.val = false,
             onclick: onclick,
             disabled: disabled,
         },
