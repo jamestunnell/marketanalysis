@@ -10,8 +10,20 @@ const IconCheck = () => {
     return i({class: "fa-solid fa-check"});
 }
 
+const IconClose = () => {
+    return i({class: "fa-solid fa-xmark"});
+}
+
 const IconCollapsed = () => {
     return i({class: "fa-solid fa-chevron-right"});
+}
+
+const IconDelete = () => {
+    return i({class: "fa-solid fa-trash"});
+}
+
+const IconDownload = () => {
+    return i({class: "fa-solid fa-download"});
 }
 
 const IconError = () => {
@@ -20,10 +32,6 @@ const IconError = () => {
 
 const IconExpanded = () => {
     return i({class: "fa-solid fa-chevron-down"});
-}
-
-const IconDelete = () => {
-    return i({class: "fa-solid fa-trash"});
 }
 
 const IconExport = () => {
@@ -38,6 +46,10 @@ const IconPlay = () => {
     return i({class: "fa-solid fa-play"});
 }
 
+const IconPlot = () => {
+    return i({class: "fa-solid fa-chart-line"});
+}
+
 const IconSave = () => {
     return i({class: "fa-solid fa-floppy-disk"});
 }
@@ -46,4 +58,4 @@ const IconView = () => {
     return i({class: "fa-solid fa-eye"});
 }
 
-export {IconAdd, IconCheck, IconCollapsed, IconDelete, IconError, IconExpanded, IconExport, IconImport, IconPlay, IconSave, IconView};
+export {IconAdd, IconCheck, IconClose, IconCollapsed, IconDelete, IconDownload, IconError, IconExpanded, IconExport, IconImport, IconPlay, IconPlot, IconSave, IconView};

@@ -19,9 +19,9 @@ type NDJSON struct {
 	notFlushed int
 }
 
-type Record struct {
-	Time   time.Time          `json:"timestamp"`
-	Values map[string]float64 `json:"values"`
+type NDRecord struct {
+	Time   time.Time      `json:"timestamp"`
+	Values map[string]any `json:"values"`
 }
 
 func NewNDJSON(w io.Writer, localTZ string) *NDJSON {
@@ -52,15 +52,22 @@ func (rec *NDJSON) Init(valNames []string) error {
 	return nil
 }
 
-func (rec *NDJSON) Record(t time.Time, vals map[string]float64) {
+func (rec *NDJSON) Process(t time.Time, vals map[string]float64) {
 	if rec.loc != nil {
 		t = t.In(rec.loc)
 	}
 
-	record := &Record{
-		Time:   t,
-		Values: vals,
+	recordVals := map[string]any{}
+	for _, name := range rec.valNames {
+		// a missing value will be represented by null
+		recordVals[name] = vals[name]
 	}
+
+	record := &NDRecord{
+		Time:   t,
+		Values: recordVals,
+	}
+
 	d, _ := json.Marshal(record)
 
 	if _, err := rec.writer.Write(d); err != nil {

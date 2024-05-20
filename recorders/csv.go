@@ -57,7 +57,7 @@ func (rec *CSV) Init(valNames []string) error {
 	return nil
 }
 
-func (rec *CSV) Record(t time.Time, vals map[string]float64) {
+func (rec *CSV) Process(t time.Time, vals map[string]float64) {
 	if rec.loc != nil {
 		t = t.In(rec.loc)
 	}
