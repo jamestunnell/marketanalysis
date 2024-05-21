@@ -116,8 +116,8 @@ const RunGraph = (graph) => {
     runBtn.classList.add("self-center")
 
     const modal = ModalBackground(
-        ModalForeground(
-            {id: "foreground"},
+        div(
+            {id: "foreground", class: "block p-16 rounded-lg bg-white min-w-[25%] max-w-[25%]"},
             div(
                 {id: "modalContent", class: "flex flex-col rounded-md space-y-4"},
                 closeBtn,
@@ -134,7 +134,7 @@ const RunGraph = (graph) => {
                         id: "runSymbol",
                         class: inputClass,
                         type: "text",
-                        placeholder: 'Security symbol (SPY, QQQ, etc.)',
+                        placeholder: 'Symbol (SPY, QQQ, etc.)',
                         oninput: e => symbol.val = e.target.value,
                     }),                        
                 ),

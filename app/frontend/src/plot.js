@@ -1,7 +1,8 @@
 import van from 'vanjs-core'
 import  ndjsonParser from 'ndjson-parse'
 import { parseISO } from 'date-fns'
-import uPlot from 'uplot'
+import Highcharts from 'highcharts'
+import ApexCharts from 'apexcharts'
 
 import { ButtonIcon } from './buttons.js'
 import { IconClose } from './icons.js'
@@ -11,53 +12,55 @@ const {div} = van.tags
 
 const COLORS = ["royalblue", "seagreen", "plum", "tomato", "goldenrod", "sienna"]
 
-function color(idx) {
+function plotColor(idx) {
     return COLORS[idx % COLORS.length]
 }
 
 function tsToUnix(ts) {
     const date = parseISO(ts)
     
-    return Math.floor(date.getTime() / 1000);
+    return Math.floor(date.getTime());
 }
 
-const PlotNDJSON = (text) => {
+const makePlot = (series) => {
+    const plotArea = div()
+    const chart = Highcharts.chart(plotArea, {
+        chart: {type: 'line', zooming: {type: 'x'}},
+        title: {enabled: false, text: ""},
+        xAxis: {type: 'datetime'},
+        yAxis: {    },
+        plotOptions: {
+            series:{
+                tooltip: {shared: true},
+                states: {
+                    hover: {enabled: false}
+                },
+            },
+        },
+        legend: {
+            enabled: true
+        },
+        series: series,
+        navigation: {
+            buttonOptions: {
+                enabled: true
+            }
+        }
+    });
+
+    return plotArea
+}
+
+function plotNDJSON(text) {
     const records = ndjsonParser(text)
     const names = Object.keys(records[0].values)
-    const data = [records.map(r => tsToUnix(r.timestamp))]
-    
-    names.forEach(name => data.push(records.map(r => r.values[name])))
+    const series = names.map((name, i) => {
+        const valuePairs = records.map(r => [tsToUnix(r.timestamp), r.values[name]])
+        
+        return {name, data: valuePairs, color: plotColor(i)}
+    })
 
-    const opts = {
-        title: "Run Results",
-        id: "results-chart",
-        // class: "my-chart",
-        width: 800,
-        height: 600,
-        axes: [
-            {},
-            {
-                scale: "price",
-                values: (u, vals, space) => vals.map(v => "$"+v.toFixed(2)),
-            }
-        ],
-        series: [{}].concat(names.map((name, i) => {
-            return {
-                show: true,
-                spanGaps: false, // don't connect missing points
-                label: name,
-                stroke: color(i),
-                scale: "price",
-                value: (u,v) => v === null ? null : ("$" + v.toFixed(2)),
-            }
-        })),
-    }
-
-    const chartArea = div()
-
-    let u = uPlot(opts, data, chartArea)
-
-    return chartArea
+    return makePlot(series)
 }
 
 const PlotModal = ({text, format}) => {
@@ -69,17 +72,15 @@ const PlotModal = ({text, format}) => {
 
     const closed = van.state(false);
     const closeBtn = ButtonIcon({icon: IconClose(), onclick: () => closed.val = true})
-    const plot = PlotNDJSON(text)
-
-    closeBtn.classList.add("self-end")
+    const plot = plotNDJSON(text)
 
     const modal = ModalBackground(
-        ModalForeground(
-            {},
+        div(
+            {class: "block p-16 rounded-lg bg-white min-w-[65%] max-w-[65%]"},
             div(
                 {class: "flex flex-col"},
-                closeBtn,
-                plot,
+                div({class:"flex self-end"}, closeBtn),
+                plot
             )
         ),
     )
