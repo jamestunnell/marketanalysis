@@ -87,7 +87,7 @@ const RunGraph = (graph) => {
 
     const closeBtn = ButtonIcon({icon: IconClose(), onclick: ()=> closed.val = true})
     const runBtn = Button({
-        disabled: van.derive(() => date.val.length == 0),
+        disabled: van.derive(() => (date.val.length === 0) || (symbol.val.length === 0)),
         child: [IconPlay, " Run"],
         onclick: onRun,
     })
@@ -135,7 +135,7 @@ const RunGraph = (graph) => {
                         class: inputClass,
                         type: "text",
                         placeholder: 'Symbol (SPY, QQQ, etc.)',
-                        oninput: e => symbol.val = e.target.value,
+                        onchange: e => symbol.val = e.target.value,
                     }),                        
                 ),
                 runBtn,
