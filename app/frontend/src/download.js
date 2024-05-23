@@ -15,13 +15,13 @@ const Download = ({filename, blob}) => {
     URL.revokeObjectURL(url);
 };
 
-const DownloadJSON = ({basename, obj}) => {
-    const jsonStr = JSON.stringify(obj, null, 2)
+const DownloadJSON = ({filename, object}) => {
+    const jsonStr = JSON.stringify(object, null, 2)
 
-    console.log(`downloading JSON ${basename}`)
+    console.log(`downloading JSON file ${filename}`)
 
     Download({
-        filename: basename + ".json",
+        filename: filename,
         blob: new Blob([jsonStr], {type: 'application/json; charset=utf-8;'}),
     })
 };

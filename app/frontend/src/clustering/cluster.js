@@ -1,45 +1,10 @@
 import skmeans from 'skmeans'
-import agglo from 'agglo'
-
-// function computeSum(values) {
-//     return values.reduce((sum, val) => sum + val, 0.0)
-// }
-
-// function computeMean(values) {
-//     return computeSum(values) / Number(values.length)
-// }
-
-// function computeVariance(values, mean) {
-//     return computeMean(values.map(x => Math.pow(x - mean, 2.0)))
-// }
-
-// function computeStdDev(values, mean) {
-//     return Math.sqrt(computeVariance(values, mean))
-// }
-
-// function computeStats(values) {
-//     const min = Math.min(values)
-//     const max = Math.max(values)
-//     const mid = (min + max) / 2.0
-//     const mean = computeMean(values)
-//     const stddev = computeStdDev(values, mean)
-
-//     return {min, mid, max, mean, stddev}
-// }
-
-// function dumpAggloLevels(levels, curIdx, maxDepth) {
-//     console.log(`levels[${curIdx}]: ${JSON.stringify(levels[curIdx])}`)
-
-//     if (maxDepth === 0) {
-//         return
-//     }
-
-//     dumpAggloLevels(levels, levels[curIdx].source.index, maxDepth-1)
-// }
 
 function kMeansAdaptive(namedDatasets) {
     const names = Object.keys(namedDatasets)
     const datasets = names.map(name => namedDatasets[name])
+
+    console.log("clustering with datasets", names)
 
     if (names.length === 0) {
         return []
@@ -61,24 +26,17 @@ function kMeansAdaptive(namedDatasets) {
         })
     })
 
-    // console.log(`produced allValues`, allValues)
-    // console.log(`produced dsIndices`, dsIndices)
-    
-    // const levels = agglo(allValues)
-
-    // dumpAggloLevels(levels, levels.length-1, names.length)
-
     let clusters = []
     let k = names.length
 
     for (; k > 1; k--) {
         const majority = Number(k) / Number(k+1)
 
-        // console.log(`trying clustering with k=${k}`)
+        console.log(`trying clustering with k=${k}`)
 
         const results = skmeans(allValues, k)
 
-        // console.log(`clustering with k=${k} complete`, results)
+        console.log(`clustering with k=${k} complete`, results)
 
         const votesByDS = Object.fromEntries(names.map(name => {
             const votes = {}
@@ -109,7 +67,7 @@ function kMeansAdaptive(namedDatasets) {
                 // console.log(`datastore ${name} votes for ${k}: ${100.0*perc}%`)
 
                 if (perc >= majority) {
-                    // console.log(`datastore ${name}: selected cluster ${j}`)
+                    console.log(`datastore ${name}: selected cluster ${j}`)
 
                     clustersByDS[name] = j
                     
@@ -119,7 +77,7 @@ function kMeansAdaptive(namedDatasets) {
         })
 
         if (Object.keys(clustersByDS).length === names.length) {
-            // console.log(`clustering done with k=${k}`)
+            console.log(`clustering done with k=${k}`)
 
             for (let j = 0; j < k; j++) {
                 const members = []
@@ -143,9 +101,5 @@ function kMeansAdaptive(namedDatasets) {
 
     return clusters.filter(cluster => cluster.length > 0)
 }
-
-// export default function kMeansAdaptive(namedDatasets, maxClusters) {
-
-// }
 
 export {kMeansAdaptive}

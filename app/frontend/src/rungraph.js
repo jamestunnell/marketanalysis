@@ -3,19 +3,19 @@ import Datepicker from 'flowbite-datepicker/Datepicker'
 
 import { AppErrorAlert} from './apperror.js'
 import { PostJSON } from './backend.js'
-import { Button, ButtonCancel, ButtonIcon } from "./buttons.js"
-import { Download } from "./download.js"
+import { Button, ButtonIcon } from "./buttons.js"
+import { DownloadJSON } from "./download.js"
 import { IconDownload, IconClose, IconPlay, IconPlot } from './icons.js'
-import { ModalBackground, ModalForeground } from './modal.js'
-import { PlotModal } from './plot.js'
+import { ModalBackground } from './modal.js'
+import { PlotRecordingModal } from './plot.js'
 
 const {div, input, p, label} = van.tags
 
 const runGraph = ({id, date, symbol}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/run-day`
-        const object = {date, symbol, format: "ndjson"}
-        const options = {accept: 'application/x-ndjson'}
+        const object = {date, symbol, format: "json"}
+        const options = {accept: 'application/json'}
 
         console.log("running graph", object)
 
@@ -28,7 +28,7 @@ const runGraph = ({id, date, symbol}) => {
                 })
             }
 
-            resp.text().then(text => resolve(text))
+            resp.json().then(obj => resolve(obj))
         }).catch(err => {
             console.log("failed to make run graph request", err)
             
@@ -44,7 +44,7 @@ const runGraph = ({id, date, symbol}) => {
 const RunGraph = (graph) => {
     const closed = van.state(false)
     const completed = van.state(false)
-    const resultText = van.state("")
+    const recording = van.state({})
     const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring"
     const today = new Date()
     const date = van.state("")
@@ -75,10 +75,10 @@ const RunGraph = (graph) => {
             id: graph.id,
             date: date.val,
             symbol: symbol.val,
-        }).then(text => {
+        }).then(obj => {
             console.log("run graph succeeded")
             
-            resultText.val = text
+            recording.val = obj
             completed.val = true
         }).catch(appErr => {
             AppErrorAlert(appErr)
@@ -93,14 +93,14 @@ const RunGraph = (graph) => {
     })
     const plotBtn = ButtonIcon({
         icon: IconPlot(),
-        onclick: ()=> PlotModal({text: resultText.val, format: "ndjson"}),
+        onclick: ()=> PlotRecordingModal(recording.val),
     })
     const downloadBtn = ButtonIcon({
         icon: IconDownload(),
         onclick: ()=> {
-            Download({
-                filename: `${graph.name}_${date.val}.ndjson`,
-                blob: new Blob([resultText.val]),
+            DownloadJSON({
+                filename: `${graph.name}_${symbol.val}_${date.val}.json`,
+                object: recording.val,
             })
         },
     })

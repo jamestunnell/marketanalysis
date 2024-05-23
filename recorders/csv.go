@@ -92,10 +92,12 @@ func (rec *CSV) Process(t time.Time, vals map[string]float64) {
 	rec.notFlushed++
 }
 
-func (rec *CSV) Flush() {
+func (rec *CSV) Finalize() error {
 	log.Debug().Int("count", rec.notFlushed).Msg("flushed CSV records")
 
 	rec.writer.Flush()
 
 	rec.notFlushed = 0
+
+	return nil
 }

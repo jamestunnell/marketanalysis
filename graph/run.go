@@ -39,7 +39,9 @@ func RunDay(
 		g.Update(bar)
 	}
 
-	r.Flush()
+	if err = r.Finalize(); err != nil {
+		return fmt.Errorf("failed to finalize recording: %w", err)
+	}
 
 	return nil
 }

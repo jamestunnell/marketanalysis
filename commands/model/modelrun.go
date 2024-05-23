@@ -97,7 +97,9 @@ func (cmd *ModelRun) Run() error {
 		cmd.model.Update(bar)
 	}
 
-	cmd.Recorder.Flush()
+	if err := cmd.Recorder.Finalize(); err != nil {
+		return fmt.Errorf("failed to finalize recording: %w", err)
+	}
 
 	return nil
 }

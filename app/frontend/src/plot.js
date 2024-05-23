@@ -41,33 +41,32 @@ const makePlot = (series) => {
     return plotArea
 }
 
-// function guessYAxis(values) {
-//     const average = values.reduce((partialSum, a) => partialSum + a, 0.0) / Number(values.length)
+function plotRecording(recording) {
+    const qs = {}
 
-//     return (Math.abs(average) < 5.0) ? 1 : 0
-// }
+    recording.quantities.forEach(q => {
+        if (q.records.length === 0) {
+            console.log(`ignoring quantity ${q.name} with no records`)
 
-function plotNDJSON(text) {
-    const records = ndjsonParser(text)
-    const names = Object.keys(records[0].values)
-    const datasets = Object.fromEntries(names.map(name => {
-        const values = records.map(r => {
-            return r.values[name] ? r.values[name] : null
-        })
+            return
+        }
 
+        console.log(`keeping quantities ${q.name}`)
+
+        qs[q.name] = q
+    })
+
+    const valuesByName = Object.fromEntries(Object.entries(qs).map(([name,q]) => {
+        const values = q.records.map(r => r.v)
+        
         return [name, values]
     }))
-
-    console.log(`made result datasets`, datasets)
-    
-    const clusters = kMeansAdaptive(datasets)
-
+    const clusters = kMeansAdaptive(valuesByName)
     const plots = clusters.map(members => {
-        console.log("making plot with cluster members:", ...members)
+        console.log(`plotting quantities: ${members}`)
 
         const series = members.map((name, i) => {
-            const values = datasets[name]
-            const valuePairs = records.map((r,i) => [tsToUnix(r.timestamp), values[i]])
+            const valuePairs = qs[name].records.map(r => [tsToUnix(r.t), r.v])
             
             return {name, data: valuePairs, color: plotColor(i)}
         })
@@ -78,13 +77,7 @@ function plotNDJSON(text) {
     return plots
 }
 
-const PlotModal = ({text, format}) => {
-    if (format !== "ndjson") {
-        console.log(`plotting format ${format} is not supported`)
-
-        return
-    }
-
+const PlotRecordingModal = (recording) => {
     const closed = van.state(false);
     const closeBtn = ButtonIcon({icon: IconClose(), onclick: () => closed.val = true})
 
@@ -97,7 +90,7 @@ const PlotModal = ({text, format}) => {
                     p({class: "text-xl"}, "Run Results"),
                     div({class: "float-end"}, closeBtn),
                 ),
-                plotNDJSON(text)
+                plotRecording(recording)
             )
         ),
     )
@@ -106,4 +99,4 @@ const PlotModal = ({text, format}) => {
     van.add(document.body, () => closed.val ? null : modal)
 }
 
-export { PlotModal }
+export { PlotRecordingModal }

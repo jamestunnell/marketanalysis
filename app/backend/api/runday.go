@@ -45,9 +45,9 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	case "csv":
 		rec = recorders.NewCSV(buf, runReq.LocalTZ)
 		contentType = "text/csv"
-	case "ndjson":
-		rec = recorders.NewNDJSON(buf, runReq.LocalTZ)
-		contentType = "application/x-ndjson"
+	case "json":
+		rec = recorders.NewJSON(buf, runReq.LocalTZ)
+		contentType = "application/json"
 	default:
 		appErr := app.NewErrInvalidInput("request", "format is missing or unknown")
 
