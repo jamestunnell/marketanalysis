@@ -5,6 +5,7 @@ import Highcharts from 'highcharts'
 
 import { ButtonIcon } from './buttons.js'
 import { IconClose } from './icons.js'
+import { kMeansAdaptive } from './clustering/cluster.js'
 import { ModalBackground, ModalForeground } from './modal.js'
 
 const {div, p} = van.tags
@@ -27,19 +28,7 @@ const makePlot = (series) => {
         chart: {type: 'line', zooming: {type: 'x'}},
         title: {enabled: false, text: ""},
         xAxis: {type: 'datetime'},
-        yAxis: [
-            {
-                title: {
-                    text: 'Price',
-                },
-            },
-            {
-                title: {
-                    text: 'Oscillator',
-                },
-                opposite: true,
-            },
-        ],
+        yAxis: {},
         tooltip: {
             shared: true
         },
@@ -52,25 +41,41 @@ const makePlot = (series) => {
     return plotArea
 }
 
-function guessYAxis(values) {
-    const average = values.reduce((partialSum, a) => partialSum + a, 0.0) / Number(values.length)
+// function guessYAxis(values) {
+//     const average = values.reduce((partialSum, a) => partialSum + a, 0.0) / Number(values.length)
 
-    return (Math.abs(average) < 5.0) ? 1 : 0
-}
+//     return (Math.abs(average) < 5.0) ? 1 : 0
+// }
 
 function plotNDJSON(text) {
     const records = ndjsonParser(text)
     const names = Object.keys(records[0].values)
-    const series = names.map((name, i) => {
-        const values = records.map(r => r.values[name])
-        const yAxis = guessYAxis(values)
-        const valuePairs = records.map((r,i) => [tsToUnix(r.timestamp), values[i]])
-        
-        console.log(`series ${name} is using y-axis ${yAxis}`)
-        return {name, data: valuePairs, color: plotColor(i), yAxis}
+    const datasets = Object.fromEntries(names.map(name => {
+        const values = records.map(r => {
+            return r.values[name] ? r.values[name] : null
+        })
+
+        return [name, values]
+    }))
+
+    console.log(`made result datasets`, datasets)
+    
+    const clusters = kMeansAdaptive(datasets)
+
+    const plots = clusters.map(members => {
+        console.log("making plot with cluster members:", ...members)
+
+        const series = members.map((name, i) => {
+            const values = datasets[name]
+            const valuePairs = records.map((r,i) => [tsToUnix(r.timestamp), values[i]])
+            
+            return {name, data: valuePairs, color: plotColor(i)}
+        })
+    
+        return makePlot(series)    
     })
 
-    return makePlot(series)
+    return plots
 }
 
 const PlotModal = ({text, format}) => {
