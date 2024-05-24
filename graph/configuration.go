@@ -3,6 +3,9 @@ package graph
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/maps"
+
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
 
@@ -82,6 +85,20 @@ func (cfg *Configuration) Validate() []error {
 				errs = append(errs, err)
 			}
 		}
+
+		if err := blk.GetParams().SetValuesOrDefault(b.ParamVals); err != nil {
+			err = fmt.Errorf("block %s: failed to set param vals %#v: %w", cfg.Name, b.ParamVals, err)
+
+			errs = append(errs, err)
+		}
+
+		if err := blk.Init(); err != nil {
+			errs = append(errs, fmt.Errorf("block %s: failed to init: %w", cfg.Name, err))
+		}
+	}
+
+	if len(errs) == 0 {
+		log.Debug().Strs("blocks", maps.Keys(blks)).Msg("blocks are all valid")
 	}
 
 	// validate connections
