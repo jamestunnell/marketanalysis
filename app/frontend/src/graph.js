@@ -2,12 +2,11 @@ import van from "vanjs-core"
 import { v4 as uuidv4 } from 'uuid';
 import hash from 'object-hash';
 import { nanoid } from 'nanoid'
-import { Tooltip } from "vanjs-ui"
 
 import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
 import { SelectBlockTypeModal, ConfigureBlockModal, BlockRow } from "./block.js";
-import { Button, ButtonIcon, ButtonIconDisableable } from "./buttons.js";
+import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { ConnectionRow, DoConnectionModal, validateConnection } from "./connection.js";
 import { DownloadJSON } from "./download.js";
 import { IconAdd, IconCheck, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
@@ -15,7 +14,7 @@ import { RunGraph } from './rungraph.js'
 import { Table } from './table.js';
 import { UploadJSON } from "./upload.js";
 
-const {div, input, p, tbody} = van.tags
+const {canvas, div, input, p, tbody} = van.tags
 
 const getAllBlockInfo = () => {
     return new Promise((resolve, reject) => {
@@ -188,8 +187,14 @@ class PageContent {
             return this.digest !== hash(this.makeGraph())
         })
 
+        const addIcon1 = IconAdd()
+        const addIcon2 = IconAdd()
+        
+        addIcon1.classList.add("text-xl")
+        addIcon2.classList.add("text-xl")
+
         const addBlockBtn = ButtonIcon({
-            icon: IconAdd(),
+            icon: addIcon1,
             onclick: () => {
                 SelectBlockTypeModal({
                     types: Object.keys(this.infoByType),
@@ -210,7 +215,7 @@ class PageContent {
             },
         });
         const addConnBtn = ButtonIcon({
-            icon: IconAdd(),
+            icon: addIcon2,
             onclick: () => {
                 const connection = {source: "", target: ""}
                 const id = nanoid()
@@ -273,15 +278,15 @@ class PageContent {
         });
 
         return div(
-            {class: "container p-6 w-full flex flex-col"},
+            {class: "container p-4 w-full flex flex-col divide-y divide-gray-400"},
             div(
                 {class: "grid grid-cols-2"},
                 div(
-                    {class: "flex flex-row p-4"},
+                    {class: "flex flex-row p-2"},
                     p({class: "text-2xl font-medium font-bold"}, this.name),
                 ),
                 div(
-                    {class: "flex flex-row-reverse p-4"},
+                    {class: "flex flex-row-reverse p-2"},
                     exportBtn,
                     runBtn,
                     saveBtn,
@@ -289,17 +294,35 @@ class PageContent {
                 ),
             ),
             div(
-                {class: "flex flex-row p-4"},
-                p({class: "text-xl font-medium"}, "Blocks"),
-                addBlockBtn,
+                {class: "flex flex-col mt-4"},
+                div(
+                    {class: "grid grid-cols-2"},
+                    div(
+                        {class: "flex flex-row p-2"},
+                        p({class: "p-3 m-1 text-xl font-medium"}, "Blocks"),
+                    ),
+                    div(
+                        {class: "flex flex-row-reverse p-2"},
+                        addBlockBtn,
+                    )
+                ),
+                Table({columnNames: ["","Name", "Type", "Parameters", "Recording", "", ""], tableBody: this.blockTableBody}),
             ),
-            Table({columnNames: ["","Name", "Type", "Parameters", "Recording", "", ""], tableBody: this.blockTableBody}),
             div(
-                {class: "flex flex-row p-4"},
-                p({class: "text-xl font-medium"}, "Connections"),
-                addConnBtn,
-            ),
-            Table({columnNames: ["Source", "Target", "", ""], tableBody: this.connTableBody}),
+                {class: "flex flex-col mt-4"},
+                div(
+                    {class: "grid grid-cols-2"},
+                    div(
+                        {class: "flex flex-row p-2"},
+                        p({class: "p-3 m-1 text-xl font-medium"}, "Connections"),
+                    ),
+                    div(
+                        {class: "flex flex-row-reverse p-2"},
+                        addConnBtn,
+                    )
+                ),
+                Table({columnNames: ["Source", "Target", "", ""], tableBody: this.connTableBody}),
+            )
         )
     }
 
