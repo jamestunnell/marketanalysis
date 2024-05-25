@@ -6,7 +6,7 @@ import { nanoid } from 'nanoid'
 import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
 import { SelectBlockTypeModal, ConfigureBlockModal, BlockRow } from "./block.js";
-import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
+import { ButtonIcon, ButtonIconDisableable, ButtonToggle } from "./buttons.js";
 import { ConnectionRow, DoConnectionModal, validateConnection } from "./connection.js";
 import { DownloadJSON } from "./download.js";
 import { IconAdd, IconCheck, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
@@ -227,6 +227,11 @@ class PageContent {
                 this.changed.val = true
             },
         });
+        const toggleVisualBtn = ButtonToggle({
+            setVal: false,
+            onSet: () => console.log("switching to visual editing"),
+            onClear: () => console.log("switching away from visual editing"),
+        })
         const runBtn = ButtonIconDisableable({
             icon: IconPlay(),
             disabled: needsSaved,
@@ -282,7 +287,7 @@ class PageContent {
             div(
                 {class: "grid grid-cols-2"},
                 div(
-                    {class: "flex flex-row p-2"},
+                    {class: "flex flex-row p-3"},
                     p({class: "text-2xl font-medium font-bold"}, this.name),
                 ),
                 div(
@@ -291,6 +296,14 @@ class PageContent {
                     runBtn,
                     saveBtn,
                     importBtn,
+                ),
+                div(
+                    {class: "flex flex-row"},
+                ),
+                div(
+                    {class: "flex flex-row-reverse"},
+                    toggleVisualBtn,
+                    p({class: "p-2"}, "Visual Editing")
                 ),
             ),
             div(

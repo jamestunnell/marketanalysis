@@ -344,6 +344,11 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@maxgraph/core@^0.10.2":
+  version "0.10.2"
+  resolved "https://registry.yarnpkg.com/@maxgraph/core/-/core-0.10.2.tgz#2282b61c5ec6449af7a27cf1ac308741f08bcbda"
+  integrity sha512-7Ka/irQkb/TMs2ovEck1YW9SamMHHXUx48tlOBpBLd9lXmidDf/ToDj1bNuvU/j6U6xFwEnWNl7/aBuDHSTbzQ==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
