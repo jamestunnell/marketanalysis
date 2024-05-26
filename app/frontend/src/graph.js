@@ -1,20 +1,19 @@
 import van from "vanjs-core"
-import { v4 as uuidv4 } from 'uuid';
 import hash from 'object-hash';
 import { nanoid } from 'nanoid'
 
 import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
-import { SelectBlockTypeModal, ConfigureBlockModal, BlockRow } from "./block.js";
+import { SelectBlockTypeModal, BlockRow } from "./block.js";
 import { ButtonIcon, ButtonIconDisableable, ButtonToggle } from "./buttons.js";
-import { ConnectionRow, DoConnectionModal, validateConnection } from "./connection.js";
+import { ConnectionRow } from "./connection.js";
 import { DownloadJSON } from "./download.js";
-import { IconAdd, IconCheck, IconDelete, IconError, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
+import { IconAdd, IconExport, IconImport, IconPlay, IconSave, IconView } from "./icons.js";
 import { RunGraph } from './rungraph.js'
 import { Table } from './table.js';
 import { UploadJSON } from "./upload.js";
 
-const {canvas, div, input, p, tbody} = van.tags
+const {div, p, tbody} = van.tags
 
 const getAllBlockInfo = () => {
     return new Promise((resolve, reject) => {
@@ -227,11 +226,6 @@ class PageContent {
                 this.changed.val = true
             },
         });
-        const toggleVisualBtn = ButtonToggle({
-            setVal: false,
-            onSet: () => console.log("switching to visual editing"),
-            onClear: () => console.log("switching away from visual editing"),
-        })
         const runBtn = ButtonIconDisableable({
             icon: IconPlay(),
             disabled: needsSaved,
@@ -296,14 +290,6 @@ class PageContent {
                     runBtn,
                     saveBtn,
                     importBtn,
-                ),
-                div(
-                    {class: "flex flex-row"},
-                ),
-                div(
-                    {class: "flex flex-row-reverse"},
-                    toggleVisualBtn,
-                    p({class: "p-2"}, "Visual Editing")
                 ),
             ),
             div(
