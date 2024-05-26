@@ -164,9 +164,11 @@ class PageContent {
     }
 
     blockNames() {
-        console.log("getting block names", this.blockRowsByID)
-
-        return Object.values(this.blockRowsByID).map(row => row.getName())
+        const names = Object.values(this.blockRowsByID).map(row => row.getName())
+        
+        console.log("getting block names", names)
+        
+        return names
     }
 
     findBlockInfo(name) {
@@ -320,7 +322,7 @@ class PageContent {
                         addConnBtn,
                     )
                 ),
-                Table({columnNames: ["Source", "Target", "", ""], tableBody: this.connTableBody}),
+                Table({columnNames: ["Block", "Output", "Block", "Input", "", ""], tableBody: this.connTableBody}),
             )
         )
     }

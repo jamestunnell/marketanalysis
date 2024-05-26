@@ -1,11 +1,12 @@
 import van from "vanjs-core"
-import {Tooltip, Modal} from "vanjs-ui"
+import {Modal} from "vanjs-ui"
 
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.js'
 import { IconCheck, IconDelete, IconError } from './icons.js'
 import { TableRow } from './table.js'
+import { validateParamVal } from "./paramvals.js"
 
-const {div, input, label, p} = van.tags
+const {datalist, div, input, label, option, p} = van.tags
 
 const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
 
@@ -47,15 +48,86 @@ function validateConnection({connection, findBlockInfo}) {
 
 class ConnectionRow {
     constructor({id, connection, parent}) {
+        const sourceParts = connection.source.split(".")
+        const targetParts = connection.target.split(".")
+
+        const sourceBlock = sourceParts[0]
+        const sourceOutput = (sourceParts.length > 1) ? sourceParts[1] : ""
+        const targetBlock = targetParts[0]
+        const targetInput = (targetParts.length > 1) ? targetParts[1] : ""
+
+        console.log(`creating connection row`, {sourceBlock, sourceOutput, targetBlock, targetInput})
+
         this.id = id
         this.parent = parent
-        this.source = van.state(connection.source)
-        this.target = van.state(connection.target)
+        this.sourceBlock = van.state(sourceBlock)
+        this.sourceOutput = van.state(sourceOutput)
+        this.targetBlock = van.state(targetBlock)
+        this.targetInput = van.state(targetInput)
         this.deleted = van.state(false)
+
+        this.sourceBlocksDatalist = datalist({id:`sourceBlocks-${id}`})
+        this.sourceOutputsDatalist = datalist({id:`sourceOutputs-${id}`})
+        this.targetBlocksDatalist = datalist({id:`targetBlocks-${id}`})
+        this.targetInputsDatalist = datalist({id:`targetInputs-${id}`})
+
+        this.updateSourceDatalistOptions(sourceBlock, sourceOutput)
+        this.updateTargetDatalistOptions(targetBlock, targetInput)
+    }
+
+    updateSourceDatalistOptions(blockName, outName) {
+        this.sourceBlocksDatalist.replaceChildren(
+            ...this.parent.blockNames().map(name => {
+                return option({value: name, selected: (name === blockName)}, name)
+            })
+        )
+
+        const sourceInfo = this.parent.findBlockInfo(blockName)
+        const sourceOutputOpts = []
+        
+        if (sourceInfo) {
+            sourceInfo.outputs.forEach(out => {
+                const opt = option({
+                    value: out.name,
+                    selected: (out.name === outName),
+                }, out.name)
+
+                sourceOutputOpts.push(opt)
+            })
+        }
+
+        this.sourceOutputsDatalist.replaceChildren(...sourceOutputOpts)
+    }
+
+    updateTargetDatalistOptions(blockName, inName) {
+        this.targetBlocksDatalist.replaceChildren(
+            ...this.parent.blockNames().map(name => {
+                return option({value: name, selected: (name === blockName)}, name)
+            })
+        )
+
+        const targetInfo = this.parent.findBlockInfo(blockName)
+        const targetInputOpts = []
+        
+        if (targetInfo) {
+            targetInfo.inputs.forEach(input => {
+                const opt = option({
+                    value: input.name,
+                    selected: (input.name === inName),
+                }, input.name)
+
+                targetInputOpts.push(opt)
+            })
+        }
+
+        this.targetInputsDatalist.replaceChildren(...targetInputOpts)
     }
 
     makeConnection() {
-        return {source: this.source.val, target: this.target.val}
+        return {
+            source: `${this.sourceBlock.val}.${this.sourceOutput.val}`,
+            target: `${this.targetBlock.val}.${this.targetInput.val}`,
+        }
     }
 
     delete() {
@@ -81,22 +153,68 @@ class ConnectionRow {
             icon: () => validateErr.val ? IconError() : IconCheck(),
             tooltipText: van.derive(() => validateErr.val ? `Connection is invalid: ${validateErr.val.message}` : "Connection is valid"),
         });
-    
+
         const rowItems = [
-            input({
-                class: inputClass,
-                type: "text",
-                value: this.source.val,
-                placeholder: "<block.output>",
-                oninput: e => this.source.val = e.target.value,
-            }),
-            input({
-                class: inputClass,
-                type: "text",
-                value: this.target.val,
-                placeholder: "<block.output>",
-                oninput: e => this.target.val = e.target.value,
-            }),
+            div(
+                {class:"text-container"},
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.sourceBlocksDatalist.getAttribute('id'),
+                    value: this.sourceBlock.val,
+                    placeholder: "<source block>",
+                    oninput: e => {
+                        const sourceBlock = e.target.value
+                        
+                        this.sourceBlock.val = sourceBlock
+                        
+                        this.updateSourceDatalistOptions(sourceBlock, this.sourceOutput.val)
+                    },
+                }),
+                this.sourceBlocksDatalist,
+            ),
+            div(
+                {class:"text-container"},
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.sourceOutputsDatalist.getAttribute('id'),
+                    value: this.sourceOutput.val,
+                    placeholder: "<block output>",
+                    oninput: e => this.sourceOutput.val = e.target.value,
+                }),
+                this.sourceOutputsDatalist,
+            ),
+            div(
+                {class:"text-container"},
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.targetBlocksDatalist.getAttribute('id'),
+                    value: this.targetBlock.val,
+                    placeholder: "<target block>",
+                    oninput: e => {
+                        const targetBlock = e.target.value
+                        
+                        this.targetBlock.val = targetBlock
+                        
+                        this.updateTargetDatalistOptions(targetBlock, this.targetInput.val)
+                    },
+                }),
+                this.targetBlocksDatalist,
+            ),
+            div(
+                {class:"text-container"},
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.targetInputsDatalist.getAttribute('id'),
+                    value: this.targetInput.val,
+                    placeholder: "<block input>",
+                    oninput: e => this.targetInput.val = e.target.value,
+                }),
+                this.targetInputsDatalist,
+            ),
             deleteBtn,
             statusBtn
         ];
