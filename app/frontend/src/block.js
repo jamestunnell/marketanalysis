@@ -94,6 +94,7 @@ class BlockRow {
             oninput: e => {
                 this.name.val = e.target.value
 
+                this.parent.onBlockNameChange()
                 this.parent.markChanged()
             },
         })

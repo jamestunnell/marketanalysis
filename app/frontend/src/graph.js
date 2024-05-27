@@ -171,6 +171,10 @@ class PageContent {
         return names
     }
 
+    onBlockNameChange() {
+        Object.values(this.connRowsByID).forEach(row => row.onBlockNameChange())
+    }
+
     findBlockInfo(name) {
         const row = Object.values(this.blockRowsByID).find(row => name === row.getName())
         

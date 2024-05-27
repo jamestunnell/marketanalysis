@@ -75,6 +75,11 @@ class ConnectionRow {
         this.updateTargetDatalistOptions(targetBlock, targetInput)
     }
 
+    onBlockNameChange() {
+        this.updateSourceDatalistOptions(this.sourceBlock.val, this.sourceOutput.val)
+        this.updateTargetDatalistOptions(this.targetBlock.val, this.targetInput.val)
+    }
+
     updateSourceDatalistOptions(blockName, outName) {
         this.sourceBlocksDatalist.replaceChildren(
             ...this.parent.blockNames().map(name => {
