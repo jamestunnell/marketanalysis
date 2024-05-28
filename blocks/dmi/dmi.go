@@ -7,9 +7,9 @@ import (
 )
 
 type DMI struct {
-	period       *blocks.IntRange
-	dmi          *indicators.DMI
-	pdi, ndi, dx *blocks.TypedOutput[float64]
+	period              *blocks.IntRange
+	dmi                 *indicators.DMI
+	pdi, ndi, trend, dx *blocks.TypedOutput[float64]
 }
 
 const (
@@ -27,6 +27,7 @@ func New() blocks.Block {
 		dmi:    nil,
 		pdi:    blocks.NewTypedOutput[float64](),
 		ndi:    blocks.NewTypedOutput[float64](),
+		trend:  blocks.NewTypedOutput[float64](),
 		dx:     blocks.NewTypedOutput[float64](),
 	}
 }
@@ -51,9 +52,10 @@ func (blk *DMI) GetInputs() blocks.Inputs {
 
 func (blk *DMI) GetOutputs() blocks.Outputs {
 	return blocks.Outputs{
-		NameDX:  blk.dx,
-		NameNDI: blk.ndi,
-		NamePDI: blk.pdi,
+		NameDX:           blk.dx,
+		NameNDI:          blk.ndi,
+		NamePDI:          blk.pdi,
+		blocks.NameTrend: blk.trend,
 	}
 }
 
@@ -81,4 +83,5 @@ func (blk *DMI) Update(cur *models.Bar) {
 	blk.dx.SetValue(blk.dmi.DX())
 	blk.ndi.SetValue(blk.dmi.NDI())
 	blk.pdi.SetValue(blk.dmi.PDI())
+	blk.trend.SetValue(blk.dmi.Trend())
 }
