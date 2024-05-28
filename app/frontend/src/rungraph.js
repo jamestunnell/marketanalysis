@@ -61,15 +61,7 @@ const RunGraph = (graph) => {
     })
 
     const onRun = () => {
-        if (date.val === "") {
-            AppErrorAlert({
-                title: "Invalid Input",
-                message: "date is empty",
-                details: [],
-            })
-
-            return
-        }
+        completed.val = false
 
         runGraph({
             id: graph.id,

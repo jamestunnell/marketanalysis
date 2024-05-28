@@ -67,6 +67,8 @@ const EvalGraph = (graph, infoByType) => {
     })
 
     const onRun = () => {
+        completed.val = false
+
         evalGraph({
             id: graph.id,
             symbol: symbol.val,
