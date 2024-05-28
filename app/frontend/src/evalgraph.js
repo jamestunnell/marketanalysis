@@ -89,18 +89,21 @@ const EvalGraph = (graph, infoByType) => {
             max: WINDOW_MAX,
             step: 1,
             onchange: e => window.val = Number(e.target.value),
+            required: true,
         }),
         label({for: "source"}, "Source"),
         select({
             id: "source",
             class: INPUT_CLASS,
             oninput: e => source.val = e.target.value,
+            required: true,
         }, sourceBlockOutOpts),
         label({for: "predictor"}, "Predictor"),
         select({
             id: "predictor",
             class: INPUT_CLASS,
             oninput: e => predictor.val = e.target.value,
+            required: true,
         }, predBlockOutOpts),
     ]
   

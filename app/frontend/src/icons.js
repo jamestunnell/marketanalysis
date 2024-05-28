@@ -26,6 +26,10 @@ const IconDownload = () => {
     return i({class: "fa-solid fa-download"});
 }
 
+const IconEdit = () => {
+    return i({class: "fa-solid fa-pen-to-square"});
+}
+
 const IconError = () => {
     return i({class: "fa-solid fa-triangle-exclamation"});
 }
@@ -73,6 +77,7 @@ export {
     IconCollapsed,
     IconDelete,
     IconDownload,
+    IconEdit,
     IconError,
     IconExpanded,
     IconExport,

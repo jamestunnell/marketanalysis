@@ -4,7 +4,6 @@ import {Modal} from "vanjs-ui"
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.js'
 import { IconCheck, IconDelete, IconError } from './icons.js'
 import { TableRow } from './table.js'
-import { validateParamVal } from "./paramvals.js"
 
 const {datalist, div, input, label, option, p} = van.tags
 
@@ -161,7 +160,6 @@ class ConnectionRow {
 
         const rowItems = [
             div(
-                {class:"text-container"},
                 input({
                     class: inputClass,
                     type: "text",
@@ -179,7 +177,6 @@ class ConnectionRow {
                 this.sourceBlocksDatalist,
             ),
             div(
-                {class:"text-container"},
                 input({
                     class: inputClass,
                     type: "text",
@@ -191,7 +188,6 @@ class ConnectionRow {
                 this.sourceOutputsDatalist,
             ),
             div(
-                {class:"text-container"},
                 input({
                     class: inputClass,
                     type: "text",
@@ -209,7 +205,6 @@ class ConnectionRow {
                 this.targetBlocksDatalist,
             ),
             div(
-                {class:"text-container"},
                 input({
                     class: inputClass,
                     type: "text",

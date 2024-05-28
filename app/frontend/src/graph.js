@@ -6,6 +6,7 @@ import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
 import { BacktestGraph } from './backtestgraph.js'
 import { SelectBlockTypeModal, BlockRow } from "./block.js";
+import { ButtonGroup } from './buttongroup.js'
 import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { ConnectionRow } from "./connection.js";
 import { DownloadJSON } from "./download.js";
@@ -13,6 +14,7 @@ import { EvalGraph } from './evalgraph.js'
 import { IconAdd, IconExport, IconImport, IconMagnifyDollar, IconPlay, IconSave, IconStethoscope } from "./icons.js";
 import { RunGraph } from './rungraph.js'
 import { Table } from './table.js';
+import truncateString from "./truncatestring.js";
 import { UploadJSON } from "./upload.js";
 
 const {div, p, tbody} = van.tags
@@ -108,10 +110,14 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
 
 class PageContent {
     constructor({graph, infoByType}) {
+        const digest = hash(graph)
+
+        console.log(`initial graph digest`, truncateString(digest, 10))
+
         this.id = graph.id
-        this.digest = hash(graph)
+        this.digest = van.state(digest)
+        this.digestSaved = van.state(digest)
         this.name = van.state(graph.name)
-        this.changed = van.state(false)
         this.infoByType = infoByType
 
         this.blockTableBody = tbody({class:"table-auto"});
@@ -152,13 +158,13 @@ class PageContent {
     deleteBlockRow(id) {
         delete this.blockRowsByID[id]
 
-        this.changed.val = true
+        this.updateDigest()
     }
 
     deleteConnectionRow(id) {
         delete this.connRowsByID[id]
 
-        this.changed.val = true
+        this.updateDigest()
     }
 
     blockRowsWithoutID(tgtID) {
@@ -186,14 +192,7 @@ class PageContent {
     render() {
         console.log("rendering graph page content")
         
-        const needsSaved = van.derive(() => { 
-            if (!this.changed.val) {
-                return false
-            }
-
-            return this.digest !== hash(this.makeGraph())
-        })
-
+        const needsSaved = van.derive(() => this.digest.val !== this.digestSaved.val)
         const addIcon1 = IconAdd()
         const addIcon2 = IconAdd()
         
@@ -216,7 +215,7 @@ class PageContent {
                         van.add(this.blockTableBody, row.render())
 
                         this.blockRowsByID[id] = row
-                        this.changed.val = true
+                        this.updateDigest()
                     },
                 })
             },
@@ -231,7 +230,7 @@ class PageContent {
                 van.add(this.connTableBody, row.render())
 
                 this.connRowsByID[id] = row
-                this.changed.val = true
+                this.updateDigest()
             },
         });
         const runBtn = ButtonIconDisableable({
@@ -259,8 +258,10 @@ class PageContent {
                     graph: graph,
                     onErr: (appErr) => AppErrorAlert(appErr),
                     onSuccess: () => {
-                        this.changed.val = false
-                        this.digest = hash(graph)
+                        const digest = hash(graph)
+                        
+                        this.digest.val = digest
+                        this.digestSaved.val = digest
                     }
                 });
             },
@@ -302,15 +303,10 @@ class PageContent {
                     {class: "flex flex-row p-3"},
                     p({class: "text-2xl font-medium font-bold"}, this.name),
                 ),
-                div(
-                    {class: "flex flex-row-reverse p-2"},
-                    exportBtn,
-                    backtestBtn,
-                    evalBtn,
-                    runBtn,
-                    saveBtn,
-                    importBtn,
-                ),
+                ButtonGroup({
+                    buttons: [importBtn, saveBtn, runBtn, evalBtn, backtestBtn, exportBtn],
+                    moreClass: "place-self-end",
+                })
             ),
             div(
                 {class: "flex flex-col mt-4"},
@@ -325,7 +321,7 @@ class PageContent {
                         addBlockBtn,
                     )
                 ),
-                Table({columnNames: ["","Name", "Type", "Parameters", "Recording", "", ""], tableBody: this.blockTableBody}),
+                Table({columnNames: ["Name", "Type", "Parameters", "Recording", "", ""], tableBody: this.blockTableBody}),
             ),
             div(
                 {class: "flex flex-col mt-4"},
@@ -345,8 +341,12 @@ class PageContent {
         )
     }
 
-    markChanged() {
-        this.changed.val = true
+    updateDigest() {
+        const digest = hash(this.makeGraph())
+
+        console.log(`updated graph digest`, truncateString(digest, 10))
+
+        this.digest.val = digest
     }
 
     makeGraph() {
@@ -385,8 +385,7 @@ class PageContent {
 
         this.redoBlockRows(graph.blocks)
         this.redoConnRows(graph.connections)
-       
-        this.changed.val = true
+        this.updateDigest()
     }
 }
 

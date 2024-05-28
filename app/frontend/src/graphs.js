@@ -6,8 +6,10 @@ import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generato
 
 import {Delete, Get, PostJSON} from './backend.js'
 import { Button, ButtonCancel, ButtonDanger } from "./buttons.js";
+import { ButtonGroup } from './buttongroup.js'
 import {IconDelete, IconView} from './icons.js'
 import {Table, TableRow} from './table.js'
+import truncateString from "./truncatestring.js";
 
 const {div, input, label, p, tbody} = van.tags
 
@@ -67,14 +69,6 @@ const deleteGraph = async (id) => {
     return true;
 }
 
-const truncateString = (id, len) => {
-    if (id.length > len) {
-        return id.substring(0, len) + "..."
-    }
-    
-    return id
-}
-
 const RandomName = () => {
     return uniqueNamesGenerator({ dictionaries: [adjectives, animals] });
 }
@@ -120,7 +114,7 @@ const GraphTableRow = ({id, name}) => {
         },
     });
 
-    const buttons = div({class:"flex flex-row"}, viewBtn, deleteBtn);
+    const buttons = ButtonGroup({buttons: [viewBtn, deleteBtn]});
     const rowItems = [name, truncateString(id, 8), buttons];
 
     return () => deleted.val ? null : TableRow(rowItems);

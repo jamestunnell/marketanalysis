@@ -62,6 +62,7 @@ const BacktestGraph = (graph, infoByType) => {
             id: "predictor",
             class: INPUT_CLASS,
             oninput: e => predictor.val = e.target.value,
+            required: true,
         }, predBlockOutOpts),
     ]
 

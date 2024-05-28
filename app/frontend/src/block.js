@@ -1,12 +1,11 @@
 import van from "vanjs-core"
-import { Tooltip } from 'vanjs-ui'
+import hash from 'object-hash';
 
-import { Get } from './backend.js'
-import {Button, ButtonCancel, ButtonIcon, ButtonIconTooltip} from './buttons.js';
-import capitalize from './capitalize.js';
-import { IconCheck, IconCollapsed, IconDelete, IconError, IconExpanded } from "./icons.js";
-import { ModalWorkflow, WorkflowStep } from "./workflow.js";
-import { ParamValItem, validateParamVal } from './paramvals.js'
+import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.js';
+import { ButtonGroup } from "./buttongroup.js";
+import { IconCheck, IconEdit, IconDelete, IconError, IconView } from "./icons.js";
+import { EditParamValsModal, validateParamVal } from './paramvals.js'
+import { EditRecordingModal } from "./recording.js";
 import { ModalBackground, ModalForeground } from "./modal.js";
 import { TableRow } from './table.js';
 
@@ -15,6 +14,8 @@ const {div, input, label, li, ul, option, p, select, span} = van.tags
 const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
 
 function validateBlock({block, info, otherNames}) {
+    console.log("validating block", block)
+
     if (otherNames.indexOf(block.name) >= 0) {
         return new Error(`Name '${block.name}' is not unique`)
     }
@@ -54,16 +55,12 @@ class BlockRow {
         this.id = id
         this.info = info
         this.parent = parent
-        this.deleted = van.state(false);
+        this.deleted = van.state(false)
 
         this.type = block.type
         this.name = van.state(block.name)
-        this.paramVals = Object.fromEntries(info.params.map(p => {
-            return [p.name, van.state(block.paramVals[p.name] || p.default)]
-        }))
-        this.recordingFlags = info.outputs.map((o) => {
-            return van.state(block.recording.indexOf(o.name) >= 0)
-        });
+        this.paramVals = van.state(block.paramVals)
+        this.recording = van.state(block.recording)
     }
 
     getName() {
@@ -74,10 +71,8 @@ class BlockRow {
         return {
             name: this.name.val,
             type: this.type,
-            paramVals: Object.fromEntries(Object.entries(this.paramVals).map(([name,value]) => [name, value.val])),
-            recording: this.info.outputs.map((out,idx) => {
-                return this.recordingFlags[idx].val ? out.name : ""
-            }).filter(n => n !== "")
+            paramVals: this.paramVals.val,
+            recording: this.recording.val,
         }
     }
 
@@ -113,7 +108,7 @@ class BlockRow {
             console.log("using other names", otherNames)
             
             return validateBlock({
-                block   : this.makeBlock(),
+                block : this.makeBlock(),
                 info: this.info,
                 otherNames: otherNames,
             })
@@ -122,53 +117,62 @@ class BlockRow {
             icon: () => validateErr.val ? IconError() : IconCheck(),
             tooltipText: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
         });
+        const viewParamsBtn = ButtonIconTooltip({
+            icon: IconView(),
+            tooltipText: () => {
+                const items = Object.entries(this.paramVals.val).map(([name, val]) => {
+                    return li(`${name}: ${val}`)
+                })
 
-        const recordingListItems = this.info.outputs.map((out, i) => {
-            const props = {
-                id: out.name,
-                type: "checkbox",
-                onchange: e => {
-                    this.recordingFlags[i].val = e.target.checked
-
-                    this.parent.markChanged()
-                },
-            }
-    
-            if (this.recordingFlags[i].val) {
-                props.checked = "checked"
-            }
-    
-            return li(
-                input(props, capitalize(out.name)),
-                span(out.name),
-            )
-        });
-        const paramListItems = this.info.params.map(p => {
-            return ParamValItem({
-                param: p,
-                value: this.paramVals[p.name],
-                onChange: (val) => this.parent.markChanged(),
-            })
-        });
-        const paramList = ul({hidden: true}, paramListItems)
-        const recordingList = ul({hidden: true}, recordingListItems)
-        const expanded = van.state(false)
-        const expandBtn = ButtonIcon({
-            icon: () => expanded.val ? IconExpanded() : IconCollapsed(),
-            onclick: () => {
-                if (expanded.val) {
-                    paramList.setAttribute("hidden", true)
-                    recordingList.setAttribute("hidden", true)
-                } else {
-                    paramList.removeAttribute("hidden")
-                    recordingList.removeAttribute("hidden")
-                }
-
-                expanded.val = !expanded.val
+                return items.length === 0 ? p("No parameters") : ul(items)
             },
-        });
-        const rowItems = [ expandBtn, nameInput, this.type,
-            paramList, recordingList, deleteBtn, statusBtn]
+        })
+        const viewRecordingBtn = ButtonIconTooltip({
+            icon: IconView(),
+            tooltipText: () => {
+                const items = this.recording.val.map(name => li(name))
+
+                return items.length === 0 ? p("No recording") : ul(items)
+            },
+        })
+        const editParamsBtn = ButtonIcon({
+            icon: IconEdit(),
+            onclick: () => {
+                EditParamValsModal({
+                    params: this.info.params,
+                    paramVals: this.paramVals.val,
+                    onComplete: (paramVals) => {
+                        if (hash(paramVals) === hash(this.paramVals.val)) {
+                            return
+                        }
+
+                        this.paramVals.val = paramVals
+                        this.parent.updateDigest()
+                    },
+                })
+            },
+        })
+        const editRecordingBtn = ButtonIcon({
+            icon: IconEdit(),
+            onclick: () => {
+                EditRecordingModal({
+                    outputNames: this.info.outputs.map(o => o.name),
+                    recording: this.recording.val,
+                    onComplete: (recording) => {
+                        if (hash(recording) === hash(this.recording.val)) {
+                            return
+                        }
+
+                        this.recording.val = recording
+                        this.parent.updateDigest()
+                    },
+                })
+            },
+        })
+
+        const paramButtons = ButtonGroup({buttons: [viewParamsBtn, editParamsBtn]})
+        const recordingButtons = ButtonGroup({buttons: [viewRecordingBtn, editRecordingBtn]})
+        const rowItems = [ nameInput, this.type, paramButtons, recordingButtons, deleteBtn, statusBtn]
     
         return () => this.deleted.val ? null : TableRow(rowItems);
     }
@@ -197,134 +201,6 @@ const SelectBlockTypeForm = ({types, onComplete, onCancel}) => {
     )
 }
 
-const ConfigureBlockForm = ({info, block, otherNames, onComplete, onCancel}) => {
-    console.log(`configuring block with type ${block.type}`)
-
-    const name = van.state(block.name)
-    const recordingFlags = info.outputs.map((o) => {
-        return van.state(block.recording.indexOf(o.name) >= 0)
-    });
-    const paramVals = Object.fromEntries(info.params.map(p => {
-        return [p.name, van.state(block.paramVals[p.name] || p.default)]
-    }))
-    
-    const ok = Button({
-        child: "OK",
-        onclick: () => {
-            if (name.val.length === 0) {
-                console.log("Name is empty")
-                return 
-            } else if (otherNames.indexOf(name.val) >= 0) {
-                console.log(`Name '${name.val}' is not unique`)
-                return
-            }
-
-            const nonDefaultParamVals = {};
-
-            info.params.forEach(p => {
-                const value = paramVals[p.name].val
-
-                if (value === p.default) {
-                    return
-                }
-
-                const err = validateParamVal(p, value)
-                if (err) {
-                    console.log(`invalid value ${value} for param ${p.name}`, err)
-
-                    return
-                }
-
-                nonDefaultParamVals[p.name] = value
-            })
-
-            const recordingNames = [];
-
-            info.outputs.forEach((o, i) => {
-                if (recordingFlags[i].val) {
-                    recordingNames.push(o.name)
-                }
-            })
-
-            const blk = {
-                name: name.val,
-                recording: recordingNames,
-                type: block.type,
-                paramVals: nonDefaultParamVals,
-            }
-
-            console.log(`completing block configuration with type ${block.type}`)
-
-            onComplete(blk)
-        }
-    })
-    const cancel = ButtonCancel({child: "Cancel", onclick: onCancel})
-    const paramValItems = info.params.map(p => {
-        return ParamValItem({param: p, value: paramVals[p.name], onChange: (val) => this.parent.markChanged()})
-    })
-    const recordingItems = info.outputs.map((out, i) => {
-        const props = {
-            id: out.name,
-            type: "checkbox",
-            onchange: e => {
-                recordingFlags[i].val = e.target.checked
-
-                this.parent.markChanged()
-            },
-        }
-
-        if (recordingFlags[i].val) {
-            props.checked = "checked"
-        }
-
-        return li(
-            input(props, capitalize(out.name)),
-            span(out.name),
-        )
-    });
-
-    return div(
-        {class: "flex flex-col"},
-        div(
-            label({for: "name"}, "Name"),
-            input({
-                id: "name",
-                class: inputClass,
-                type: "text",
-                value: block.name,
-                placeholder: "Non-empty, unique",
-                oninput: e => name.val = e.target.value,
-            }),
-        ),
-        div(
-            p("Param Values"),
-            ul(paramValItems)
-        ),
-        div(
-            p("Output Recording"),
-            ul(recordingItems)
-        ),
-        div({class:"mt-4 flex flew-row-reverse"}, ok, cancel),
-    )
-}
-
-const ConfigureBlockModal = ({info, block, otherNames, handleResult}) => {
-    console.log(`other names`, otherNames)
-
-    const closed = van.state(false)
-    const onComplete = (block) => {
-        handleResult(block)
-
-        closed.val = true
-    }
-    const onCancel = () => closed.val = true;
-    const form = ConfigureBlockForm({info, block, otherNames, onComplete, onCancel})
-    const modal = ModalBackground(ModalForeground({}, form))
-
-    van.add(document.body, () => closed.val ? null : modal);
-}
-
-
 const SelectBlockTypeModal = ({types, handleResult}) => {
     const closed = van.state(false)
     const onComplete = (selectedType) => {
@@ -339,4 +215,4 @@ const SelectBlockTypeModal = ({types, handleResult}) => {
     van.add(document.body, () => closed.val ? null : modal);
 }
 
-export {BlockRow, ConfigureBlockModal, SelectBlockTypeModal};
+export {BlockRow, SelectBlockTypeModal};

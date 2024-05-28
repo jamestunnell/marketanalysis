@@ -3,6 +3,7 @@ import Datepicker from 'flowbite-datepicker/Datepicker'
 
 import { AppErrorAlert} from './apperror.js'
 import { Button, ButtonIcon } from "./buttons.js"
+import { ButtonGroupHideable } from './buttongroup.js'
 import capitalize from './capitalize.js'
 import { DownloadJSON } from "./download.js"
 import { IconDownload, IconClose, IconPlay, IconPlot } from './icons.js'
@@ -66,20 +67,19 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
     const buttons = div(
         { class: "grid grid-cols-2" },
         runBtn,
-        div(
-            { class: van.derive(() => `flex flex-row ${!completed.val ? "hidden" : ""}`) },
-            plotBtn,
-            downloadBtn,    
-        )
+        ButtonGroupHideable({
+            buttons: [plotBtn, downloadBtn],
+            hidden: van.derive(() => !completed.val),
+        })
     )
 
     closeBtn.classList.add("self-end")
-    runBtn.classList.add("self-center")
 
     const modal = ModalBackground(
         div(
             {id: "foreground", class: "flex flex-col block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
             closeBtn,
+            p({class: "text-lg font-medium font-bold text-center"}, `${capitalize(actionName)} Graph`),
             label({for: "actionSymbol"}, "Symbol"),
             input({
                 id: "actionSymbol",
