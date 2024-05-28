@@ -42,6 +42,10 @@ const IconImport = () => {
     return i({class: "fa-solid fa-file-import"});
 }
 
+const IconMagnifyDollar = () => {
+    return i({class: "fa-solid fa-magnifying-glass-dollar"});
+}
+
 const IconPlay = () => {
     return i({class: "fa-solid fa-play"});
 }
@@ -54,8 +58,29 @@ const IconSave = () => {
     return i({class: "fa-solid fa-floppy-disk"});
 }
 
+const IconStethoscope = () => {
+    return i({class: "fa-solid fa-stethoscope"});
+}
+
 const IconView = () => {
     return i({class: "fa-solid fa-eye"});
 }
 
-export {IconAdd, IconCheck, IconClose, IconCollapsed, IconDelete, IconDownload, IconError, IconExpanded, IconExport, IconImport, IconPlay, IconPlot, IconSave, IconView};
+export {
+    IconAdd,
+    IconCheck,
+    IconClose,
+    IconCollapsed,
+    IconDelete,
+    IconDownload,
+    IconError,
+    IconExpanded,
+    IconExport,
+    IconImport,
+    IconMagnifyDollar,
+    IconPlay,
+    IconPlot,
+    IconSave,
+    IconStethoscope,
+    IconView,
+};

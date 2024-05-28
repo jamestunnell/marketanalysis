@@ -41,6 +41,8 @@ type Graph struct {
 // }
 
 func New(cfg *Configuration) *Graph {
+	log.Debug().Interface("configuration", cfg).Msg("making graph")
+
 	return &Graph{
 		Configuration: cfg,
 		blocks:        Blocks{},
