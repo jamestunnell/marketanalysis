@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"slices"
 
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
@@ -63,10 +62,6 @@ func EvalSlope(
 	if !found {
 		return nil, errors.New("failed to find predictor quantity")
 	}
-
-	slices.SortFunc(sourceQ.Records, func(a, b *models.QuantityRecord) int {
-		return a.Timestamp.Compare(b.Timestamp)
-	})
 
 	slopeQ := &models.Quantity{
 		Name:    "Source Future Slope",

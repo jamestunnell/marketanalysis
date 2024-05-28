@@ -4,12 +4,13 @@ import { nanoid } from 'nanoid'
 
 import { AppErrorAlert} from './apperror.js';
 import { Get, Put } from './backend.js';
+import { BacktestGraph } from './backtestgraph.js'
 import { SelectBlockTypeModal, BlockRow } from "./block.js";
 import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { ConnectionRow } from "./connection.js";
 import { DownloadJSON } from "./download.js";
 import { EvalGraph } from './evalgraph.js'
-import { IconAdd, IconExport, IconImport, IconPlay, IconSave, IconStethoscope } from "./icons.js";
+import { IconAdd, IconExport, IconImport, IconMagnifyDollar, IconPlay, IconSave, IconStethoscope } from "./icons.js";
 import { RunGraph } from './rungraph.js'
 import { Table } from './table.js';
 import { UploadJSON } from "./upload.js";
@@ -243,6 +244,11 @@ class PageContent {
             disabled: needsSaved,
             onclick: () => EvalGraph(this.makeGraph(), this.infoByType),
         });
+        const backtestBtn = ButtonIconDisableable({
+            icon: IconMagnifyDollar(),
+            disabled: needsSaved,
+            onclick: () => BacktestGraph(this.makeGraph(), this.infoByType),
+        });
         const saveBtn = ButtonIconDisableable({
             icon: IconSave(),
             disabled: van.derive(() => !needsSaved.val),
@@ -299,6 +305,7 @@ class PageContent {
                 div(
                     {class: "flex flex-row-reverse p-2"},
                     exportBtn,
+                    backtestBtn,
                     evalBtn,
                     runBtn,
                     saveBtn,
