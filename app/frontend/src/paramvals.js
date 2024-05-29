@@ -253,7 +253,7 @@ const EditParamValsModal = ({params, paramVals, onComplete}) => {
             const nonDefaultVals = {}
 
             Object.entries(paramValsWorking).forEach(([name, value]) => {
-                if (value.val !== paramsByName[name].default) {
+                if (value.val !== params.find(p => p.name === name).default) {
                     nonDefaultVals[name] = value.val
                 }
             })

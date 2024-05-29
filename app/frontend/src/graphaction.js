@@ -10,7 +10,7 @@ import { IconDownload, IconClose, IconPlay, IconPlot } from './icons.js'
 import { ModalBackground } from './modal.js'
 import { PlotRecordingModal } from './plot.js'
 
-const {div, input, label} = van.tags
+const {div, input, label, p} = van.tags
 
 const INPUT_CLASS = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring"
 
