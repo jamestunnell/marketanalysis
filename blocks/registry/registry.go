@@ -8,6 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/aroon"
 	"github.com/jamestunnell/marketanalysis/blocks/atr"
 	"github.com/jamestunnell/marketanalysis/blocks/bar"
+	"github.com/jamestunnell/marketanalysis/blocks/div"
 	"github.com/jamestunnell/marketanalysis/blocks/dmi"
 	"github.com/jamestunnell/marketanalysis/blocks/ema"
 	"github.com/jamestunnell/marketanalysis/blocks/emv"
@@ -35,6 +36,7 @@ func init() {
 	Add(aroon.Type, aroon.New)
 	Add(atr.Type, atr.New)
 	Add(bar.Type, bar.New)
+	Add(div.Type, div.New)
 	Add(dmi.Type, dmi.New)
 	Add(ema.Type, ema.New)
 	Add(emv.Type, emv.New)
