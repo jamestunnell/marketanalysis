@@ -49,8 +49,16 @@ func (s *MongoStore[T]) Reset(ctx context.Context) Error {
 }
 
 func (s *MongoStore[T]) Create(ctx context.Context, val T) Error {
-	if key := val.GetKey(); key == "" {
+	key := val.GetKey()
+	if key == "" {
 		return NewErrInvalidInput(s.info.KeyName, "key is empty")
+	}
+
+	// check for duplicate key
+	if err := s.col.FindOne(ctx, bson.M{"_id": key}).Err(); err == nil {
+		reason := fmt.Sprintf("%s %s already exists", s.info.KeyName, key)
+
+		return NewErrInvalidInput(s.info.Name, reason)
 	}
 
 	if errs := val.Validate(); len(errs) > 0 {

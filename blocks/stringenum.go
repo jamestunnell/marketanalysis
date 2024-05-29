@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type StringEnum struct {
@@ -16,11 +17,13 @@ func (p *StringEnum) GetDefault() any {
 	return p.Default
 }
 
-func (p *StringEnum) GetSchema() map[string]any {
-	return map[string]any{
-		"type": "string",
-		"enum": p.Enum,
-	}
+func (p *StringEnum) GetType() string {
+	return "StrEnum"
+}
+
+func (p *StringEnum) GetLimits() []any {
+	return sliceutils.Map(
+		p.Enum, func(s string) any { return s })
 }
 
 func (p *StringEnum) GetVal() any {

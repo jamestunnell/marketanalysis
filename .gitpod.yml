@@ -13,8 +13,13 @@ tasks:
     command: 'mkdir -p /workspace/data'
   - name: start mongodb
     command: 'mongod --dbpath /workspace/data --port 27017'
+  - name: install rake
+    command: gem install rake
 
 ports:
   - name: database
     port: 27017
+    onOpen: ignore
+  - name: backend
+    port: 4002
     onOpen: ignore

@@ -20,7 +20,7 @@ const (
 	ShutdownTimeout = 15 * time.Second
 )
 
-func New(port int) *Server {
+func New(port int) (*Server, *mux.Router) {
 	httpSrv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
 		WriteTimeout:      time.Minute,
@@ -37,7 +37,7 @@ func New(port int) *Server {
 		router:     r,
 	}
 
-	return srv
+	return srv, r
 }
 
 func (s *Server) GetRouter() *mux.Router {

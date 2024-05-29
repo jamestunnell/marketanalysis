@@ -41,6 +41,8 @@ type Graph struct {
 // }
 
 func New(cfg *Configuration) *Graph {
+	log.Debug().Interface("configuration", cfg).Msg("making graph")
+
 	return &Graph{
 		Configuration: cfg,
 		blocks:        Blocks{},
@@ -95,10 +97,10 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 	recordName := "record-" + nanoid.Must()
 	recordIns := map[string]*blocks.TypedInput[float64]{}
 
-	for name, cfg := range m.Blocks {
+	for _, cfg := range m.Blocks {
 		new, found := registry.Get(cfg.Type)
 		if !found {
-			err := fmt.Errorf("block %s: type '%s' not found in registry", name, cfg.Type)
+			err := fmt.Errorf("block %s: type '%s' not found in registry", cfg.Name, cfg.Type)
 
 			return Blocks{}, []*Connection{}, err
 		}
@@ -106,23 +108,23 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 		blk := new()
 
 		if err := blk.GetParams().SetValuesOrDefault(cfg.ParamVals); err != nil {
-			err = fmt.Errorf("block %s: failed to set param vals %#v: %w", name, cfg.ParamVals, err)
+			err = fmt.Errorf("block %s: failed to set param vals %#v: %w", cfg.Name, cfg.ParamVals, err)
 
 			return Blocks{}, []*Connection{}, err
 		}
 
-		blks[name] = blk
+		blks[cfg.Name] = blk
 
 		for _, outName := range cfg.Recording {
 			if _, found := blk.GetOutputs()[outName]; !found {
-				err := fmt.Errorf("block %s: recording output '%s' not found", name, outName)
+				err := fmt.Errorf("block %s: recording output '%s' not found", cfg.Name, outName)
 
 				return Blocks{}, []*Connection{}, err
 			}
 
-			recTarget := fmt.Sprintf("%s.%s", name, outName)
+			recTarget := fmt.Sprintf("%s.%s", cfg.Name, outName)
 			recordConn := &Connection{
-				Source: NewAddress(name, outName),
+				Source: NewAddress(cfg.Name, outName),
 				Target: NewAddress(recordName, recTarget),
 			}
 

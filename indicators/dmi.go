@@ -8,13 +8,14 @@ import (
 
 // DMI is a Directional Movement Index indicator.
 type DMI struct {
-	period           int
-	prevOHLC         *models.OHLC
-	negDirMoveEMA    *EMA
-	posDirMoveEMA    *EMA
-	trueRangeEMA     *EMA
-	posDI, negDI, dx float64
-	warm             bool
+	period        int
+	prevOHLC      *models.OHLC
+	negDirMoveEMA *EMA
+	posDirMoveEMA *EMA
+	trueRangeEMA  *EMA
+	posDI, negDI  float64
+	trend, dx     float64
+	warm          bool
 }
 
 func NewDMI(period int) *DMI {
@@ -26,6 +27,7 @@ func NewDMI(period int) *DMI {
 		trueRangeEMA:  NewEMA(period),
 		posDI:         0.0,
 		negDI:         0.0,
+		trend:         0.0,
 		dx:            0.0,
 		warm:          false,
 	}
@@ -66,6 +68,7 @@ func (ind *DMI) Update(b *models.Bar) {
 func (ind *DMI) updateOutputs() {
 	ind.posDI = ind.posDirMoveEMA.Current() / ind.trueRangeEMA.Current()
 	ind.negDI = ind.negDirMoveEMA.Current() / ind.trueRangeEMA.Current()
+	ind.trend = ind.posDI - ind.negDI
 	ind.dx = math.Abs(ind.posDI-ind.negDI) / (ind.posDI + ind.negDI)
 }
 
@@ -77,6 +80,11 @@ func (ind *DMI) PDI() float64 {
 // NDI returns the negative directional index value.
 func (ind *DMI) NDI() float64 {
 	return ind.negDI
+}
+
+// Trend returns the trend value (PDI - NDI).
+func (ind *DMI) Trend() float64 {
+	return ind.trend
 }
 
 // DX returns the directional index value.

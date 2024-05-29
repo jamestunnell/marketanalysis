@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -21,24 +21,17 @@ type Graphs struct {
 func NewGraphs(
 	db *mongo.Database,
 	securities *CRUDAPI[*models.Security],
-) (*Graphs, error) {
-	info := &app.ResourceInfo{
-		KeyName:    graph.ConfigKeyName,
-		Name:       "graph",
-		NamePlural: "graphs",
-	}
-	col := db.Collection(info.NamePlural)
-	store := app.NewMongoStore[*graph.Configuration](info, col)
-	graphs := &Graphs{
-		CRUDAPI:    NewCRUDAPI(store),
+) *Graphs {
+	return &Graphs{
+		CRUDAPI:    NewCRUDAPI(stores.NewGraphs(db)),
 		securities: securities,
 	}
-
-	return graphs, nil
 }
 
 func (a *Graphs) Bind(r *mux.Router) {
 	a.CRUDAPI.Bind(r)
 
-	r.HandleFunc(a.SingularRoute()+"/run-day", a.RunDay).Methods(http.MethodPost)
+	r.HandleFunc(a.SingularRoute()+"/backtest", a.BacktestGraph).Methods(http.MethodPost) //, http.MethodOptions)
+	r.HandleFunc(a.SingularRoute()+"/eval", a.EvalGraph).Methods(http.MethodPost)         //, http.MethodOptions)
+	r.HandleFunc(a.SingularRoute()+"/run", a.RunGraph).Methods(http.MethodPost)           //, http.MethodOptions)
 }

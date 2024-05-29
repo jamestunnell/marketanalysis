@@ -14,12 +14,12 @@ func (p *IntRange) GetDefault() any {
 	return p.Default
 }
 
-func (p *IntRange) GetSchema() map[string]any {
-	return map[string]any{
-		"type":    "integer",
-		"minimum": p.Min,
-		"maximum": p.Max,
-	}
+func (p *IntRange) GetLimits() []any {
+	return []any{p.Min, p.Max}
+}
+
+func (p *IntRange) GetType() string {
+	return "IntRange"
 }
 
 func (p *IntRange) GetVal() any {

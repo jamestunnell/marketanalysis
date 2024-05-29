@@ -2,23 +2,27 @@ version: '3.8'
 
 services:
   market-analysis:
-    image: mcr.microsoft.com/devcontainers/go:1-1.22-bookworm
+    build:
+      context: .
     depends_on:
       - db
     ports:
-      - 3000:3000
+      - 4002:4002
     volumes:
       - ..:/workspace:cached
     environment:
-      port: 3000
-      dbconn: mongodb://db:27017
+        BACKEND_DBCONN: mongodb://db:27017
+        BACKEND_DEBUG: true
+        BACKEND_PORT: 4002
     command: sleep infinity
 
   db:
     image: mongo:latest
     restart: unless-stopped
+    command: ["mongod", "--config", "/etc/mongo/mongod.conf"]
     volumes:
       - db-data:/var/lib/mongodb/data
+      - ../.devcontainer/mongo:/etc/mongo/
 
 volumes:
   db-data:

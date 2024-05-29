@@ -9,35 +9,40 @@ import (
 )
 
 type ErrorResponse struct {
-	ErrType string   `json:"errType"`
+	Title   string   `json:"title"`
 	Message string   `json:"message"`
 	Details []string `json:"details,omitempty"`
 }
 
 func handleAppErr(w http.ResponseWriter, appErr app.Error) {
 	var statusCode int
+	var title string
 
 	switch appErr.GetType() {
 	case app.NotFound:
 		statusCode = http.StatusNotFound
+		title = "Not Found"
 	case app.InvalidInput:
 		statusCode = http.StatusBadRequest
+		title = "Invalid Input"
 	case app.ActionFailed:
 		statusCode = http.StatusInternalServerError
+		title = "Action Failed"
 	default:
 		log.Error().Msgf("app error type %s is unknown", appErr.GetType())
 
 		statusCode = http.StatusInternalServerError
+		title = "Unknown"
 	}
 
 	resp := &ErrorResponse{
-		ErrType: appErr.GetType().String(),
+		Title:   title,
 		Message: appErr.GetMessage(),
 		Details: appErr.GetDetails(),
 	}
 
 	log.Error().
-		Str("errType", resp.ErrType).
+		Str("errType", appErr.GetType().String()).
 		Str("message", resp.Message).
 		Strs("details", resp.Details).
 		Msg("app error")

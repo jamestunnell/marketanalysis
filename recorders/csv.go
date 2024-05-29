@@ -13,17 +13,19 @@ import (
 type CSV struct {
 	writer     *csv.Writer
 	loc        *time.Location
+	localTZ    string
 	valNames   []string
 	record     []string
 	notFlushed int
 }
 
-const timeCol = "time"
+const timeCol = "timestamp"
 
-func NewCSV(w io.Writer, loc *time.Location) *CSV {
+func NewCSV(w io.Writer, localTZ string) *CSV {
 	return &CSV{
 		writer:     csv.NewWriter(w),
-		loc:        loc,
+		loc:        nil,
+		localTZ:    localTZ,
 		valNames:   []string{},
 		record:     []string{},
 		notFlushed: 0,
@@ -31,6 +33,15 @@ func NewCSV(w io.Writer, loc *time.Location) *CSV {
 }
 
 func (rec *CSV) Init(valNames []string) error {
+	if rec.localTZ != "" {
+		loc, err := time.LoadLocation(rec.localTZ)
+		if err != nil {
+			return fmt.Errorf("failed to load location from local time zone '%s': %w", rec.localTZ, err)
+		}
+
+		rec.loc = loc
+	}
+
 	rec.valNames = valNames
 	rec.record = make([]string, 1+len(valNames))
 
@@ -46,8 +57,12 @@ func (rec *CSV) Init(valNames []string) error {
 	return nil
 }
 
-func (rec *CSV) Record(t time.Time, vals map[string]float64) {
-	rec.record[0] = t.In(rec.loc).String()
+func (rec *CSV) Process(t time.Time, vals map[string]float64) {
+	if rec.loc != nil {
+		t = t.In(rec.loc)
+	}
+
+	rec.record[0] = t.String()
 
 	missing := []string{}
 	for i, valName := range rec.valNames {
@@ -77,10 +92,12 @@ func (rec *CSV) Record(t time.Time, vals map[string]float64) {
 	rec.notFlushed++
 }
 
-func (rec *CSV) Flush() {
+func (rec *CSV) Finalize() error {
 	log.Debug().Int("count", rec.notFlushed).Msg("flushed CSV records")
 
 	rec.writer.Flush()
 
 	rec.notFlushed = 0
+
+	return nil
 }

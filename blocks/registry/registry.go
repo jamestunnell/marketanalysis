@@ -4,6 +4,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/jamestunnell/marketanalysis/blocks"
+	"github.com/jamestunnell/marketanalysis/blocks/add"
 	"github.com/jamestunnell/marketanalysis/blocks/aroon"
 	"github.com/jamestunnell/marketanalysis/blocks/atr"
 	"github.com/jamestunnell/marketanalysis/blocks/bar"
@@ -12,8 +13,10 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/emv"
 	"github.com/jamestunnell/marketanalysis/blocks/heikinashi"
 	"github.com/jamestunnell/marketanalysis/blocks/maorder"
+	"github.com/jamestunnell/marketanalysis/blocks/mul"
 	"github.com/jamestunnell/marketanalysis/blocks/multitrend"
 	"github.com/jamestunnell/marketanalysis/blocks/sma"
+	"github.com/jamestunnell/marketanalysis/blocks/sub"
 	"github.com/jamestunnell/marketanalysis/blocks/supertrend"
 )
 
@@ -28,6 +31,7 @@ type Registry interface {
 var reg = map[string]NewBlockFunc{}
 
 func init() {
+	Add(add.Type, add.New)
 	Add(aroon.Type, aroon.New)
 	Add(atr.Type, atr.New)
 	Add(bar.Type, bar.New)
@@ -36,9 +40,11 @@ func init() {
 	Add(emv.Type, emv.New)
 	Add(heikinashi.Type, heikinashi.New)
 	Add(maorder.Type, maorder.New)
-	Add(sma.Type, sma.New)
-	Add(supertrend.Type, supertrend.New)
 	Add(multitrend.Type, multitrend.New)
+	Add(mul.Type, mul.New)
+	Add(sma.Type, sma.New)
+	Add(sub.Type, sub.New)
+	Add(supertrend.Type, supertrend.New)
 }
 
 func Types() []string {

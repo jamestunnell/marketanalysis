@@ -5,43 +5,51 @@ import (
 )
 
 type BlockInfo struct {
-	Type        string            `json:"type"`
-	Descr       string            `json:"description"`
-	Params      map[string]*Param `json:"params"`
-	InputTypes  map[string]string `json:"inputTypes"`
-	OutputTypes map[string]string `json:"outputTypes"`
+	Type    string   `json:"type"`
+	Descr   string   `json:"description"`
+	Params  []*Param `json:"params"`
+	Inputs  []*Port  `json:"inputs"`
+	Outputs []*Port  `json:"outputs"`
 }
 
 type Param struct {
-	Default any            `json:"default"`
-	Schema  map[string]any `json:"schema"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Default any    `json:"default"`
+	Limits  []any  `json:"limits"`
+}
+
+type Port struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 func NewBlockInfo(b blocks.Block) *BlockInfo {
-	params := map[string]*Param{}
-
+	params := []*Param{}
 	for name, p := range b.GetParams() {
-		params[name] = &Param{
+		params = append(params, &Param{
+			Name:    name,
+			Type:    p.GetType(),
 			Default: p.GetDefault(),
-			Schema:  p.GetSchema(),
-		}
+			Limits:  p.GetLimits(),
+		})
 	}
 
-	inTypes := map[string]string{}
+	ins := []*Port{}
 	for name, in := range b.GetInputs() {
-		inTypes[name] = in.GetType()
+		ins = append(ins, &Port{Name: name, Type: in.GetType()})
 	}
 
-	outTypes := map[string]string{}
+	outs := []*Port{}
 	for name, out := range b.GetOutputs() {
-		outTypes[name] = out.GetType()
+		outs = append(outs, &Port{Name: name, Type: out.GetType()})
 	}
 
 	return &BlockInfo{
-		Type:        b.GetType(),
-		Descr:       b.GetDescription(),
-		Params:      params,
-		InputTypes:  inTypes,
-		OutputTypes: outTypes,
+		Type:    b.GetType(),
+		Descr:   b.GetDescription(),
+		Params:  params,
+		Inputs:  ins,
+		Outputs: outs,
 	}
 }

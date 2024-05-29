@@ -68,5 +68,5 @@ func (blk *Record) Update(cur *models.Bar) {
 		return
 	}
 
-	blk.Recorder.Record(cur.Timestamp, vals)
+	blk.Recorder.Process(cur.Timestamp, vals)
 }
