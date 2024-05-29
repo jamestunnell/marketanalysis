@@ -19,6 +19,8 @@ const (
 	NameOCC3  = "occ3"
 	NameOHLC4 = "ohlc4"
 	NameHLCC4 = "hlcc4"
+
+	NameVWAP = "vwap"
 )
 
 type Bar struct {
@@ -31,6 +33,7 @@ type Bar struct {
 	occ3  *blocks.TypedOutput[float64]
 	ohlc4 *blocks.TypedOutput[float64]
 	hlcc4 *blocks.TypedOutput[float64]
+	vwap  *blocks.TypedOutput[float64]
 }
 
 func New() blocks.Block {
@@ -44,6 +47,7 @@ func New() blocks.Block {
 		occ3:  blocks.NewTypedOutput[float64](),
 		ohlc4: blocks.NewTypedOutput[float64](),
 		hlcc4: blocks.NewTypedOutput[float64](),
+		vwap:  blocks.NewTypedOutput[float64](),
 	}
 }
 
@@ -74,6 +78,7 @@ func (blk *Bar) GetOutputs() blocks.Outputs {
 		NameOCC3:  blk.occ3,
 		NameOHLC4: blk.ohlc4,
 		NameHLCC4: blk.hlcc4,
+		NameVWAP:  blk.vwap,
 	}
 }
 
@@ -100,4 +105,6 @@ func (blk *Bar) Update(cur *models.Bar) {
 	blk.occ3.SetIfConnected(cur.OCC3)
 	blk.ohlc4.SetIfConnected(cur.OHLC4)
 	blk.hlcc4.SetIfConnected(cur.HLCC4)
+
+	blk.vwap.SetValue(cur.VWAP)
 }
