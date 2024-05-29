@@ -90,7 +90,7 @@ class BlockRow {
                 this.name.val = e.target.value
 
                 this.parent.onBlockNameChange()
-                this.parent.markChanged()
+                this.parent.updateDigest()
             },
         })
         const deleteBtn = ButtonIcon({
@@ -124,7 +124,7 @@ class BlockRow {
                     return li(`${name}: ${val}`)
                 })
 
-                return items.length === 0 ? p("No parameters") : ul(items)
+                return items.length === 0 ? p("All values set to defaults") : ul(items)
             },
         })
         const viewRecordingBtn = ButtonIconTooltip({
@@ -132,7 +132,7 @@ class BlockRow {
             tooltipText: () => {
                 const items = this.recording.val.map(name => li(name))
 
-                return items.length === 0 ? p("No recording") : ul(items)
+                return items.length === 0 ? p("No outputs set to record") : ul(items)
             },
         })
         const editParamsBtn = ButtonIcon({

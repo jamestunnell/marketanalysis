@@ -239,7 +239,7 @@ const ConnectionForm = ({source, target, onOK, onCancel}) => {
             oninput: e => {
                 source.val = e.target.value
 
-                this.parent.markChanged()
+                this.parent.updateDigest()
             },
         }),
         label({for: "target"}, "Target Address"),
@@ -252,7 +252,7 @@ const ConnectionForm = ({source, target, onOK, onCancel}) => {
             oninput: e => {
                 target.val = e.target.value
 
-                this.parent.markChanged()
+                this.parent.updateDigest()
             },
         }),
         div(

@@ -28,6 +28,9 @@ const RecordingRow = ({name, flag}) => {
 
 const EditRecordingModal = ({outputNames, recording, onComplete}) => {
     const closed = van.state(false)
+    
+    outputNames.sort()
+
     const flags = outputNames.map(name => {
         return van.state(recording.indexOf(name) >= 0)
     })
@@ -57,7 +60,7 @@ const EditRecordingModal = ({outputNames, recording, onComplete}) => {
             closed.val = true
         },
     })
-    const buttons = ButtonGroup({buttons: [cancelBtn, okBtn]})
+    const buttons = ButtonGroup({buttons: [cancelBtn, okBtn], moreClass: "self-end"})
     const modal = ModalBackground(
         div(
             {id: "foreground", class: "flex flex-col block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},

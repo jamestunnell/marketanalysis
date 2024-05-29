@@ -203,6 +203,19 @@ function validateParamVal(param, value) {
 
 const EditParamValsModal = ({params, paramVals, onComplete}) => {
     const closed = van.state(false)
+
+    params.sort((a,b) => {
+        if (a.name < b.name) {
+            return -1
+        }
+
+        if (a.name > b.name) {
+            return 1
+        }
+
+        return 0
+    })
+
     const paramValsWorking = Object.fromEntries(params.map(p => {
         const nonDefaultVal = paramVals[p.name]
 
@@ -240,9 +253,7 @@ const EditParamValsModal = ({params, paramVals, onComplete}) => {
             const nonDefaultVals = {}
 
             Object.entries(paramValsWorking).forEach(([name, value]) => {
-                const p = params.find(p => p.name === name)
-
-                if (value.val !== p.default) {
+                if (value.val !== paramsByName[name].default) {
                     nonDefaultVals[name] = value.val
                 }
             })
@@ -252,7 +263,7 @@ const EditParamValsModal = ({params, paramVals, onComplete}) => {
             closed.val = true
         },
     })
-    const buttons = ButtonGroup({buttons: [cancelBtn, okBtn]})
+    const buttons = ButtonGroup({buttons: [cancelBtn, okBtn], moreClass: "self-end"})
     const modal = ModalBackground(
         div(
             {id: "foreground", class: "flex flex-col block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
