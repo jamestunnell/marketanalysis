@@ -3,6 +3,7 @@ package graph
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rickb777/date"
@@ -10,20 +11,21 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/recorders"
 )
 
 func Backtest(
 	graphConfig *Configuration,
-	loader bars.Loader,
-	date date.Date,
+	symbol string,
+	testDate date.Date,
+	loc *time.Location,
+	loadBars bars.LoadBarsFunc,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
 	graphConfig.ClearAllRecording()
 
 	log.Debug().
-		Stringer("date", date).
+		Stringer("date", testDate).
 		Stringer("predictor", predictor).
 		Msg("backtesting graph")
 
@@ -40,20 +42,17 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	sourceAddr := sourceBlkCfg.Name + ".close"
-	predAddr := predictor.String()
-	recorder := recorders.NewTimeSeries(LocationNewYork)
-
-	if err := RunDay(date, graphConfig, loader, recorder); err != nil {
-		return nil, fmt.Errorf("failed to run graph on %s: %w", date, err)
+	timeSeries, err := RunDay(graphConfig, symbol, testDate, loc, loadBars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
 
-	sourceQ, found := recorder.FindQuantity(sourceAddr)
+	sourceQ, found := timeSeries.FindQuantity(sourceBlkCfg.Name + ".close")
 	if !found {
 		return nil, errors.New("failed to find source quantity")
 	}
 
-	predQ, found := recorder.FindQuantity(predAddr)
+	predQ, found := timeSeries.FindQuantity(predictor.String())
 	if !found {
 		return nil, errors.New("failed to find predictor quantity")
 	}
@@ -72,7 +71,27 @@ func Backtest(
 
 	var position *models.Position
 
-	for _, r := range predQ.Records {
+	closePosition := func(t time.Time, value float64, reason string) {
+		position.Close(t, value, reason)
+
+		currentEquity += position.ClosedPL
+
+		equityQ.Records = append(equityQ.Records, &models.QuantityRecord{
+			Timestamp: t,
+			Value:     currentEquity,
+		})
+
+		log.Debug().
+			Stringer("entryTime", position.Entry.Time).
+			Stringer("exitTime", position.Exit.Time).
+			Float64("profitLoss", position.ClosedPL).
+			Str("reason", position.ExitReason).
+			Msg("closed position")
+
+		position = nil
+	}
+
+	for i, r := range predQ.Records {
 		t := r.Timestamp
 
 		rSource, found := sourceQ.FindRecord(t)
@@ -88,21 +107,29 @@ func Backtest(
 
 		switch dir {
 		case models.DirDown:
-			if r.Value > -threshold {
-				if threshold == 0.0 {
-					dir = models.DirUp
-				} else {
-					dir = models.DirNone
-				}
+			if r.Value < -threshold {
+				break
 			}
+
+			if r.Value > threshold {
+				dir = models.DirUp
+
+				break
+			}
+
+			dir = models.DirNone
 		case models.DirUp:
-			if r.Value < threshold {
-				if threshold == 0.0 {
-					dir = models.DirDown
-				} else {
-					dir = models.DirNone
-				}
+			if r.Value > threshold {
+				break
 			}
+
+			if r.Value < -threshold {
+				dir = models.DirDown
+
+				break
+			}
+
+			dir = models.DirNone
 		case models.DirNone:
 			if r.Value > threshold {
 				dir = models.DirUp
@@ -111,21 +138,24 @@ func Backtest(
 			}
 		}
 
+		if i == (len(predQ.Records) - 1) {
+			// log.Debug().Msg("last pred record")
+
+			if position != nil {
+				closePosition(t, rSource.Value, "end of run")
+			}
+
+			continue
+		}
+
 		if dir == prevDir {
 			continue
 		}
 
 		if position != nil {
-			position.Close(t, rSource.Value, fmt.Sprintf("dir changed from %s", prevDir))
+			reason := fmt.Sprintf("dir changed from %s", prevDir)
 
-			currentEquity += position.ClosedPL
-
-			equityQ.Records = append(equityQ.Records, &models.QuantityRecord{
-				Timestamp: t,
-				Value:     currentEquity,
-			})
-
-			position = nil
+			closePosition(t, rSource.Value, reason)
 		}
 
 		switch dir {
@@ -134,11 +164,16 @@ func Backtest(
 		case models.DirDown:
 			position = models.NewShortPosition(t, rSource.Value)
 		}
+
+		if position != nil {
+			// log.Debug().
+			// 	Stringer("entryTime", t).
+			// 	Str("type", position.Type).
+			// 	Msg("opened position")
+		}
 	}
 
-	ts := &models.TimeSeries{
-		Quantities: []*models.Quantity{sourceQ, predQ, equityQ},
-	}
+	timeSeries.AddQuantity(equityQ)
 
-	return ts, nil
+	return timeSeries, nil
 }

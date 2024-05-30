@@ -1,7 +1,10 @@
 package models
 
 import (
+	"slices"
 	"time"
+
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type TimeSeries struct {
@@ -18,6 +21,34 @@ type QuantityRecord struct {
 	Value     float64   `json:"v"`
 }
 
+func NewTimeSeries() *TimeSeries {
+	return &TimeSeries{
+		Quantities: []*Quantity{},
+	}
+}
+
+func (ts *TimeSeries) IsEmpty() bool {
+	for _, q := range ts.Quantities {
+		if !q.IsEmpty() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (ts *TimeSeries) SortByTime() bool {
+	for _, q := range ts.Quantities {
+		q.SortByTime()
+	}
+
+	return true
+}
+
+func (ts *TimeSeries) AddQuantity(q *Quantity) {
+	ts.Quantities = append(ts.Quantities, q)
+}
+
 func (ts *TimeSeries) FindQuantity(name string) (*Quantity, bool) {
 	for _, q := range ts.Quantities {
 		if q.Name == name {
@@ -28,6 +59,22 @@ func (ts *TimeSeries) FindQuantity(name string) (*Quantity, bool) {
 	return nil, false
 }
 
+func (ts *TimeSeries) DropRecordsBefore(t time.Time) {
+	for _, q := range ts.Quantities {
+		q.DropRecordsBefore(t)
+	}
+}
+
+func (q *Quantity) IsEmpty() bool {
+	return len(q.Records) == 0
+}
+
+func (q *Quantity) SortByTime() {
+	slices.SortStableFunc(q.Records, func(a, b *QuantityRecord) int {
+		return a.Timestamp.Compare(b.Timestamp)
+	})
+}
+
 func (q *Quantity) FindRecord(t time.Time) (*QuantityRecord, bool) {
 	for _, record := range q.Records {
 		if record.Timestamp == t {
@@ -36,4 +83,10 @@ func (q *Quantity) FindRecord(t time.Time) (*QuantityRecord, bool) {
 	}
 
 	return nil, false
+}
+
+func (q *Quantity) DropRecordsBefore(t time.Time) {
+	q.Records = sliceutils.Where(q.Records, func(r *QuantityRecord) bool {
+		return !r.Timestamp.Before(t)
+	})
 }

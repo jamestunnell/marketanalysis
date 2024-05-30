@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
@@ -11,54 +12,45 @@ import (
 	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/recorders"
 )
-
-const LocationNewYork = "America/New_York"
-
-type EvalSlopeConfig struct {
-	Date      date.Date `json:"date"`
-	Window    int       `json:"window"`
-	Source    *Address  `json:"source"`
-	Predictor *Address  `json:"predictor"`
-}
 
 func EvalSlope(
 	graphConfig *Configuration,
-	loader bars.Loader,
-	config *EvalSlopeConfig,
+	symbol string,
+	evalDate date.Date,
+	loc *time.Location,
+	loadBars bars.LoadBarsFunc,
+	source, predictor *Address,
+	horizon int,
 ) (*models.TimeSeries, error) {
 	graphConfig.ClearAllRecording()
 
 	log.Debug().
-		Stringer("date", config.Date).
-		Stringer("source", config.Source).
-		Stringer("predictor", config.Predictor).
-		Int("window", config.Window).
+		Stringer("date", evalDate).
+		Stringer("source", source).
+		Stringer("predictor", predictor).
+		Int("horizon", horizon).
 		Msg("evaluating graph using slope")
 
-	if err := graphConfig.SetRecording(config.Source); err != nil {
+	if err := graphConfig.SetRecording(source); err != nil {
 		return nil, fmt.Errorf("failed to set recording for source output: %w", err)
 	}
 
-	if err := graphConfig.SetRecording(config.Predictor); err != nil {
+	if err := graphConfig.SetRecording(predictor); err != nil {
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	sourceName := config.Source.String()
-	predName := config.Predictor.String()
-	recorder := recorders.NewTimeSeries(LocationNewYork)
-
-	if err := RunDay(config.Date, graphConfig, loader, recorder); err != nil {
-		return nil, fmt.Errorf("failed to run graph on %s: %w", config.Date, err)
+	timeSeries, err := RunDay(graphConfig, symbol, evalDate, loc, loadBars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}
 
-	sourceQ, found := recorder.FindQuantity(sourceName)
+	sourceQ, found := timeSeries.FindQuantity(source.String())
 	if !found {
 		return nil, errors.New("failed to find source quantity")
 	}
 
-	predQ, found := recorder.FindQuantity(predName)
+	predQ, found := timeSeries.FindQuantity(predictor.String())
 	if !found {
 		return nil, errors.New("failed to find predictor quantity")
 	}
@@ -69,7 +61,7 @@ func EvalSlope(
 	}
 
 	// Find the slope of future values in the window
-	lr := indicators.NewLinRegression(config.Window)
+	lr := indicators.NewLinRegression(horizon)
 	maxSlopeMagn := -math.MaxFloat64
 	for i, record := range sourceQ.Records {
 		lr.Update(record.Value)
@@ -79,7 +71,7 @@ func EvalSlope(
 		}
 
 		slopeQ.Records = append(slopeQ.Records, &models.QuantityRecord{
-			Timestamp: sourceQ.Records[i-(config.Window-1)].Timestamp,
+			Timestamp: sourceQ.Records[i-(horizon-1)].Timestamp,
 			Value:     lr.Slope(),
 		})
 
@@ -112,9 +104,8 @@ func EvalSlope(
 		})
 	}
 
-	ts := &models.TimeSeries{
-		Quantities: []*models.Quantity{sourceQ, predQ, slopeQ, evalQ},
-	}
+	timeSeries.AddQuantity(slopeQ)
+	timeSeries.AddQuantity(evalQ)
 
-	return ts, nil
+	return timeSeries, nil
 }

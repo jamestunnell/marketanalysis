@@ -2,13 +2,15 @@ import van from 'vanjs-core'
 
 import { PostJSON } from './backend.js'
 import { GraphActionModal, INPUT_CLASS } from './graphaction.js'
+import userTimeZone from './timezone.js'
 
 const {input, label, option, select} = van.tags
 
-const evalGraph = ({id, date, symbol, source, predictor, window}) => {
+const evalGraph = ({id, symbol, date, source, predictor, horizon}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/eval`
-        const object = {type: "slope", date, symbol, source, predictor, window}
+        const timeZone = userTimeZone()
+        const object = {type: "slope", symbol, date, timeZone, source, predictor, horizon}
         const options = {accept: 'application/json'}
 
         console.log("evaluating graph", object)
@@ -35,11 +37,11 @@ const evalGraph = ({id, date, symbol, source, predictor, window}) => {
     });
 }
 
-const WINDOW_MIN = 3
-const WINDOW_MAX = 100
+const HORIZON_MIN = 3
+const HORIZON_MAX = 100
 
 const EvalGraph = (graph, infoByType) => {
-    const window = van.state(WINDOW_MIN)
+    const horizon = van.state(HORIZON_MIN)
     const source = van.state("")
     const predictor = van.state("")
 
@@ -48,15 +50,15 @@ const EvalGraph = (graph, infoByType) => {
             id: graph.id,
             symbol,
             date,
-            window: window.val,
+            horizon: horizon.val,
             source: source.val,
             predictor: predictor.val,
         })
     }
     const runDisabled = van.derive(() => {
         return (
-            (window.val < WINDOW_MIN) || 
-            (window.val > WINDOW_MAX) ||
+            (horizon.val < HORIZON_MIN) || 
+            (horizon.val > HORIZON_MAX) ||
             (source.val.length === 0) || 
             (predictor.val.length === 0)
         )
@@ -85,8 +87,8 @@ const EvalGraph = (graph, infoByType) => {
             type: "number",
             class: INPUT_CLASS,
             value: window.val,
-            min: WINDOW_MIN,
-            max: WINDOW_MAX,
+            min: HORIZON_MIN,
+            max: HORIZON_MAX,
             step: 1,
             onchange: e => window.val = Number(e.target.value),
             required: true,

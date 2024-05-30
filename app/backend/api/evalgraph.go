@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -55,9 +56,23 @@ func (a *Graphs) EvalSlope(
 
 	log.Debug().Interface("request", eval).Msg("received eval-slope request")
 
-	barsLoader := bars.NewAlpacaLoader(eval.Symbol)
+	loc, err := time.LoadLocation(eval.TimeZone)
+	if err != nil {
+		handleAppErr(w, app.NewErrInvalidInput("eval timeZone", err.Error()))
 
-	recording, err := graph.EvalSlope(cfg, barsLoader, eval.EvalSlopeConfig)
+		return
+	}
+
+	recording, err := graph.EvalSlope(
+		cfg,
+		eval.Symbol,
+		eval.Date,
+		loc,
+		bars.GetAlpacaBarsOneMin,
+		eval.Source,
+		eval.Predictor,
+		eval.Horizon,
+	)
 	if err != nil {
 		appErr := app.NewErrActionFailed("eval graph", err.Error())
 

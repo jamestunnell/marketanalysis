@@ -1,7 +1,6 @@
 package recorders
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -12,32 +11,19 @@ import (
 type TimeSeries struct {
 	*models.TimeSeries
 
-	loc         *time.Location
-	localTZ     string
-	recordCount int
+	loc *time.Location
 }
 
-func NewTimeSeries(localTZ string) *TimeSeries {
+func NewTimeSeries(loc *time.Location) *TimeSeries {
 	return &TimeSeries{
 		TimeSeries: &models.TimeSeries{
 			Quantities: []*models.Quantity{},
 		},
-		loc:         nil,
-		localTZ:     localTZ,
-		recordCount: 0,
+		loc: nil,
 	}
 }
 
 func (rec *TimeSeries) Init(valNames []string) error {
-	if rec.localTZ != "" {
-		loc, err := time.LoadLocation(rec.localTZ)
-		if err != nil {
-			return fmt.Errorf("failed to load location from local time zone '%s': %w", rec.localTZ, err)
-		}
-
-		rec.loc = loc
-	}
-
 	sort.Strings(valNames)
 
 	rec.Quantities = sliceutils.Map(valNames, func(name string) *models.Quantity {
@@ -46,7 +32,6 @@ func (rec *TimeSeries) Init(valNames []string) error {
 			Records: []*models.QuantityRecord{},
 		}
 	})
-	rec.recordCount = 0
 
 	return nil
 }
@@ -63,10 +48,10 @@ func (rec *TimeSeries) Process(t time.Time, vals map[string]float64) {
 			q.Records = append(q.Records, record)
 		}
 	}
-
-	rec.recordCount++
 }
 
 func (rec *TimeSeries) Finalize() error {
+	rec.SortByTime()
+
 	return nil
 }

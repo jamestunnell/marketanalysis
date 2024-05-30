@@ -8,6 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/aroon"
 	"github.com/jamestunnell/marketanalysis/blocks/atr"
 	"github.com/jamestunnell/marketanalysis/blocks/bar"
+	"github.com/jamestunnell/marketanalysis/blocks/constant"
 	"github.com/jamestunnell/marketanalysis/blocks/div"
 	"github.com/jamestunnell/marketanalysis/blocks/dmi"
 	"github.com/jamestunnell/marketanalysis/blocks/ema"
@@ -16,6 +17,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/maorder"
 	"github.com/jamestunnell/marketanalysis/blocks/mul"
 	"github.com/jamestunnell/marketanalysis/blocks/multitrend"
+	"github.com/jamestunnell/marketanalysis/blocks/rescale"
 	"github.com/jamestunnell/marketanalysis/blocks/sma"
 	"github.com/jamestunnell/marketanalysis/blocks/sub"
 	"github.com/jamestunnell/marketanalysis/blocks/supertrend"
@@ -36,6 +38,7 @@ func init() {
 	Add(aroon.Type, aroon.New)
 	Add(atr.Type, atr.New)
 	Add(bar.Type, bar.New)
+	Add(constant.Type, constant.New)
 	Add(div.Type, div.New)
 	Add(dmi.Type, dmi.New)
 	Add(ema.Type, ema.New)
@@ -44,6 +47,7 @@ func init() {
 	Add(maorder.Type, maorder.New)
 	Add(multitrend.Type, multitrend.New)
 	Add(mul.Type, mul.New)
+	Add(rescale.Type, rescale.New)
 	Add(sma.Type, sma.New)
 	Add(sub.Type, sub.New)
 	Add(supertrend.Type, supertrend.New)

@@ -2,13 +2,15 @@ import van from 'vanjs-core'
 
 import { GraphActionModal, INPUT_CLASS } from './graphaction.js'
 import { PostJSON } from './backend.js'
+import userTimeZone from './timezone.js'
 
-const {label, option, select} = van.tags
+const {input, label, option, select} = van.tags
 
-const backtestGraph = ({id, date, symbol, source, predictor, window}) => {
+const backtestGraph = ({id, date, symbol, predictor}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/backtest`
-        const object = {date, symbol, predictor}
+        const timeZone = userTimeZone()
+        const object = {date, symbol, timeZone, predictor}
         const options = {accept: 'application/json'}
 
         console.log("backtesting graph", object)
@@ -37,6 +39,7 @@ const backtestGraph = ({id, date, symbol, source, predictor, window}) => {
 
 const BacktestGraph = (graph, infoByType) => {
     const predictor = van.state("")
+    const threshold = van.state(0.25)
 
     const doAction = ({date, symbol}) => {
         return backtestGraph({id: graph.id, symbol, date, predictor: predictor.val})
@@ -64,6 +67,17 @@ const BacktestGraph = (graph, infoByType) => {
             oninput: e => predictor.val = e.target.value,
             required: true,
         }, predBlockOutOpts),
+        label({for: "threshold"}, "Threshold"),
+        input({
+            id: "threshold",
+            type: "number",
+            class: INPUT_CLASS,
+            value: threshold.val,
+            min: -1.0,
+            max: 1.0,
+            step: 0.01,
+            onchange: e => threshold.val = parseFloat(e.target.value)
+        }),
     ]
 
     GraphActionModal({ actionName: "backtest", graph, inputElems, runDisabled, doAction })

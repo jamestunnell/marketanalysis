@@ -7,6 +7,7 @@ import { ButtonIcon } from './buttons.js'
 import { IconClose } from './icons.js'
 import { kMeansAdaptive } from './clustering/cluster.js'
 import { ModalBackground, ModalForeground } from './modal.js'
+import userTimeZone from './timezone.js'
 
 const {div, p} = van.tags
 
@@ -22,10 +23,14 @@ function tsToUnix(ts) {
     return Math.floor(date.getTime());
 }
 
-const makePlot = (series) => {
+const makePlot = ({series, height}) => {
     const plotArea = div()
     const chart = Highcharts.chart(plotArea, {
-        chart: {type: 'line', zooming: {type: 'x'}},
+        chart: {
+            type: 'line',
+            zooming: {type: 'x'},
+            height,
+        },
         title: {enabled: false, text: ""},
         xAxis: {type: 'datetime'},
         yAxis: {},
@@ -36,12 +41,15 @@ const makePlot = (series) => {
             enabled: true
         },
         series: series,
+        time: {
+            timezone: userTimeZone(),
+        },
     });
 
     return plotArea
 }
 
-function plotRecording(recording) {
+function plotRecording({recording, totalHeight}) {
     const qs = {}
 
     recording.quantities.forEach(q => {
@@ -62,6 +70,7 @@ function plotRecording(recording) {
         return [name, values]
     }))
     const clusters = kMeansAdaptive(valuesByName)
+    const height = totalHeight / Math.min(3, clusters.length)
     const plots = clusters.map(members => {
         console.log(`plotting quantities: ${members}`)
 
@@ -71,7 +80,7 @@ function plotRecording(recording) {
             return {name, data: valuePairs, color: plotColor(i)}
         })
     
-        return makePlot(series)    
+        return makePlot({series, height})
     })
 
     return plots
@@ -80,17 +89,18 @@ function plotRecording(recording) {
 const PlotRecordingModal = (recording) => {
     const closed = van.state(false);
     const closeBtn = ButtonIcon({icon: IconClose(), onclick: () => closed.val = true})
+    const totalHeight = window.screen.availHeight * 0.9 * 0.75
 
     const modal = ModalBackground(
         div(
-            {class: "block p-16 rounded-lg bg-white min-w-[65%] max-w-[65%]"},
+            {class: "block p-8 rounded-lg bg-white min-w-[70%] max-w-[90%] min-h-[70%] max-h-[90%] overflow-y-auto"},
             div(
                 {class: "flex flex-col"},
                 div(
                     p({class: "text-xl"}, "Run Results"),
                     div({class: "float-end"}, closeBtn),
                 ),
-                plotRecording(recording)
+                plotRecording({recording, totalHeight})
             )
         ),
     )

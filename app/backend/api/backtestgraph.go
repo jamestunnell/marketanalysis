@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -32,9 +33,14 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug().Interface("request", bt).Msg("received backtest request")
 
-	barsLoader := bars.NewAlpacaLoader(bt.Symbol)
+	loc, err := time.LoadLocation(bt.TimeZone)
+	if err != nil {
+		handleAppErr(w, app.NewErrInvalidInput("backtest timeZone", err.Error()))
 
-	recording, err := graph.Backtest(cfg, barsLoader, bt.Date, bt.Predictor, bt.Threshold)
+		return
+	}
+
+	recording, err := graph.Backtest(cfg, bt.Symbol, bt.Date, loc, bars.GetAlpacaBarsOneMin, bt.Predictor, bt.Threshold)
 	if err != nil {
 		appErr := app.NewErrActionFailed("backtest graph", err.Error())
 

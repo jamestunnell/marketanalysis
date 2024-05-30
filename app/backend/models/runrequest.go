@@ -2,11 +2,11 @@ package models
 
 import "github.com/rickb777/date"
 
-const RunDay = "Day"
+const RunDay = "day"
 
 type RunDayRequest struct {
-	Symbol  string    `json:"symbol"`
-	Date    date.Date `json:"date"`
-	Format  string    `json:"format"`
-	LocalTZ string    `json:"localTZ,omitempty"`
+	Symbol   string    `json:"symbol"`
+	Date     date.Date `json:"date"`
+	Format   string    `json:"format"`
+	TimeZone string    `json:"timeZone"`
 }

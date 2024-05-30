@@ -2,11 +2,13 @@ import van from 'vanjs-core'
 
 import { GraphActionModal } from './graphaction.js'
 import { PostJSON } from './backend.js'
+import userTimeZone from './timezone.js';
 
-const runGraph = ({id, date, symbol}) => {
+const runGraph = ({id, symbol, date}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/run`
-        const object = {type: "Day", date, symbol, format: "json"}
+        const timeZone = userTimeZone()
+        const object = {type: "day", symbol, date, timeZone}
         const options = {accept: 'application/json'}
 
         console.log("running graph", object)
@@ -36,7 +38,7 @@ const runGraph = ({id, date, symbol}) => {
 const RunGraph = (graph) => {
     const runDisabled = van.state(false)
     const doAction = ({date, symbol}) => {
-        return runGraph({id: graph.id, date, symbol})
+        return runGraph({id: graph.id, symbol, date})
     }
     const inputElems = []
 

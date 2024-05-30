@@ -11,7 +11,11 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func GetAlpacaBars(ts timespan.TimeSpan, sym string, loc *time.Location) (models.Bars, error) {
+func GetAlpacaBarsOneMin(
+	sym string,
+	ts timespan.TimeSpan,
+	loc *time.Location,
+) (models.Bars, error) {
 	start, end := ts.Start(), ts.End()
 
 	// the most current end time alpaca allows for free

@@ -1,10 +1,11 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -13,9 +14,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/bars"
-	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/graph"
-	"github.com/jamestunnell/marketanalysis/recorders"
 )
 
 func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +40,10 @@ func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
 	switch runType.String() {
 	case models.RunDay:
 		a.RunDay(w, cfg, d)
+	default:
+		msg := fmt.Sprintf("run type '%s'", runType)
+
+		handleAppErr(w, app.NewErrInvalidInput(msg, "type is unknown"))
 	}
 }
 
@@ -58,28 +61,16 @@ func (a *Graphs) RunDay(
 
 	log.Debug().Interface("request", runDay).Msg("received run-day request")
 
-	barsLoader := bars.NewAlpacaLoader(runDay.Symbol)
-	buf := bytes.NewBuffer([]byte{})
+	loc, err := time.LoadLocation(runDay.TimeZone)
+	if err != nil {
+		msg := fmt.Sprintf("run time zone '%s'", runDay.TimeZone)
 
-	var rec blocks.Recorder
-	var contentType string
-
-	switch runDay.Format {
-	case "csv":
-		rec = recorders.NewCSV(buf, runDay.LocalTZ)
-		contentType = "text/csv"
-	case "json":
-		rec = recorders.NewTimeSeriesJSON(buf, runDay.LocalTZ)
-		contentType = "application/json"
-	default:
-		appErr := app.NewErrInvalidInput("request", "format is missing or unknown")
-
-		handleAppErr(w, appErr)
+		handleAppErr(w, app.NewErrInvalidInput(msg, err.Error()))
 
 		return
 	}
 
-	err := graph.RunDay(runDay.Date, cfg, barsLoader, rec)
+	timeSeries, err := graph.RunDay(cfg, runDay.Symbol, runDay.Date, loc, bars.GetAlpacaBarsOneMin)
 	if err != nil {
 		appErr := app.NewErrActionFailed("run graph", err.Error())
 
@@ -88,11 +79,11 @@ func (a *Graphs) RunDay(
 		return
 	}
 
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	if _, err = w.Write(buf.Bytes()); err != nil {
+	if err = json.NewEncoder(w).Encode(timeSeries); err != nil {
 		log.Warn().Err(err).Msg("failed to write response")
 	}
 }
