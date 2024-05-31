@@ -13,9 +13,9 @@ const inputClass = "block border border-gray-200 rounded-md focus:border-indigo-
 const minSteps = 100.0
 
 function computeStep(min, max) {
-    const ratio = max / min;
+    const x = Math.log10((max - min) / minSteps)
     
-    return (ratio / minSteps) / Math.pow(10.0, Math.ceil(Math.log10(ratio)))
+    return Math.pow(10.0, Math.ceil(x - 1.0))
 }
 
 const RangeParamRow = ({param, currentVal, step, updateVal, errMsg}) => {

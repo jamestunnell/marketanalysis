@@ -81,16 +81,16 @@ const EvalGraph = (graph, infoByType) => {
     )
 
     const inputElems = [
-        label({for: "window"}, "Window Size"),
+        label({for: "horizon"}, "Horizon"),
         input({
-            id: "window",
+            id: "horizon",
             type: "number",
             class: INPUT_CLASS,
-            value: window.val,
+            value: horizon.val,
             min: HORIZON_MIN,
             max: HORIZON_MAX,
             step: 1,
-            onchange: e => window.val = Number(e.target.value),
+            onchange: e => horizon.val = Number(e.target.value),
             required: true,
         }),
         label({for: "source"}, "Source"),
