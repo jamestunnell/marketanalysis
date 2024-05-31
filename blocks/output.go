@@ -12,6 +12,7 @@ type Output interface {
 	GetConnected() []Input
 
 	IsConnected() bool
+	ClearValue()
 	IsValueSet() bool
 
 	Connect(Input) error
@@ -50,6 +51,10 @@ func (out *TypedOutput[T]) GetConnected() []Input {
 
 func (out *TypedOutput[T]) IsConnected() bool {
 	return len(out.Ins) != 0
+}
+
+func (out *TypedOutput[T]) ClearValue() {
+	out.set = false
 }
 
 func (out *TypedOutput[T]) IsValueSet() bool {

@@ -173,6 +173,10 @@ func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []strin
 
 func (m *Graph) Update(bar *models.Bar) {
 	for _, blk := range m.blocks {
+		for _, out := range blk.GetOutputs() {
+			out.ClearValue()
+		}
+
 		blk.Update(bar)
 	}
 }

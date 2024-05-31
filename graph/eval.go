@@ -11,6 +11,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/indicators"
+	"github.com/jamestunnell/marketanalysis/indicators/pivots"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -60,9 +61,42 @@ func EvalSlope(
 		Records: []*models.QuantityRecord{},
 	}
 
+	pivotsQ := &models.Quantity{
+		Name:    "Source Pivots",
+		Records: []*models.QuantityRecord{},
+	}
+
+	pivots, err := pivots.New(horizon * 2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make pivots indicator: %w", err)
+	}
+
+	log.Debug().Msg("eval: finding source pivot points")
+
+	for _, record := range sourceQ.Records {
+		added := pivots.Update(record.Timestamp, record.Value)
+		if added {
+			pivot := pivots.GetLatest()
+
+			log.Debug().
+				Stringer("type", pivot.Type).
+				Time("timestamp", pivot.Timestamp).
+				Float64("value", pivot.Value).
+				Msg("found pivot")
+
+			pivotsQ.Records = append(pivotsQ.Records, &models.QuantityRecord{
+				Timestamp: pivot.Timestamp,
+				Value:     pivot.Value,
+			})
+		}
+	}
+
+	log.Debug().Msg("eval: calculating future source slopes")
+
 	// Find the slope of future values in the window
 	lr := indicators.NewLinRegression(horizon)
 	maxSlopeMagn := -math.MaxFloat64
+
 	for i, record := range sourceQ.Records {
 		lr.Update(record.Value)
 
@@ -91,6 +125,8 @@ func EvalSlope(
 		Records: []*models.QuantityRecord{},
 	}
 
+	log.Debug().Int("pred records", len(predQ.Records)).Msg("eval: evaluating predictor slope agreement")
+
 	// Evaluate predictor when it crosses threshold
 	for _, record := range predQ.Records {
 		slope, found := slopeQ.FindRecord(record.Timestamp)
@@ -106,6 +142,7 @@ func EvalSlope(
 
 	timeSeries.AddQuantity(slopeQ)
 	timeSeries.AddQuantity(evalQ)
+	timeSeries.AddQuantity(pivotsQ)
 
 	return timeSeries, nil
 }

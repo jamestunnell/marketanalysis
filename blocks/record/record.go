@@ -12,16 +12,16 @@ type Record struct {
 }
 
 const (
-	DescrRecord = "Records block outputs"
-	TypeRecord  = "Record"
+	Descr = "Records block outputs"
+	Type  = "Record"
 )
 
 func (blk *Record) GetType() string {
-	return TypeRecord
+	return Type
 }
 
 func (blk *Record) GetDescription() string {
-	return DescrRecord
+	return Descr
 }
 
 func (blk *Record) GetParams() blocks.Params {

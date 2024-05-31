@@ -149,6 +149,15 @@ func Backtest(
 		}
 
 		if dir == prevDir {
+			// if position != nil {
+			// 	pl, _ := position.OpenProfitLoss(rSource.Value)
+			// 	if pl < -0.5 {
+			// 		closePosition(t, rSource.Value, "stop loss")
+			// 	} else if pl > 1.0 {
+			// 		closePosition(t, rSource.Value, "take profit")
+			// 	}
+			// }
+
 			continue
 		}
 
