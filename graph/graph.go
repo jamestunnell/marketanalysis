@@ -96,6 +96,7 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 	conns := slices.Clone(m.Connections)
 	recordName := "record-" + nanoid.Must()
 	recordIns := map[string]*blocks.TypedInput[float64]{}
+	recordInsAsync := map[string]*blocks.TypedInputAsync[float64]{}
 
 	for _, cfg := range m.Blocks {
 		new, found := registry.Get(cfg.Type)
@@ -116,7 +117,8 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 		blks[cfg.Name] = blk
 
 		for _, outName := range cfg.Recording {
-			if _, found := blk.GetOutputs()[outName]; !found {
+			out, found := blk.GetOutputs()[outName]
+			if !found {
 				err := fmt.Errorf("block %s: recording output '%s' not found", cfg.Name, outName)
 
 				return Blocks{}, []*Connection{}, err
@@ -128,15 +130,20 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 				Target: NewAddress(recordName, recTarget),
 			}
 
-			recordIns[recTarget] = blocks.NewTypedInput[float64]()
+			if out.IsAsynchronous() {
+				recordInsAsync[recTarget] = blocks.NewTypedInputAsync[float64]()
+			} else {
+				recordIns[recTarget] = blocks.NewTypedInput[float64]()
+			}
 
 			conns = append(conns, recordConn)
 		}
 	}
 
 	blks[recordName] = &record.Record{
-		Inputs:   recordIns,
-		Recorder: r,
+		Inputs:      recordIns,
+		InputsAsync: recordInsAsync,
+		Recorder:    r,
 	}
 
 	return blks, conns, nil

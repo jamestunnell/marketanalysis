@@ -7,8 +7,9 @@ import (
 )
 
 type Record struct {
-	Recorder blocks.Recorder
-	Inputs   map[string]*blocks.TypedInput[float64]
+	Recorder    blocks.Recorder
+	Inputs      map[string]*blocks.TypedInput[float64]
+	InputsAsync map[string]*blocks.TypedInputAsync[float64]
 }
 
 const (

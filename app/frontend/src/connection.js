@@ -141,6 +141,7 @@ class ConnectionRow {
     render() {
         const deleteBtn = ButtonIcon({
             icon: IconDelete(),
+            text: "Delete",
             onclick: () => {
                 this.deleted.val = true
     

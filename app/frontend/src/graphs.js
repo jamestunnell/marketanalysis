@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import {Delete, Get, PostJSON} from './backend.js'
-import { Button, ButtonCancel, ButtonDanger } from "./buttons.js";
+import { Button, ButtonIcon, ButtonCancel } from "./buttons.js";
 import { ButtonGroup } from './buttongroup.js'
 import {IconDelete, IconView} from './icons.js'
 import {Table, TableRow} from './table.js'
@@ -99,12 +99,14 @@ const GraphNameForm = ({onOK, onCancel}) => {
 const GraphTableRow = ({id, name}) => {
     const deleted = van.state(false)
 
-    const viewBtn = Button({
-        child: IconView(),
+    const viewBtn = ButtonIcon({
+        icon: IconView(),
+        text: "View",
         onclick: () => routeTo('graphs', [id]),
     });
-    const deleteBtn = ButtonDanger({
-        child: IconDelete(),
+    const deleteBtn = ButtonIcon({
+        icon: IconDelete(),
+        text: "Delete",
         onclick: () => {
             deleteGraph(id).then(ok => {
                 if (ok) {

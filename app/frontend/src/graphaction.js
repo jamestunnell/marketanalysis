@@ -32,7 +32,11 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
         date.val = dateInput.value
     })
 
-    const closeBtn = ButtonIcon({icon: IconClose(), onclick: ()=> closed.val = true})
+    const closeBtn = ButtonIcon({
+        icon: IconClose(),
+        text: "Close",
+        onclick: ()=> closed.val = true},
+    )
     const runBtn = Button({
         disabled: van.derive(() => {
             return runDisabled.val || (date.val.length === 0) || (symbol.val.length === 0)
@@ -53,10 +57,12 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
     })
     const plotBtn = ButtonIcon({
         icon: IconPlot(),
+        text: "Plot",
         onclick: ()=> PlotRecordingModal(recording.val),
     })
     const downloadBtn = ButtonIcon({
         icon: IconDownload(),
+        text: "Download",
         onclick: ()=> {
             DownloadJSON({
                 filename: `${graph.name}_${symbol.val}_${date.val}_${actionName}.json`,

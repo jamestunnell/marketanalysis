@@ -10,7 +10,7 @@ import (
 
 type Pivots struct {
 	in     *blocks.TypedInput[float64]
-	out    *blocks.TypedOutput[float64]
+	out    *blocks.TypedOutputAsync[float64]
 	length *blocks.IntRange
 	ind    *p.Pivots
 }
@@ -23,7 +23,7 @@ const (
 func New() blocks.Block {
 	return &Pivots{
 		in:     blocks.NewTypedInput[float64](),
-		out:    blocks.NewTypedOutput[float64](),
+		out:    blocks.NewTypedOutputAsync[float64](),
 		length: &blocks.IntRange{Default: 15, Min: 2, Max: 1000},
 		ind:    nil,
 	}
@@ -79,9 +79,7 @@ func (blk *Pivots) Update(cur *models.Bar) {
 		return
 	}
 
-	tvIn := blk.in.GetTimeValue()
-
-	if !blk.ind.Update(tvIn.Time, tvIn.Value) {
+	if !blk.ind.Update(cur.Timestamp, blk.in.GetValue()) {
 		return
 	}
 

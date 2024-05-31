@@ -11,6 +11,7 @@ type Output interface {
 	GetType() string
 	GetConnected() []Input
 
+	IsAsynchronous() bool
 	IsConnected() bool
 	ClearValue()
 	IsValueSet() bool
@@ -47,6 +48,10 @@ func (out *TypedOutput[T]) GetConnected() []Input {
 	return sliceutils.Map(out.Ins, func(in *TypedInput[T]) Input {
 		return in
 	})
+}
+
+func (out *TypedOutput[T]) IsAsynchronous() bool {
+	return false
 }
 
 func (out *TypedOutput[T]) IsConnected() bool {

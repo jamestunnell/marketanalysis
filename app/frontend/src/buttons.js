@@ -29,7 +29,7 @@ const ButtonDanger = ({child, onclick, disabled}) => {
 
 const iconClassNormal = 'rounded-md p-1 m-3 text-gray-700 hover:text-black'
 
-const ButtonIconDisableable = ({icon, disabled, onclick}) => {
+const ButtonIconDisableable = ({icon, text, disabled, onclick}) => {
     return button(
         {
             class: van.derive(() => {
@@ -39,16 +39,18 @@ const ButtonIconDisableable = ({icon, disabled, onclick}) => {
             onclick: onclick,
         },
         icon,
+        text,
     )
 }
 
-const ButtonIcon = ({icon, onclick}) => {
+const ButtonIcon = ({icon, text, onclick}) => {
     return button(
         {
             class: iconClassNormal,
             onclick: onclick,
         },
         icon,
+        text,
     )
 }
 
@@ -120,7 +122,7 @@ const ButtonToggle = ({setVal, onSet, onClear}) => {
     )
 }
 
-const ButtonIconTooltip = ({icon, tooltipText}) => {
+const ButtonIconTooltip = ({icon, text, tooltipText}) => {
     const showTooltip = van.state(false)
     
     return button(
@@ -131,6 +133,7 @@ const ButtonIconTooltip = ({icon, tooltipText}) => {
             onmouseleave: () => showTooltip.val = false,
         },
         icon,
+        text,
         Tooltip({
             text: tooltipText,
             show: showTooltip,
