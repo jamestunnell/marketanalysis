@@ -8,13 +8,13 @@ import (
 )
 
 func BindAll(r *mux.Router, db *mongo.Database) {
-	securities := NewSecurities(db)
-	graphs := NewGraphs(db, securities)
+	graphs := NewGraphs(db)
+	datasets := NewMarketDatasets(db)
 
 	r.Handle("/blocks/{type}", NewGetBlockInfo()).Methods(http.MethodGet) //, http.MethodOptions)
 	r.Handle("/blocks", NewGetAllBlockInfo()).Methods(http.MethodGet)     //, http.MethodOptions)
 	r.Handle("/status", NewStatus()).Methods(http.MethodPost)             //, http.MethodOptions)
 
 	graphs.Bind(r)
-	securities.Bind(r)
+	datasets.Bind(r)
 }
