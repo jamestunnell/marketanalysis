@@ -9,17 +9,22 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/app/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type Graphs struct {
 	*CRUDAPI[*graph.Configuration]
+
+	securities *CRUDAPI[*models.Security]
 }
 
 func NewGraphs(
 	db *mongo.Database,
+	securities *CRUDAPI[*models.Security],
 ) *Graphs {
 	return &Graphs{
-		CRUDAPI: NewCRUDAPI(stores.NewGraphs(db)),
+		CRUDAPI:    NewCRUDAPI(stores.NewGraphs(db)),
+		securities: securities,
 	}
 }
 

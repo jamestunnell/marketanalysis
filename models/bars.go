@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
 	"time"
 
 	"github.com/rickb777/date/timespan"
@@ -15,22 +14,6 @@ import (
 )
 
 type Bars []*Bar
-
-func (bars Bars) Sort() {
-	slices.SortFunc(bars, CompareBarsByTimestamp)
-}
-
-func (bars Bars) BinarySearch(t time.Time) (int, bool) {
-	return slices.BinarySearchFunc(bars, t, CompareBarWithTimestamp)
-}
-
-func CompareBarsByTimestamp(a, b *Bar) int {
-	return a.Timestamp.Compare(b.Timestamp)
-}
-
-func CompareBarWithTimestamp(bar *Bar, t time.Time) int {
-	return bar.Timestamp.Compare(t)
-}
 
 func LoadBarsFromFile(fpath string) (Bars, error) {
 	f, err := os.Open(fpath)
