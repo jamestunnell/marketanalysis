@@ -41,26 +41,51 @@ func NewDayBarsLoader(
 }
 
 func (l *DayBarsLoader) Load(ctx context.Context, d date.Date) (*models.DayBars, error) {
+	log.Debug().Stringer("date", d).Msg("loading day bars")
+
 	dayBars, appErr := l.Store.Get(ctx, d.String())
 	if appErr == nil {
+		log.Debug().
+			Int("count", len(dayBars.Bars)).
+			Stringer("date", d).
+			Msg("found bars in store")
+
 		return dayBars, nil
 	}
 
 	ts := timespan.NewTimeSpan(d.In(l.Location), d.Add(1).In(l.Location))
 
-	bars, err := bars.GetAlpacaBarsOneMin(l.Symbol, ts, l.Location)
+	bs, err := bars.GetAlpacaBarsOneMin(l.Symbol, ts, l.Location)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aplaca bars: %w", err)
 	}
 
+	log.Debug().
+		Int("count", len(bs)).
+		Stringer("date", d).
+		Msg("loaded bars from alpaca")
+
 	dayBars = &models.DayBars{
-		Bars: bars,
-		Date: d,
+		Bars: bs,
+		Date: d.String(),
 	}
+
+	log.Debug().
+		Int("count", len(bs)).
+		Stringer("date", d).
+		Msg("storing day bars")
 
 	appErr = l.Store.Create(ctx, dayBars)
 	if appErr != nil {
-		log.Warn().Err(err).Stringer("date", d).Msg("failed to store day bars")
+		log.Warn().
+			Err(appErr).
+			Stringer("date", d).
+			Msg("failed to store day bars")
+	} else {
+		log.Debug().
+			Int("count", len(bs)).
+			Stringer("date", d).
+			Msg("stored bars")
 	}
 
 	return dayBars, nil

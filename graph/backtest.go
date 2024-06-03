@@ -61,10 +61,10 @@ func Backtest(
 	currentEquity := 0.0
 	equityQ := &models.Quantity{
 		Name: "Equity",
-		Records: []*models.QuantityRecord{
+		Records: []models.QuantityRecord{
 			{
-				Timestamp: sourceQ.Records[0].Timestamp,
-				Value:     0.0,
+				Time:  sourceQ.Records[0].Time,
+				Value: 0.0,
 			},
 		},
 	}
@@ -77,9 +77,9 @@ func Backtest(
 
 		currentEquity += position.ClosedPL
 
-		equityQ.Records = append(equityQ.Records, &models.QuantityRecord{
-			Timestamp: t,
-			Value:     currentEquity,
+		equityQ.Records = append(equityQ.Records, models.QuantityRecord{
+			Time:  t,
+			Value: currentEquity,
 		})
 
 		log.Debug().
@@ -93,7 +93,7 @@ func Backtest(
 	}
 
 	for i, r := range predQ.Records {
-		t := r.Timestamp
+		t := r.Time
 
 		rSource, found := sourceQ.FindRecord(t)
 		if !found {

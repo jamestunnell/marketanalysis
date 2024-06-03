@@ -8,8 +8,8 @@ import (
 )
 
 type DayBars struct {
-	Date date.Date `json:"date" bson:"_id"`
-	Bars Bars      `json:"bars"`
+	Date string `json:"date" bson:"_id"`
+	Bars Bars   `json:"bars"`
 }
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func (db *DayBars) GetKey() string {
-	return db.Date.String()
+	return db.Date
 }
 
 func (db *DayBars) Validate() []error {
@@ -31,7 +31,7 @@ func (db *DayBars) Validate() []error {
 	}
 
 	for _, bar := range db.Bars {
-		if !date.NewAt(bar.Timestamp).Equal(db.Date) {
+		if date.NewAt(bar.Timestamp).String() != db.Date {
 			errs = append(errs, errBarWithUnexpectedDate)
 
 			break

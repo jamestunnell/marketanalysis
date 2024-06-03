@@ -11,7 +11,7 @@ function kMeansAdaptive(namedDatasets) {
     }
     
     if (names.length === 1) {
-        return [names[0]]
+        return [[names[0]]]
     }
 
     const allValues = []

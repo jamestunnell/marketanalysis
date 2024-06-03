@@ -59,12 +59,12 @@ func EvalSlope(
 
 	slopeQ := &models.Quantity{
 		Name:    "Source Future Slope",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	pivotsQ := &models.Quantity{
 		Name:    "Source Pivots",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	pivots, err := pivots.New(horizon * 2)
@@ -75,7 +75,7 @@ func EvalSlope(
 	log.Debug().Msg("eval: finding source pivot points")
 
 	for _, record := range sourceQ.Records {
-		added := pivots.Update(record.Timestamp, record.Value)
+		added := pivots.Update(record.Time, record.Value)
 		if added {
 			pivot := pivots.GetLatest()
 
@@ -85,9 +85,9 @@ func EvalSlope(
 				Float64("value", pivot.Value).
 				Msg("found pivot")
 
-			pivotsQ.Records = append(pivotsQ.Records, &models.QuantityRecord{
-				Timestamp: pivot.Timestamp,
-				Value:     pivot.Value,
+			pivotsQ.Records = append(pivotsQ.Records, models.QuantityRecord{
+				Time:  pivot.Timestamp,
+				Value: pivot.Value,
 			})
 		}
 	}
@@ -105,9 +105,9 @@ func EvalSlope(
 			continue
 		}
 
-		slopeQ.Records = append(slopeQ.Records, &models.QuantityRecord{
-			Timestamp: sourceQ.Records[i-(horizon-1)].Timestamp,
-			Value:     lr.Slope(),
+		slopeQ.Records = append(slopeQ.Records, models.QuantityRecord{
+			Time:  sourceQ.Records[i-(horizon-1)].Time,
+			Value: lr.Slope(),
 		})
 
 		magn := math.Abs(lr.Slope())
@@ -123,21 +123,21 @@ func EvalSlope(
 
 	evalQ := &models.Quantity{
 		Name:    "Predictor Slope Agreement",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	log.Debug().Int("pred records", len(predQ.Records)).Msg("eval: evaluating predictor slope agreement")
 
 	// Evaluate predictor when it crosses threshold
 	for _, record := range predQ.Records {
-		slope, found := slopeQ.FindRecord(record.Timestamp)
+		slope, found := slopeQ.FindRecord(record.Time)
 		if !found {
 			continue
 		}
 
-		evalQ.Records = append(evalQ.Records, &models.QuantityRecord{
-			Value:     slope.Value * record.Value,
-			Timestamp: record.Timestamp,
+		evalQ.Records = append(evalQ.Records, models.QuantityRecord{
+			Value: slope.Value * record.Value,
+			Time:  record.Time,
 		})
 	}
 

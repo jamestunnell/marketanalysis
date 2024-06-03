@@ -3,6 +3,7 @@ package record
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -36,6 +37,10 @@ func (blk *Record) GetInputs() blocks.Inputs {
 		ins[name] = in
 	}
 
+	for name, in := range blk.InputsAsync {
+		ins[name] = in
+	}
+
 	return ins
 }
 
@@ -52,22 +57,32 @@ func (blk *Record) IsWarm() bool {
 }
 
 func (blk *Record) Init() error {
-	return blk.Recorder.Init(maps.Keys(blk.Inputs))
+	inputNames := append(maps.Keys(blk.Inputs), maps.Keys(blk.InputsAsync)...)
+
+	return blk.Recorder.Init(inputNames)
 }
 
 func (blk *Record) Update(cur *models.Bar) {
-	vals := map[string]float64{}
+	tvs := map[string]models.TimeValue[float64]{}
 
 	for name, in := range blk.Inputs {
 		if in.IsValueSet() {
-			vals[name] = in.GetValue()
+			tvs[name] = models.NewTimeValue(cur.Timestamp, in.GetValue())
+		}
+	}
+
+	for name, in := range blk.InputsAsync {
+		if in.IsValueSet() {
+			log.Debug().Str("name", name).Float64("value", in.GetValue()).Msg("async input is set")
+
+			tvs[name] = models.NewTimeValue(in.GetTime(), in.GetValue())
 		}
 	}
 
 	// don't record nothing
-	if len(vals) == 0 {
+	if len(tvs) == 0 {
 		return
 	}
 
-	blk.Recorder.Process(cur.Timestamp, vals)
+	blk.Recorder.Process(tvs)
 }

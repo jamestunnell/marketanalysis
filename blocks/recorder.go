@@ -1,9 +1,11 @@
 package blocks
 
-import "time"
+import (
+	"github.com/jamestunnell/marketanalysis/models"
+)
 
 type Recorder interface {
 	Init(valNames []string) error
-	Process(t time.Time, vals map[string]float64)
+	Process(map[string]models.TimeValue[float64])
 	Finalize() error
 }

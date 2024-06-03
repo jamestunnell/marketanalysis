@@ -56,7 +56,7 @@ func (blk *Pivots) GetOutputs() blocks.Outputs {
 }
 
 func (blk *Pivots) GetWarmupPeriod() int {
-	return 0
+	return blk.ind.WarmupPeriod()
 }
 
 func (blk *Pivots) IsWarm() bool {

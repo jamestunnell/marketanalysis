@@ -12,14 +12,11 @@ type TimeSeries struct {
 }
 
 type Quantity struct {
-	Name    string            `json:"name"`
-	Records []*QuantityRecord `json:"records"`
+	Name    string           `json:"name"`
+	Records []QuantityRecord `json:"records"`
 }
 
-type QuantityRecord struct {
-	Timestamp time.Time `json:"t"`
-	Value     float64   `json:"v"`
-}
+type QuantityRecord = TimeValue[float64]
 
 func NewTimeSeries() *TimeSeries {
 	return &TimeSeries{
@@ -70,23 +67,23 @@ func (q *Quantity) IsEmpty() bool {
 }
 
 func (q *Quantity) SortByTime() {
-	slices.SortStableFunc(q.Records, func(a, b *QuantityRecord) int {
-		return a.Timestamp.Compare(b.Timestamp)
+	slices.SortStableFunc(q.Records, func(a, b QuantityRecord) int {
+		return a.Time.Compare(b.Time)
 	})
 }
 
-func (q *Quantity) FindRecord(t time.Time) (*QuantityRecord, bool) {
+func (q *Quantity) FindRecord(t time.Time) (QuantityRecord, bool) {
 	for _, record := range q.Records {
-		if record.Timestamp == t {
+		if record.Time == t {
 			return record, true
 		}
 	}
 
-	return nil, false
+	return QuantityRecord{}, false
 }
 
 func (q *Quantity) DropRecordsBefore(t time.Time) {
-	q.Records = sliceutils.Where(q.Records, func(r *QuantityRecord) bool {
-		return !r.Timestamp.Before(t)
+	q.Records = sliceutils.Where(q.Records, func(r QuantityRecord) bool {
+		return !r.Time.Before(t)
 	})
 }

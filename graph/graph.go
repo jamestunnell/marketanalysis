@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/dominikbraun/graph"
 	gr "github.com/dominikbraun/graph"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
@@ -69,7 +68,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
 
-	order, err := graph.TopologicalSort(g)
+	order, err := gr.TopologicalSort(g)
 	if err != nil {
 		return fmt.Errorf("topological sort failed: %w", err)
 	}
