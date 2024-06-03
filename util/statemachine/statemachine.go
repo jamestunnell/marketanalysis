@@ -26,7 +26,7 @@ func New[T any](name string, start State[T]) *StateMachine[T] {
 
 func (sm *StateMachine[T]) Run(t time.Time, val T) {
 	if next := sm.Current.Run(t, val); next != nil {
-		log.Debug().
+		log.Trace().
 			Str("nextState", next.GetName()).
 			Stringer("timestamp", t).
 			Msgf("%s state machine: changing state", sm.Name)

@@ -70,7 +70,5 @@ func (pivs *Pivots) GetLastCompleted() *Pivot {
 }
 
 func (pivs *Pivots) addCompleted(piv *Pivot) {
-	log.Debug().Interface("pivot", piv).Msg("completed pivot")
-
 	pivs.completed = append(pivs.completed, piv)
 }

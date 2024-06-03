@@ -20,6 +20,7 @@ type Graph struct {
 
 	blocks       Blocks
 	warmupPeriod int
+	order        []string
 }
 
 // func LoadGraph(fpath string) (*Graph, error) {
@@ -46,6 +47,7 @@ func New(cfg *Configuration) *Graph {
 		Configuration: cfg,
 		blocks:        Blocks{},
 		warmupPeriod:  0,
+		order:         []string{},
 	}
 }
 
@@ -86,6 +88,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 
 	m.blocks = blks
 	m.warmupPeriod = wuPeriod
+	m.order = order
 
 	return nil
 }
@@ -178,10 +181,16 @@ func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []strin
 }
 
 func (m *Graph) Update(bar *models.Bar) {
+	log.Trace().Msg("updating graph")
+
 	for _, blk := range m.blocks {
-		for _, out := range blk.GetOutputs() {
-			out.ClearValue()
-		}
+		blocks.ClearOutputs(blk)
+	}
+
+	for _, name := range m.order {
+		blk := m.blocks[name]
+
+		log.Trace().Str("name", name).Msg("running block")
 
 		blk.Update(bar)
 	}

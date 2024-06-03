@@ -6,6 +6,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
+	"github.com/rs/zerolog/log"
 )
 
 type TimeSeries struct {
@@ -25,6 +26,8 @@ func NewTimeSeries(loc *time.Location) *TimeSeries {
 
 func (rec *TimeSeries) Init(valNames []string) error {
 	sort.Strings(valNames)
+
+	log.Debug().Strs("names", valNames).Msg("recording values")
 
 	rec.Quantities = sliceutils.Map(valNames, func(name string) *models.Quantity {
 		return &models.Quantity{

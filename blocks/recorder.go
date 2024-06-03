@@ -7,5 +7,4 @@ import (
 type Recorder interface {
 	Init(valNames []string) error
 	Process(map[string]models.TimeValue[float64])
-	Finalize() error
 }

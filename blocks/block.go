@@ -15,3 +15,9 @@ type Block interface {
 	Init() error
 	Update(*models.Bar)
 }
+
+func ClearOutputs(blk Block) {
+	for _, out := range blk.GetOutputs() {
+		out.ClearValue()
+	}
+}

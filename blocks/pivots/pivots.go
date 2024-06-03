@@ -86,7 +86,7 @@ func (blk *Pivots) Update(cur *models.Bar) {
 
 	pivot := blk.ind.GetLastCompleted()
 
-	log.Debug().
+	log.Trace().
 		Float64("value", pivot.Value).
 		Time("timestamp", pivot.Timestamp).
 		Time("currentTime", cur.Timestamp).
