@@ -15,7 +15,9 @@ func (state *StateNew) GetName() string {
 }
 
 func (state *StateNew) Enter() {}
-func (state *StateNew) Exit()  {}
+func (state *StateNew) Exit() {
+	state.parent.warm = true
+}
 
 func (state *StateNew) Run(t time.Time, val float64) statemachine.State[float64] {
 	return NewStateNeutral(t, val, state.parent)

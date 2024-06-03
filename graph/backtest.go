@@ -20,6 +20,7 @@ func Backtest(
 	testDate date.Date,
 	loc *time.Location,
 	loader models.DayBarsLoader,
+	showWarmup bool,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
@@ -43,7 +44,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}

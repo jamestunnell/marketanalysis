@@ -68,7 +68,8 @@ func (a *Graphs) EvalSlope(
 
 	recording, err := graph.EvalSlope(
 		ctx, cfg, eval.Symbol, eval.Date,
-		loc, loader, eval.Source, eval.Predictor, eval.Horizon)
+		loc, loader, eval.ShowWarmup,
+		eval.Source, eval.Predictor, eval.Horizon)
 	if err != nil {
 		appErr := app.NewErrActionFailed("eval graph", err.Error())
 

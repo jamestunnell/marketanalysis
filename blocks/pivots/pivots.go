@@ -6,6 +6,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	p "github.com/jamestunnell/marketanalysis/indicators/pivots"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/rs/zerolog/log"
 )
 
 type Pivots struct {
@@ -83,7 +84,14 @@ func (blk *Pivots) Update(cur *models.Bar) {
 		return
 	}
 
-	pivot := blk.ind.GetLatest()
+	pivot := blk.ind.GetLastCompleted()
+
+	log.Debug().
+		Float64("value", pivot.Value).
+		Time("timestamp", pivot.Timestamp).
+		Time("currentTime", cur.Timestamp).
+		Str("type", pivot.Type.String()).
+		Msg("detected pivot point")
 
 	blk.out.SetTimeValue(pivot.Timestamp, pivot.Value)
 }

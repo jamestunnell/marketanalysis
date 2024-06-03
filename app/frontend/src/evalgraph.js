@@ -6,11 +6,11 @@ import userTimeZone from './timezone.js'
 
 const {input, label, option, select} = van.tags
 
-const evalGraph = ({id, symbol, date, source, predictor, horizon}) => {
+const evalGraph = ({id, symbol, date, showWarmup, source, predictor, horizon}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/eval`
         const timeZone = userTimeZone()
-        const object = {type: "slope", symbol, date, timeZone, source, predictor, horizon}
+        const object = {type: "slope", symbol, date, timeZone, showWarmup, source, predictor, horizon}
         const options = {accept: 'application/json'}
 
         console.log("evaluating graph", object)
@@ -45,11 +45,12 @@ const EvalGraph = (graph, infoByType) => {
     const source = van.state("")
     const predictor = van.state("")
 
-    const doAction = ({date, symbol}) => {
+    const doAction = ({date, symbol, showWarmup}) => {
         return evalGraph({
             id: graph.id,
             symbol,
             date,
+            showWarmup,
             horizon: horizon.val,
             source: source.val,
             predictor: predictor.val,

@@ -50,6 +50,10 @@ func (l *DayBarsLoader) Load(ctx context.Context, d date.Date) (*models.DayBars,
 			Stringer("date", d).
 			Msg("found bars in store")
 
+		for _, bar := range dayBars.Bars {
+			bar.Timestamp = bar.Timestamp.In(l.Location)
+		}
+
 		return dayBars, nil
 	}
 

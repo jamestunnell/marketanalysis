@@ -4,11 +4,11 @@ import { GraphActionModal } from './graphaction.js'
 import { PostJSON } from './backend.js'
 import userTimeZone from './timezone.js';
 
-const runGraph = ({id, symbol, date}) => {
+const runGraph = ({id, symbol, date, showWarmup}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/run`
         const timeZone = userTimeZone()
-        const object = {type: "day", symbol, date, timeZone}
+        const object = {type: "day", symbol, date, timeZone, showWarmup}
         const options = {accept: 'application/json'}
 
         console.log("running graph", object)
@@ -37,8 +37,8 @@ const runGraph = ({id, symbol, date}) => {
 
 const RunGraph = (graph) => {
     const runDisabled = van.state(false)
-    const doAction = ({date, symbol}) => {
-        return runGraph({id: graph.id, symbol, date})
+    const doAction = ({date, symbol, showWarmup}) => {
+        return runGraph({id: graph.id, symbol, date, showWarmup})
     }
     const inputElems = []
 

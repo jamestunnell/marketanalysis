@@ -3,7 +3,6 @@ package record
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -73,8 +72,6 @@ func (blk *Record) Update(cur *models.Bar) {
 
 	for name, in := range blk.InputsAsync {
 		if in.IsValueSet() {
-			log.Debug().Str("name", name).Float64("value", in.GetValue()).Msg("async input is set")
-
 			tvs[name] = models.NewTimeValue(in.GetTime(), in.GetValue())
 		}
 	}

@@ -22,6 +22,7 @@ func EvalSlope(
 	evalDate date.Date,
 	loc *time.Location,
 	loader models.DayBarsLoader,
+	showWarmup bool,
 	source, predictor *Address,
 	horizon int,
 ) (*models.TimeSeries, error) {
@@ -42,7 +43,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}
@@ -77,7 +78,7 @@ func EvalSlope(
 	for _, record := range sourceQ.Records {
 		added := pivots.Update(record.Time, record.Value)
 		if added {
-			pivot := pivots.GetLatest()
+			pivot := pivots.GetLastCompleted()
 
 			log.Debug().
 				Stringer("type", pivot.Type).

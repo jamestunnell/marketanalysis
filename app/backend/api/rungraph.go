@@ -74,7 +74,7 @@ func (a *Graphs) RunDay(
 	loader := app.NewDayBarsLoader(a.DB, runDay.Symbol, loc)
 
 	timeSeries, err := graph.RunDay(
-		ctx, cfg, runDay.Symbol, runDay.Date, loc, loader)
+		ctx, cfg, runDay.Symbol, runDay.Date, loc, loader, runDay.ShowWarmup)
 	if err != nil {
 		appErr := app.NewErrActionFailed("run graph", err.Error())
 

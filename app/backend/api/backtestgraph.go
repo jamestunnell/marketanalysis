@@ -45,7 +45,7 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 	loader := app.NewDayBarsLoader(a.DB, bt.Symbol, loc)
 
 	recording, err := graph.Backtest(
-		r.Context(), cfg, bt.Symbol, bt.Date, loc, loader, bt.Predictor, bt.Threshold)
+		r.Context(), cfg, bt.Symbol, bt.Date, loc, loader, bt.ShowWarmup, bt.Predictor, bt.Threshold)
 	if err != nil {
 		appErr := app.NewErrActionFailed("backtest graph", err.Error())
 
