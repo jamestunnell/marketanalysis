@@ -95,7 +95,7 @@ class BlockRow {
         })
         const deleteBtn = ButtonIcon({
             icon: IconDelete(),
-            text: "Delete",
+            // text: "Delete",
             onclick: () => {
                 this.deleted.val = true
     
@@ -120,7 +120,7 @@ class BlockRow {
         });
         const viewParamsBtn = ButtonIconTooltip({
             icon: IconView(),
-            text: "View",
+            // text: "View",
             tooltipText: () => {
                 const items = Object.entries(this.paramVals.val).map(([name, val]) => {
                     return li(`${name}: ${val}`)
@@ -131,7 +131,7 @@ class BlockRow {
         })
         const viewRecordingBtn = ButtonIconTooltip({
             icon: IconView(),
-            text: "View",
+            // text: "View",
             tooltipText: () => {
                 const items = this.recording.val.map(name => li(name))
 
@@ -140,7 +140,7 @@ class BlockRow {
         })
         const editParamsBtn = ButtonIcon({
             icon: IconEdit(),
-            text: "Edit",
+            // text: "Edit",
             onclick: () => {
                 EditParamValsModal({
                     params: this.info.params,
@@ -158,7 +158,7 @@ class BlockRow {
         })
         const editRecordingBtn = ButtonIcon({
             icon: IconEdit(),
-            text: "Edit",
+            // text: "Edit",
             onclick: () => {
                 EditRecordingModal({
                     outputNames: this.info.outputs.map(o => o.name),

@@ -35,7 +35,7 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
 
     const closeBtn = ButtonIcon({
         icon: IconClose(),
-        text: "Close",
+        // text: "Close",
         onclick: ()=> closed.val = true},
     )
     const runBtn = Button({
@@ -58,12 +58,12 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
     })
     const plotBtn = ButtonIcon({
         icon: IconPlot(),
-        text: "Plot",
+        // text: "Plot",
         onclick: ()=> PlotRecordingModal(recording.val),
     })
     const downloadBtn = ButtonIcon({
         icon: IconDownload(),
-        text: "Download",
+        // text: "Download",
         onclick: ()=> {
             DownloadJSON({
                 filename: `${graph.name}_${symbol.val}_${date.val}_${actionName}.json`,

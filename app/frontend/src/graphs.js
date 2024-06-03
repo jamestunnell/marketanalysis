@@ -7,7 +7,7 @@ import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generato
 import {Delete, Get, PostJSON} from './backend.js'
 import { Button, ButtonIcon, ButtonCancel } from "./buttons.js";
 import { ButtonGroup } from './buttongroup.js'
-import {IconDelete, IconView} from './icons.js'
+import { IconAdd, IconDelete, IconView } from './icons.js'
 import {Table, TableRow} from './table.js'
 import truncateString from "./truncatestring.js";
 
@@ -101,12 +101,12 @@ const GraphTableRow = ({id, name}) => {
 
     const viewBtn = ButtonIcon({
         icon: IconView(),
-        text: "View",
+        // text: "View",
         onclick: () => routeTo('graphs', [id]),
     });
     const deleteBtn = ButtonIcon({
         icon: IconDelete(),
-        text: "Delete",
+        // text: "Delete",
         onclick: () => {
             deleteGraph(id).then(ok => {
                 if (ok) {
@@ -132,8 +132,12 @@ const GraphsPage = () => {
         van.add(tableBody, rows);
     });
 
-    const newGraphBtn = Button({
-        child: "New Graph",
+    const addIcon = IconAdd()
+    
+    addIcon.classList.add("text-xl")
+
+    const newGraphBtn = ButtonIcon({
+        icon: addIcon,
         onclick: () => {
             const closed = van.state(false)
 
@@ -163,11 +167,22 @@ const GraphsPage = () => {
     });
 
     return div(
+        {class: "container p-4 w-full flex flex-col divide-y divide-gray-400"},
         div(
-            {class: "container flex flex-row-reverse p-4"},
-            newGraphBtn,
-        ),
-        Table({columnNames: columnNames, tableBody: tableBody}),
+            {class: "flex flex-col mt-4"},
+            div(
+                {class: "grid grid-cols-2"},
+                div(
+                    {class: "flex flex-row p-2"},
+                    p({class: "p-3 m-1 text-xl font-medium"}, "Graphs"),
+                ),
+                div(
+                    {class: "flex flex-row-reverse p-2"},
+                    newGraphBtn,
+                )
+            ),
+            Table({columnNames: columnNames, tableBody: tableBody}),
+        )
     )
 }
 

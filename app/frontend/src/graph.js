@@ -201,7 +201,7 @@ class PageContent {
 
         const addBlockBtn = ButtonIcon({
             icon: addIcon1,
-            text: "Add",
+            // text: "Add",
             onclick: () => {
                 SelectBlockTypeModal({
                     types: Object.keys(this.infoByType),
@@ -223,7 +223,7 @@ class PageContent {
         });
         const addConnBtn = ButtonIcon({
             icon: addIcon2,
-            text: "Add",
+            // text: "Add",
             onclick: () => {
                 const connection = {source: "", target: ""}
                 const id = nanoid()
@@ -237,25 +237,25 @@ class PageContent {
         });
         const runBtn = ButtonIconDisableable({
             icon: IconPlay(),
-            text: "Run",
+            // text: "Run",
             disabled: needsSaved,
             onclick: () => RunGraph(this.makeGraph()),
         });
         const evalBtn = ButtonIconDisableable({
             icon: IconStethoscope(),
-            text: "Eval",
+            // text: "Eval",
             disabled: needsSaved,
             onclick: () => EvalGraph(this.makeGraph(), this.infoByType),
         });
         const backtestBtn = ButtonIconDisableable({
             icon: IconMagnifyDollar(),
-            text: "$$$",
+            // text: "$$$",
             disabled: needsSaved,
             onclick: () => BacktestGraph(this.makeGraph(), this.infoByType),
         });
         const saveBtn = ButtonIconDisableable({
             icon: IconSave(),
-            text: "Save",
+            // text: "Save",
             disabled: van.derive(() => !needsSaved.val),
             onclick: () => {
                 const graph = this.makeGraph()
@@ -274,12 +274,12 @@ class PageContent {
         });
         const exportBtn = ButtonIcon({
             icon: IconExport(),
-            text: "Export",
+            // text: "Export",
             onclick: () => DownloadJSON({obj: this.makeGraph(), basename: this.name.val}),
         });
         const importBtn = ButtonIcon({
             icon: IconImport(),
-            text: "Import",
+            // text: "Import",
             onclick: () => {
                 UploadJSON({
                     onSuccess: (g) => {

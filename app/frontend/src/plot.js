@@ -89,7 +89,7 @@ const PlotRecordingModal = (recording) => {
     const closed = van.state(false);
     const closeBtn = ButtonIcon({
         icon: IconClose(),
-        text: "Close",
+        // text: "Close",
         onclick: () => closed.val = true},
     )
     const totalHeight = window.screen.availHeight * 0.9 * 0.75
