@@ -12,7 +12,7 @@ type StateMachine[T any] struct {
 }
 
 func New[T any](name string, start State[T]) *StateMachine[T] {
-	log.Trace().
+	log.Debug().
 		Str("startState", start.GetName()).
 		Msgf("%s state machine: starting", name)
 

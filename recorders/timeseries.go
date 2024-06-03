@@ -6,6 +6,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
+	"github.com/rs/zerolog/log"
 )
 
 type TimeSeries struct {
@@ -26,26 +27,26 @@ func NewTimeSeries(loc *time.Location) *TimeSeries {
 func (rec *TimeSeries) Init(valNames []string) error {
 	sort.Strings(valNames)
 
+	log.Debug().Strs("names", valNames).Msg("recording values")
+
 	rec.Quantities = sliceutils.Map(valNames, func(name string) *models.Quantity {
 		return &models.Quantity{
 			Name:    name,
-			Records: []*models.QuantityRecord{},
+			Records: []models.QuantityRecord{},
 		}
 	})
 
 	return nil
 }
 
-func (rec *TimeSeries) Process(t time.Time, vals map[string]float64) {
-	if rec.loc != nil {
-		t = t.In(rec.loc)
-	}
-
+func (rec *TimeSeries) Process(tvs map[string]models.TimeValue[float64]) {
 	for _, q := range rec.Quantities {
-		if val, found := vals[q.Name]; found {
-			record := &models.QuantityRecord{Timestamp: t, Value: val}
+		if tv, found := tvs[q.Name]; found {
+			if rec.loc != nil {
+				tv.Time = tv.Time.In(rec.loc)
+			}
 
-			q.Records = append(q.Records, record)
+			q.Records = append(q.Records, tv)
 		}
 	}
 }

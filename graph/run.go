@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -34,21 +35,25 @@ func init() {
 }
 
 func RunDay(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	d date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
+	showWarmup bool,
 ) (*models.TimeSeries, error) {
-	return Run(cfg, symbol, GetCoreHours(d), loc, loadBars)
+	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, loader, showWarmup)
 }
 
 func Run(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
+	showWarmup bool,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
 		log.Debug().Msg("timespan is empty, returning empty time series")
@@ -63,8 +68,11 @@ func Run(
 		return nil, fmt.Errorf("failed to init graph: %w", err)
 	}
 
+	// re-locate timespan
+	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
+
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := bars.LoadRunBars(symbol, ts, loc, loadBars, g.GetWarmupPeriod())
+	bars, err := bars.LoadRunBars(ctx, symbol, ts, loc, loader, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}
@@ -85,8 +93,9 @@ func Run(
 	}
 
 	log.Debug().
-		Stringer("start", ts.Start()).
-		Stringer("end", ts.End()).
+		Stringer("warmupStart", bars[0].Timestamp).
+		Stringer("runStart", ts.Start()).
+		Stringer("runEnd", ts.End()).
 		Int("warmup bars", wuPeriod).
 		Int("run bars", len(bars)-wuPeriod).
 		Msgf("running model")
@@ -99,7 +108,11 @@ func Run(
 		return nil, fmt.Errorf("failed to finalize recording: %w", err)
 	}
 
-	r.DropRecordsBefore(ts.Start())
+	if !showWarmup {
+		log.Debug().Msg("dropping warmup records")
+
+		r.DropRecordsBefore(ts.Start())
+	}
 
 	return r.TimeSeries, nil
 }

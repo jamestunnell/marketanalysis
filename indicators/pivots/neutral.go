@@ -28,14 +28,14 @@ func (state *StateNeutral) Enter() {
 }
 
 func (state *StateNeutral) Exit() {
-	state.parent.prev = state.Pivot
+	state.parent.addCompleted(state.Pivot)
 }
 
 func (state *StateNeutral) Run(t time.Time, val float64) statemachine.State[float64] {
 	switch {
 	case val > state.Value:
 		return NewStateHigh(t, val, state.parent)
-	case val < state.parent.current.Value:
+	case val < state.Value:
 		return NewStateLow(t, val, state.parent)
 	}
 

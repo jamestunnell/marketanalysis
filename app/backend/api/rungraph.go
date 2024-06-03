@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
 
@@ -39,7 +39,7 @@ func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
 
 	switch runType.String() {
 	case models.RunDay:
-		a.RunDay(w, cfg, d)
+		a.RunDay(r.Context(), w, cfg, d)
 	default:
 		msg := fmt.Sprintf("run type '%s'", runType)
 
@@ -48,6 +48,7 @@ func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Graphs) RunDay(
+	ctx context.Context,
 	w http.ResponseWriter,
 	cfg *graph.Configuration,
 	requestData []byte,
@@ -70,7 +71,10 @@ func (a *Graphs) RunDay(
 		return
 	}
 
-	timeSeries, err := graph.RunDay(cfg, runDay.Symbol, runDay.Date, loc, bars.GetAlpacaBarsOneMin)
+	loader := app.NewDayBarsLoader(a.DB, runDay.Symbol, loc)
+
+	timeSeries, err := graph.RunDay(
+		ctx, cfg, runDay.Symbol, runDay.Date, loc, loader, runDay.ShowWarmup)
 	if err != nil {
 		appErr := app.NewErrActionFailed("run graph", err.Error())
 

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -9,16 +10,17 @@ import (
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func Backtest(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	testDate date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
+	showWarmup bool,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
@@ -42,7 +44,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, testDate, loc, loadBars)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
@@ -60,10 +62,10 @@ func Backtest(
 	currentEquity := 0.0
 	equityQ := &models.Quantity{
 		Name: "Equity",
-		Records: []*models.QuantityRecord{
+		Records: []models.QuantityRecord{
 			{
-				Timestamp: sourceQ.Records[0].Timestamp,
-				Value:     0.0,
+				Time:  sourceQ.Records[0].Time,
+				Value: 0.0,
 			},
 		},
 	}
@@ -76,9 +78,9 @@ func Backtest(
 
 		currentEquity += position.ClosedPL
 
-		equityQ.Records = append(equityQ.Records, &models.QuantityRecord{
-			Timestamp: t,
-			Value:     currentEquity,
+		equityQ.Records = append(equityQ.Records, models.QuantityRecord{
+			Time:  t,
+			Value: currentEquity,
 		})
 
 		log.Debug().
@@ -92,7 +94,7 @@ func Backtest(
 	}
 
 	for i, r := range predQ.Records {
-		t := r.Timestamp
+		t := r.Time
 
 		rSource, found := sourceQ.FindRecord(t)
 		if !found {

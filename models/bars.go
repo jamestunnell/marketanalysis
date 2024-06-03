@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/rickb777/date/timespan"
@@ -61,6 +62,30 @@ func LoadBars(r io.Reader) (Bars, error) {
 	}
 
 	return bars, nil
+}
+
+func (bars Bars) IndexForward(t time.Time) (int, bool) {
+	for i, bar := range bars {
+		if bar.Timestamp.Equal(t) {
+			return i, true
+		}
+	}
+
+	return -1, false
+}
+
+func (bars Bars) IndexReverse(t time.Time) (int, bool) {
+	for i := len(bars) - 1; i >= 0; i-- {
+		if bars[i].Timestamp.Equal(t) {
+			return i, true
+		}
+	}
+
+	return -1, false
+}
+
+func (bars Bars) BinarySearch(t time.Time) (int, bool) {
+	return slices.BinarySearchFunc(bars, t, CompareBarWithTimestamp)
 }
 
 func (bars Bars) Last() *Bar {
@@ -159,4 +184,8 @@ func (bars Bars) Store(w io.Writer) error {
 	}
 
 	return nil
+}
+
+func CompareBarWithTimestamp(bar *Bar, t time.Time) int {
+	return bar.Timestamp.Compare(t)
 }

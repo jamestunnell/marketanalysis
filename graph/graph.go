@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/dominikbraun/graph"
 	gr "github.com/dominikbraun/graph"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
@@ -21,6 +20,7 @@ type Graph struct {
 
 	blocks       Blocks
 	warmupPeriod int
+	order        []string
 }
 
 // func LoadGraph(fpath string) (*Graph, error) {
@@ -47,6 +47,7 @@ func New(cfg *Configuration) *Graph {
 		Configuration: cfg,
 		blocks:        Blocks{},
 		warmupPeriod:  0,
+		order:         []string{},
 	}
 }
 
@@ -69,7 +70,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
 
-	order, err := graph.TopologicalSort(g)
+	order, err := gr.TopologicalSort(g)
 	if err != nil {
 		return fmt.Errorf("topological sort failed: %w", err)
 	}
@@ -87,6 +88,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 
 	m.blocks = blks
 	m.warmupPeriod = wuPeriod
+	m.order = order
 
 	return nil
 }
@@ -96,6 +98,7 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 	conns := slices.Clone(m.Connections)
 	recordName := "record-" + nanoid.Must()
 	recordIns := map[string]*blocks.TypedInput[float64]{}
+	recordInsAsync := map[string]*blocks.TypedInputAsync[float64]{}
 
 	for _, cfg := range m.Blocks {
 		new, found := registry.Get(cfg.Type)
@@ -116,7 +119,8 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 		blks[cfg.Name] = blk
 
 		for _, outName := range cfg.Recording {
-			if _, found := blk.GetOutputs()[outName]; !found {
+			out, found := blk.GetOutputs()[outName]
+			if !found {
 				err := fmt.Errorf("block %s: recording output '%s' not found", cfg.Name, outName)
 
 				return Blocks{}, []*Connection{}, err
@@ -128,15 +132,20 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 				Target: NewAddress(recordName, recTarget),
 			}
 
-			recordIns[recTarget] = blocks.NewTypedInput[float64]()
+			if out.IsAsynchronous() {
+				recordInsAsync[recTarget] = blocks.NewTypedInputAsync[float64]()
+			} else {
+				recordIns[recTarget] = blocks.NewTypedInput[float64]()
+			}
 
 			conns = append(conns, recordConn)
 		}
 	}
 
 	blks[recordName] = &record.Record{
-		Inputs:   recordIns,
-		Recorder: r,
+		Inputs:      recordIns,
+		InputsAsync: recordInsAsync,
+		Recorder:    r,
 	}
 
 	return blks, conns, nil
@@ -172,10 +181,16 @@ func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []strin
 }
 
 func (m *Graph) Update(bar *models.Bar) {
+	log.Trace().Msg("updating graph")
+
 	for _, blk := range m.blocks {
-		for _, out := range blk.GetOutputs() {
-			out.ClearValue()
-		}
+		blocks.ClearOutputs(blk)
+	}
+
+	for _, name := range m.order {
+		blk := m.blocks[name]
+
+		log.Trace().Str("name", name).Msg("running block")
 
 		blk.Update(bar)
 	}

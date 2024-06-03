@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
 
@@ -38,11 +38,12 @@ func (a *Graphs) EvalGraph(w http.ResponseWriter, r *http.Request) {
 
 	switch runType.String() {
 	case models.EvalSlope:
-		a.EvalSlope(w, cfg, d)
+		a.EvalSlope(r.Context(), w, cfg, d)
 	}
 }
 
 func (a *Graphs) EvalSlope(
+	ctx context.Context,
 	w http.ResponseWriter,
 	cfg *graph.Configuration,
 	requestData []byte,
@@ -63,16 +64,12 @@ func (a *Graphs) EvalSlope(
 		return
 	}
 
+	loader := app.NewDayBarsLoader(a.DB, eval.Symbol, loc)
+
 	recording, err := graph.EvalSlope(
-		cfg,
-		eval.Symbol,
-		eval.Date,
-		loc,
-		bars.GetAlpacaBarsOneMin,
-		eval.Source,
-		eval.Predictor,
-		eval.Horizon,
-	)
+		ctx, cfg, eval.Symbol, eval.Date,
+		loc, loader, eval.ShowWarmup,
+		eval.Source, eval.Predictor, eval.Horizon)
 	if err != nil {
 		appErr := app.NewErrActionFailed("eval graph", err.Error())
 

@@ -17,6 +17,7 @@ const INPUT_CLASS = "block px-3 py-3 border border-gray-200 rounded-md focus:bor
 const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}) => {
     const closed = van.state(false)
     const completed = van.state(false)
+    const showWarmup = van.state(false)
     const recording = van.state({})
     const symbol = van.state("")
     const date = van.state("")
@@ -32,7 +33,11 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
         date.val = dateInput.value
     })
 
-    const closeBtn = ButtonIcon({icon: IconClose(), onclick: ()=> closed.val = true})
+    const closeBtn = ButtonIcon({
+        icon: IconClose(),
+        text: "Close",
+        onclick: ()=> closed.val = true},
+    )
     const runBtn = Button({
         disabled: van.derive(() => {
             return runDisabled.val || (date.val.length === 0) || (symbol.val.length === 0)
@@ -41,7 +46,7 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
         onclick: () => {
             completed.val = false
     
-            doAction({date: date.val, symbol: symbol.val}).then(obj => {
+            doAction({date: date.val, symbol: symbol.val, showWarmup: showWarmup.val}).then(obj => {
                 console.log(`graph action ${actionName} succeeded`)
                 
                 recording.val = obj
@@ -53,10 +58,12 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
     })
     const plotBtn = ButtonIcon({
         icon: IconPlot(),
+        text: "Plot",
         onclick: ()=> PlotRecordingModal(recording.val),
     })
     const downloadBtn = ButtonIcon({
         icon: IconDownload(),
+        text: "Download",
         onclick: ()=> {
             DownloadJSON({
                 filename: `${graph.name}_${symbol.val}_${date.val}_${actionName}.json`,
@@ -77,7 +84,7 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
 
     const modal = ModalBackground(
         div(
-            {id: "foreground", class: "flex flex-col block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
+            {id: "foreground", class: "flex flex-col space-y-3 block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
             closeBtn,
             p({class: "text-lg font-medium font-bold text-center"}, `${capitalize(actionName)} Graph`),
             label({for: "actionSymbol"}, "Symbol"),
@@ -87,7 +94,18 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
                 type: "text",
                 placeholder: 'Symbol (SPY, QQQ, etc.)',
                 onchange: e => symbol.val = e.target.value,
-            }),  
+            }),
+            div(
+                {class: "flex flew-row space-x-3"},
+                input({
+                    id: "showWarmup",
+                    class: INPUT_CLASS,
+                    type: "checkbox",
+                    checked: false,
+                    onchange: e => showWarmup.val = e.target.checked,
+                }),    
+                label({for: "showWarmup"}, "Show Warmup"),
+            ),
             label({for: "actionDate"}, "Date"),
             dateInput,
             ...inputElems,

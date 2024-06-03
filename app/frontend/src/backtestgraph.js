@@ -6,11 +6,11 @@ import userTimeZone from './timezone.js'
 
 const {input, label, option, select} = van.tags
 
-const backtestGraph = ({id, date, symbol, predictor}) => {
+const backtestGraph = ({id, date, symbol, showWarmup, predictor}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/${id}/backtest`
         const timeZone = userTimeZone()
-        const object = {date, symbol, timeZone, predictor}
+        const object = {date, symbol, timeZone, showWarmup, predictor}
         const options = {accept: 'application/json'}
 
         console.log("backtesting graph", object)
@@ -41,8 +41,8 @@ const BacktestGraph = (graph, infoByType) => {
     const predictor = van.state("")
     const threshold = van.state(0.25)
 
-    const doAction = ({date, symbol}) => {
-        return backtestGraph({id: graph.id, symbol, date, predictor: predictor.val})
+    const doAction = ({date, symbol, showWarmup}) => {
+        return backtestGraph({id: graph.id, symbol, date, showWarmup, predictor: predictor.val})
     }
     const runDisabled = van.derive(() => predictor.val.length === 0)
 

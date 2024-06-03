@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -9,18 +10,19 @@ import (
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/indicators/pivots"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func EvalSlope(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	evalDate date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
+	showWarmup bool,
 	source, predictor *Address,
 	horizon int,
 ) (*models.TimeSeries, error) {
@@ -41,7 +43,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, evalDate, loc, loadBars)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}
@@ -58,12 +60,12 @@ func EvalSlope(
 
 	slopeQ := &models.Quantity{
 		Name:    "Source Future Slope",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	pivotsQ := &models.Quantity{
 		Name:    "Source Pivots",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	pivots, err := pivots.New(horizon * 2)
@@ -74,9 +76,9 @@ func EvalSlope(
 	log.Debug().Msg("eval: finding source pivot points")
 
 	for _, record := range sourceQ.Records {
-		added := pivots.Update(record.Timestamp, record.Value)
+		added := pivots.Update(record.Time, record.Value)
 		if added {
-			pivot := pivots.GetLatest()
+			pivot := pivots.GetLastCompleted()
 
 			log.Debug().
 				Stringer("type", pivot.Type).
@@ -84,9 +86,9 @@ func EvalSlope(
 				Float64("value", pivot.Value).
 				Msg("found pivot")
 
-			pivotsQ.Records = append(pivotsQ.Records, &models.QuantityRecord{
-				Timestamp: pivot.Timestamp,
-				Value:     pivot.Value,
+			pivotsQ.Records = append(pivotsQ.Records, models.QuantityRecord{
+				Time:  pivot.Timestamp,
+				Value: pivot.Value,
 			})
 		}
 	}
@@ -104,9 +106,9 @@ func EvalSlope(
 			continue
 		}
 
-		slopeQ.Records = append(slopeQ.Records, &models.QuantityRecord{
-			Timestamp: sourceQ.Records[i-(horizon-1)].Timestamp,
-			Value:     lr.Slope(),
+		slopeQ.Records = append(slopeQ.Records, models.QuantityRecord{
+			Time:  sourceQ.Records[i-(horizon-1)].Time,
+			Value: lr.Slope(),
 		})
 
 		magn := math.Abs(lr.Slope())
@@ -122,21 +124,21 @@ func EvalSlope(
 
 	evalQ := &models.Quantity{
 		Name:    "Predictor Slope Agreement",
-		Records: []*models.QuantityRecord{},
+		Records: []models.QuantityRecord{},
 	}
 
 	log.Debug().Int("pred records", len(predQ.Records)).Msg("eval: evaluating predictor slope agreement")
 
 	// Evaluate predictor when it crosses threshold
 	for _, record := range predQ.Records {
-		slope, found := slopeQ.FindRecord(record.Timestamp)
+		slope, found := slopeQ.FindRecord(record.Time)
 		if !found {
 			continue
 		}
 
-		evalQ.Records = append(evalQ.Records, &models.QuantityRecord{
-			Value:     slope.Value * record.Value,
-			Timestamp: record.Timestamp,
+		evalQ.Records = append(evalQ.Records, models.QuantityRecord{
+			Value: slope.Value * record.Value,
+			Time:  record.Time,
 		})
 	}
 

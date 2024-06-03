@@ -1,5 +1,4 @@
 import van from 'vanjs-core'
-import  ndjsonParser from 'ndjson-parse'
 import { parseISO } from 'date-fns'
 import Highcharts from 'highcharts'
 
@@ -88,7 +87,11 @@ function plotRecording({recording, totalHeight}) {
 
 const PlotRecordingModal = (recording) => {
     const closed = van.state(false);
-    const closeBtn = ButtonIcon({icon: IconClose(), onclick: () => closed.val = true})
+    const closeBtn = ButtonIcon({
+        icon: IconClose(),
+        text: "Close",
+        onclick: () => closed.val = true},
+    )
     const totalHeight = window.screen.availHeight * 0.9 * 0.75
 
     const modal = ModalBackground(

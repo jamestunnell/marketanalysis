@@ -4,17 +4,16 @@ import (
 	"time"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
+	"github.com/rs/zerolog/log"
 )
 
 type Pivots struct {
 	Length       int
 	stateMachine *statemachine.StateMachine[float64]
 	warm         bool
-	prev         *Pivot
 	current      *Pivot
-	all          []*Pivot
+	completed    []*Pivot
 }
 
 func New(length int) (*Pivots, error) {
@@ -26,9 +25,8 @@ func New(length int) (*Pivots, error) {
 		Length:       length,
 		warm:         false,
 		stateMachine: nil,
-		prev:         nil,
+		completed:    []*Pivot{},
 		current:      nil,
-		all:          []*Pivot{},
 	}
 
 	pivs.stateMachine = statemachine.New("pivots", &StateNew{parent: pivs})
@@ -45,27 +43,32 @@ func (pivs *Pivots) IsWarm() bool {
 }
 
 func (pivs *Pivots) Update(t time.Time, val float64) bool {
-	prev := pivs.prev
+	count := len(pivs.completed)
 
 	pivs.stateMachine.Run(t, val)
 
-	if pivs.prev != prev {
-		pivs.all = append(pivs.all, pivs.prev)
-
-		return true
-	}
-
-	return false
+	return len(pivs.completed) > count
 }
 
-func (pivs *Pivots) GetAll() []*Pivot {
-	return pivs.all
+func (pivs *Pivots) GetInProgress() *Pivot {
+	return pivs.current
 }
 
-func (pivs *Pivots) GetLatest() *Pivot {
-	if len(pivs.all) == 0 {
+func (pivs *Pivots) GetCompleted() []*Pivot {
+	return pivs.completed
+}
+
+func (pivs *Pivots) GetLastCompleted() *Pivot {
+	n := len(pivs.completed)
+	if n == 0 {
+		log.Warn().Msg("no pivots completed yet")
+
 		return nil
 	}
 
-	return sliceutils.Last(pivs.all)
+	return pivs.completed[n-1]
+}
+
+func (pivs *Pivots) addCompleted(piv *Pivot) {
+	pivs.completed = append(pivs.completed, piv)
 }
