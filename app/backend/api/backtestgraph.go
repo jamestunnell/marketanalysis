@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/app"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
 
@@ -35,12 +35,17 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 
 	loc, err := time.LoadLocation(bt.TimeZone)
 	if err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("backtest timeZone", err.Error()))
+		msg := fmt.Sprintf("time zone '%s'", bt.TimeZone)
+
+		handleAppErr(w, app.NewErrInvalidInput(msg, err.Error()))
 
 		return
 	}
 
-	recording, err := graph.Backtest(cfg, bt.Symbol, bt.Date, loc, bars.GetAlpacaBarsOneMin, bt.Predictor, bt.Threshold)
+	loader := app.NewDayBarsLoader(a.DB, bt.Symbol, loc)
+
+	recording, err := graph.Backtest(
+		r.Context(), cfg, bt.Symbol, bt.Date, loc, loader, bt.Predictor, bt.Threshold)
 	if err != nil {
 		appErr := app.NewErrActionFailed("backtest graph", err.Error())
 

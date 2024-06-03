@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -9,18 +10,18 @@ import (
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/indicators/pivots"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func EvalSlope(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	evalDate date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
 	source, predictor *Address,
 	horizon int,
 ) (*models.TimeSeries, error) {
@@ -41,7 +42,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, evalDate, loc, loadBars)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}

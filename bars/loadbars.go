@@ -1,6 +1,7 @@
 package bars
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -17,15 +18,24 @@ type LoadBarsFunc func(
 ) (models.Bars, error)
 
 func LoadRunBars(
+	ctx context.Context,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loadBars LoadBarsFunc,
+	loader models.DayBarsLoader,
 	warmupPeriod int,
 ) (models.Bars, error) {
-	primaryBars, err := loadBars(symbol, ts, loc)
-	if err != nil {
-		return models.Bars{}, fmt.Errorf("failed to load primary run bars: %w", err)
+	primaryBars := models.Bars{}
+	startDate := date.NewAt(ts.Start())
+	endDate := date.NewAt(ts.End())
+
+	for d := startDate; !d.After(endDate); d = d.Add(1) {
+		dayBars, err := loader.Load(ctx, d)
+		if err != nil {
+			return models.Bars{}, fmt.Errorf("failed to load primary bars from %s: %w", d, err)
+		}
+
+		primaryBars = append(primaryBars, dayBars.Bars...)
 	}
 
 	// can't run on this day or unknown symbol
@@ -33,6 +43,7 @@ func LoadRunBars(
 		return models.Bars{}, nil
 	}
 
+	warmupDate := startDate
 	warmupBars := models.Bars{}
 	for len(warmupBars) < warmupPeriod {
 		// Move timespan backward at least one day
@@ -41,12 +52,12 @@ func LoadRunBars(
 			ts.Start(),
 		)
 
-		moreBars, err := loadBars(symbol, ts, loc)
+		dayBars, err := loader.Load(ctx, warmupDate)
 		if err != nil {
-			return models.Bars{}, fmt.Errorf("failed to load more bars for warmup: %w", err)
+			return models.Bars{}, fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
 		}
 
-		warmupBars = append(warmupBars, moreBars...)
+		warmupBars = append(warmupBars, dayBars.Bars...)
 	}
 
 	runBars := append(sliceutils.LastN(warmupBars, warmupPeriod), primaryBars...)

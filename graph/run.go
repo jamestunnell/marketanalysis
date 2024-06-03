@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -34,21 +35,23 @@ func init() {
 }
 
 func RunDay(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	d date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
 ) (*models.TimeSeries, error) {
-	return Run(cfg, symbol, GetCoreHours(d), loc, loadBars)
+	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, loader)
 }
 
 func Run(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
 		log.Debug().Msg("timespan is empty, returning empty time series")
@@ -64,7 +67,7 @@ func Run(
 	}
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := bars.LoadRunBars(symbol, ts, loc, loadBars, g.GetWarmupPeriod())
+	bars, err := bars.LoadRunBars(ctx, symbol, ts, loc, loader, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}

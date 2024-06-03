@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -9,16 +10,16 @@ import (
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func Backtest(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	testDate date.Date,
 	loc *time.Location,
-	loadBars bars.LoadBarsFunc,
+	loader models.DayBarsLoader,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
@@ -42,7 +43,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, testDate, loc, loadBars)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
