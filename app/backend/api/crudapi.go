@@ -5,18 +5,57 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/rs/zerolog/log"
-
-	"github.com/jamestunnell/marketanalysis/app"
 )
 
-type CRUDAPI[T app.Resource] struct {
-	Store app.Store[T]
+type CRUDAPI[T backend.Resource] struct {
+	Store   backend.Store[T]
+	Options *CRUDOptions[T]
 }
 
-func NewCRUDAPI[T app.Resource](s app.Store[T]) *CRUDAPI[T] {
+type CRUDOptions[T backend.Resource] struct {
+	Hooks *CRUDHooks[T]
+}
+
+type CRUDHooks[T backend.Resource] struct {
+	PostCreate func(res T)
+	PostUpdate func(res T)
+	PostDelete func(key string)
+}
+
+type CRUDOptionsMod[T backend.Resource] func(*CRUDOptions[T])
+
+func WithPostCreateHook[T backend.Resource](hook func(res T)) CRUDOptionsMod[T] {
+	return func(opts *CRUDOptions[T]) {
+		opts.Hooks.PostCreate = hook
+	}
+}
+
+func WithPostUpdateHook[T backend.Resource](hook func(res T)) CRUDOptionsMod[T] {
+	return func(opts *CRUDOptions[T]) {
+		opts.Hooks.PostUpdate = hook
+	}
+}
+
+func WithPostDeleteHook[T backend.Resource](hook func(key string)) CRUDOptionsMod[T] {
+	return func(opts *CRUDOptions[T]) {
+		opts.Hooks.PostDelete = hook
+	}
+}
+
+func NewCRUDAPI[T backend.Resource](s backend.Store[T], mods ...CRUDOptionsMod[T]) *CRUDAPI[T] {
+	opts := &CRUDOptions[T]{
+		Hooks: &CRUDHooks[T]{},
+	}
+
+	for _, mod := range mods {
+		mod(opts)
+	}
+
 	return &CRUDAPI[T]{
-		Store: s,
+		Store:   s,
+		Options: opts,
 	}
 }
 
@@ -61,15 +100,15 @@ func (a *CRUDAPI[T]) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *CRUDAPI[T]) Create(w http.ResponseWriter, r *http.Request) {
-	Create(w, r, a.Store)
+	Create(w, r, a.Store, a.Options.Hooks.PostCreate)
 }
 
 func (a *CRUDAPI[T]) Update(w http.ResponseWriter, r *http.Request) {
-	Update(w, r, a.Store)
+	Update(w, r, a.Store, a.Options.Hooks.PostUpdate)
 }
 
 func (a *CRUDAPI[T]) Delete(w http.ResponseWriter, r *http.Request) {
-	Delete(w, r, a.Store)
+	Delete(w, r, a.Store, a.Options.Hooks.PostDelete)
 }
 
 func (a *CRUDAPI[T]) PluralRoute() string {

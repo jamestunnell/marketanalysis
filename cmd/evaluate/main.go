@@ -18,13 +18,13 @@ const (
 
 var (
 	app          = kingpin.New("backtest", "Backtest trading strategy.")
-	debug        = app.Flag("debug", "Enable debug mode.").Bool()
-	dataDir      = app.Flag("datadir", "Collection dir path.").Required().String()
-	chainFile    = app.Flag("chainfile", "Processing chain JSON file.").Required().String()
-	trainingDays = app.Flag("trainingDays", "Training days (Default is 90).").Int()
-	inHor        = app.Flag("inhorizon", "Input horizon. Default is 15.").Int()
-	outHor       = app.Flag("outhorizon", "Output horizon. Default is 15.").Int()
-	futureHor    = app.Flag("futurehorizon", "Future horizon. Default is 15.").Int()
+	debug        = backend.Flag("debug", "Enable debug mode.").Bool()
+	dataDir      = backend.Flag("datadir", "Collection dir path.").Required().String()
+	chainFile    = backend.Flag("chainfile", "Processing chain JSON file.").Required().String()
+	trainingDays = backend.Flag("trainingDays", "Training days (Default is 90).").Int()
+	inHor        = backend.Flag("inhorizon", "Input horizon. Default is 15.").Int()
+	outHor       = backend.Flag("outhorizon", "Output horizon. Default is 15.").Int()
+	futureHor    = backend.Flag("futurehorizon", "Future horizon. Default is 15.").Int()
 
 	seed = time.Now().Unix()
 )
@@ -36,7 +36,7 @@ func main() {
 
 // 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-// 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+// 	_ = kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 // 	if *debug {
 // 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

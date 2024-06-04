@@ -1,4 +1,4 @@
-package bars
+package alpaca
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func GetAlpacaBarsOneMin(
+func GetBarsOneMin(
 	sym string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
@@ -34,7 +34,7 @@ func GetAlpacaBarsOneMin(
 		return models.Bars{}, fmt.Errorf("failed to get bars from alpaca: %w", err)
 	}
 
-	log.Info().
+	log.Trace().
 		Time("start", start).
 		Time("end", end).
 		Int("count", len(alpacaBars)).

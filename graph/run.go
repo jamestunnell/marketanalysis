@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/recorders"
 )
@@ -35,24 +33,22 @@ func init() {
 }
 
 func RunDay(
-	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	d date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
+	load models.LoadBarsFunc,
 	showWarmup bool,
 ) (*models.TimeSeries, error) {
-	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, loader, showWarmup)
+	return Run(cfg, symbol, GetCoreHours(d), loc, load, showWarmup)
 }
 
 func Run(
-	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loader models.DayBarsLoader,
+	load models.LoadBarsFunc,
 	showWarmup bool,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
@@ -72,7 +68,7 @@ func Run(
 	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := bars.LoadRunBars(ctx, symbol, ts, loc, loader, g.GetWarmupPeriod())
+	bars, err := models.LoadRunBars(symbol, ts, loc, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}

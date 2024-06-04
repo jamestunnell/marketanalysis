@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
@@ -26,7 +26,7 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 
 	var bt models.BacktestRequest
 	if err := json.NewDecoder(r.Body).Decode(&bt); err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
@@ -37,17 +37,17 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("time zone '%s'", bt.TimeZone)
 
-		handleAppErr(w, app.NewErrInvalidInput(msg, err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput(msg, err.Error()))
 
 		return
 	}
 
-	loader := app.NewDayBarsLoader(a.DB, bt.Symbol, loc)
+	load := a.makeLoadFunc(r.Context(), bt.Symbol)
 
 	recording, err := graph.Backtest(
-		r.Context(), cfg, bt.Symbol, bt.Date, loc, loader, bt.ShowWarmup, bt.Predictor, bt.Threshold)
+		cfg, bt.Symbol, bt.Date, loc, load, bt.ShowWarmup, bt.Predictor, bt.Threshold)
 	if err != nil {
-		appErr := app.NewErrActionFailed("backtest graph", err.Error())
+		appErr := backend.NewErrActionFailed("backtest graph", err.Error())
 
 		handleAppErr(w, appErr)
 

@@ -34,16 +34,16 @@ const (
 
 var (
 	app   = kingpin.New("sim-returns", "Simulate returns by repeated random experiment.")
-	debug = app.Flag("debug", "Enable debug mode.").Bool()
-	runs  = app.Flag("runs", "Number of runs. Default is 100,000.").Int()
-	iter  = app.Flag("iter", "Number of iterations per run. Default is 20.").Int()
-	bins  = app.Flag("bins", "Number of histogram bins. Default is 20.").Int()
-	start = app.Flag("start", "Start balance").Required().Float64()
-	min   = app.Flag("min", "Minimum ratio/loss amount").Required().Float64()
-	max   = app.Flag("max", "Maximum ratio/profit amount").Required().Float64()
+	debug = backend.Flag("debug", "Enable debug mode.").Bool()
+	runs  = backend.Flag("runs", "Number of runs. Default is 100,000.").Int()
+	iter  = backend.Flag("iter", "Number of iterations per run. Default is 20.").Int()
+	bins  = backend.Flag("bins", "Number of histogram bins. Default is 20.").Int()
+	start = backend.Flag("start", "Start balance").Required().Float64()
+	min   = backend.Flag("min", "Minimum ratio/loss amount").Required().Float64()
+	max   = backend.Flag("max", "Maximum ratio/profit amount").Required().Float64()
 
-	add = app.Command("add", "Add profit/loss amount each iter.")
-	mul = app.Command("mul", "Mul profit/loss ratio each iter.")
+	add = backend.Command("add", "Add profit/loss amount each iter.")
+	mul = backend.Command("mul", "Mul profit/loss ratio each iter.")
 )
 
 func main() {
@@ -51,7 +51,7 @@ func main() {
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	command := kingpin.MustParse(app.Parse(os.Args[1:]))
+	command := kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 	if *debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

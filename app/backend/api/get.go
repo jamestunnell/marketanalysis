@@ -5,15 +5,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/rs/zerolog/log"
-
-	"github.com/jamestunnell/marketanalysis/app"
 )
 
-func Get[T app.Resource](
+func Get[T backend.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
-	s app.Store[T],
+	s backend.Store[T],
 ) {
 	keyVal := mux.Vars(r)[s.GetInfo().KeyName]
 

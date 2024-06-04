@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -16,12 +15,11 @@ import (
 )
 
 func EvalSlope(
-	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	evalDate date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
+	load models.LoadBarsFunc,
 	showWarmup bool,
 	source, predictor *Address,
 	horizon int,
@@ -43,7 +41,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader, showWarmup)
+	timeSeries, err := RunDay(graphConfig, symbol, evalDate, loc, load, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}

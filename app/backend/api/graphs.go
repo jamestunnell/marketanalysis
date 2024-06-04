@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/jamestunnell/marketanalysis/app/stores"
+	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
 

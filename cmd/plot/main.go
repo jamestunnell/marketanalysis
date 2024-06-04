@@ -15,16 +15,16 @@ import (
 var (
 	app = kingpin.New("plot", "Plot market data along with model outputs.")
 
-	tzLoc     = app.Flag("tz", `Timezone location`).Default("US/Pacific").String()
-	dataDir   = app.Flag("datadir", "Data collection root dir").Required().String()
-	graphFile = app.Flag("graphfile", "Graph Model JSON file path").Required().String()
-	csvOut    = app.Flag("csvout", "CSV output file").Required().String()
-	start     = app.Flag("start", "start datetime formatted in RFC3339").String()
-	end       = app.Flag("end", "end datetime formatted in RFC3339").String()
+	tzLoc     = backend.Flag("tz", `Timezone location`).Default("US/Pacific").String()
+	dataDir   = backend.Flag("datadir", "Data collection root dir").Required().String()
+	graphFile = backend.Flag("graphfile", "Graph Model JSON file path").Required().String()
+	csvOut    = backend.Flag("csvout", "CSV output file").Required().String()
+	start     = backend.Flag("start", "start datetime formatted in RFC3339").String()
+	end       = backend.Flag("end", "end datetime formatted in RFC3339").String()
 )
 
 func main() {
-	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+	_ = kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 	s, err := collection.NewDirStore(*dataDir)
 	if err != nil {

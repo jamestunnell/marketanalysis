@@ -31,16 +31,16 @@ package main
 
 // var (
 // 	app         = kingpin.New("optimize", "Optimize trading strategy.")
-// 	debug       = app.Flag("debug", "Enable debug mode.").Bool()
-// 	dataDir     = app.Flag("datadir", "Collection dir path.").Required().String()
-// 	testDays    = app.Flag("testdays", "Number of random days to use for testing. Default is 100.").Int()
-// 	outFile     = app.Flag("outfile", "Filepath for predictor JSON file. Default is ./predictor.json").String()
-// 	upperLimits = app.Flag("upperlimits", "JSON snippet to override default upper limits for params.").String()
-// 	predName    = app.Flag("predictor", "Predictor type name").Required().String()
-// 	numGens     = app.Flag("numgens", "Num generations for EA optimization. Default is 50.").Uint()
-// 	popSize     = app.Flag("popsize", "Population size for EA optimization. Default is 15.").Uint()
-// 	numPops     = app.Flag("numpops", "Num populations for EA optimization. Default is 2.").Uint()
-// 	parallel    = app.Flag("parallel", "Run EA optimization in parallel. Default is false.").Bool()
+// 	debug       = backend.Flag("debug", "Enable debug mode.").Bool()
+// 	dataDir     = backend.Flag("datadir", "Collection dir path.").Required().String()
+// 	testDays    = backend.Flag("testdays", "Number of random days to use for testing. Default is 100.").Int()
+// 	outFile     = backend.Flag("outfile", "Filepath for predictor JSON file. Default is ./predictor.json").String()
+// 	upperLimits = backend.Flag("upperlimits", "JSON snippet to override default upper limits for params.").String()
+// 	predName    = backend.Flag("predictor", "Predictor type name").Required().String()
+// 	numGens     = backend.Flag("numgens", "Num generations for EA optimization. Default is 50.").Uint()
+// 	popSize     = backend.Flag("popsize", "Population size for EA optimization. Default is 15.").Uint()
+// 	numPops     = backend.Flag("numpops", "Num populations for EA optimization. Default is 2.").Uint()
+// 	parallel    = backend.Flag("parallel", "Run EA optimization in parallel. Default is false.").Bool()
 
 // 	seed = time.Now().Unix()
 // )
@@ -50,7 +50,7 @@ package main
 
 // 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-// 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+// 	_ = kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 // 	if *debug {
 // 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

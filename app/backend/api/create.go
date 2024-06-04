@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 )
 
-func Create[T app.Resource](
+func Create[T backend.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
-	s app.Store[T],
+	s backend.Store[T],
+	postHook func(T),
 ) {
-	val := app.NewResource[T]()
+	val := backend.NewResource[T]()
 	if err := json.NewDecoder(r.Body).Decode(val); err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
@@ -23,6 +24,10 @@ func Create[T app.Resource](
 		handleAppErr(w, appErr)
 
 		return
+	}
+
+	if postHook != nil {
+		postHook(val)
 	}
 
 	w.WriteHeader(http.StatusNoContent)

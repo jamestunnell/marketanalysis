@@ -5,20 +5,47 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/jamestunnell/marketanalysis/app/backend/models"
-	"github.com/jamestunnell/marketanalysis/app/stores"
+	"github.com/jamestunnell/marketanalysis/app/backend"
+	"github.com/jamestunnell/marketanalysis/app/backend/stores"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type Securities struct {
 	*CRUDAPI[*models.Security]
-	DB *mongo.Database
+	DB   *mongo.Database
+	Sync backend.Synchronizer
 }
 
-func NewSecurities(db *mongo.Database) *Securities {
-	return &Securities{
-		CRUDAPI: NewCRUDAPI(stores.NewSecurities(db)),
-		DB:      db,
+func NewSecurities(
+	db *mongo.Database,
+	synchronizer backend.Synchronizer,
+) *Securities {
+	s := &Securities{
+		DB:   db,
+		Sync: synchronizer,
 	}
+
+	mods := []CRUDOptionsMod[*models.Security]{
+		WithPostCreateHook(s.triggerSyncAdd),
+		WithPostUpdateHook(s.triggerSyncScan),
+		WithPostDeleteHook[*models.Security](s.triggerSyncRemove),
+	}
+
+	s.CRUDAPI = NewCRUDAPI(stores.NewSecurities(db), mods...)
+
+	return s
+}
+
+func (a *Securities) triggerSyncAdd(sec *models.Security) {
+	a.Sync.Trigger(backend.TriggerAdd(sec))
+}
+
+func (a *Securities) triggerSyncScan(sec *models.Security) {
+	a.Sync.Trigger(backend.TriggerScan(sec))
+}
+
+func (a *Securities) triggerSyncRemove(symbol string) {
+	a.Sync.Trigger(backend.TriggerRemove(symbol))
 }
 
 func (a *Securities) Bind(r *mux.Router) {

@@ -1,4 +1,4 @@
-package app
+package backend
 
 import (
 	"context"
@@ -106,6 +106,19 @@ func (s *MongoStore[T]) Get(ctx context.Context, key string) (T, Error) {
 	}
 
 	return val, nil
+}
+
+func (s *MongoStore[T]) GetAllKeys(ctx context.Context) ([]string, Error) {
+	results, err := s.col.Distinct(ctx, "_id", bson.D{})
+	if err != nil {
+		return []string{}, NewErrActionFailed("get all keys", err.Error())
+	}
+
+	keys := sliceutils.Map(results, func(result any) string {
+		return result.(string)
+	})
+
+	return keys, nil
 }
 
 func (s *MongoStore[T]) GetAll(ctx context.Context) ([]T, Error) {

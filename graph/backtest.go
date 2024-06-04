@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -14,12 +13,11 @@ import (
 )
 
 func Backtest(
-	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	testDate date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
+	load models.LoadBarsFunc,
 	showWarmup bool,
 	predictor *Address,
 	threshold float64,
@@ -44,7 +42,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader, showWarmup)
+	timeSeries, err := RunDay(graphConfig, symbol, testDate, loc, load, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
@@ -176,12 +174,12 @@ func Backtest(
 			position = models.NewShortPosition(t, rSource.Value)
 		}
 
-		if position != nil {
-			// log.Debug().
-			// 	Stringer("entryTime", t).
-			// 	Str("type", position.Type).
-			// 	Msg("opened position")
-		}
+		// if position != nil {
+		// 	// log.Debug().
+		// 	// 	Stringer("entryTime", t).
+		// 	// 	Str("type", position.Type).
+		// 	// 	Msg("opened position")
+		// }
 	}
 
 	timeSeries.AddQuantity(equityQ)

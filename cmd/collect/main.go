@@ -14,18 +14,18 @@ import (
 
 func main() {
 	app := kingpin.New("collect", "Collect historical 1-minute bar data.`")
-	debug := app.Flag("debug", "Enable debug mode").Bool()
+	debug := backend.Flag("debug", "Enable debug mode").Bool()
 
-	new := app.Command("new", "Start a new collection")
+	new := backend.Command("new", "Start a new collection")
 	newDir := new.Flag("dir", "Collection dir path (created if needed).").Required().String()
 	newSym := new.Flag("sym", "The stock symbol.").Required().String()
 	newTZ := new.Flag("tz", "Time zone location").Default("America/New_York").String()
 	newStart := new.Flag("start", "Start date formatted according to RFC3339.").Required().String()
 
-	update := app.Command("update", "Update existing collection data with the latest bars")
+	update := backend.Command("update", "Update existing collection data with the latest bars")
 	updateDir := update.Flag("dir", "Existing collection dir path.").Required().String()
 
-	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
+	cmdName := kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 )
 
-func GetAll[T app.Resource](
+func GetAll[T backend.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
-	s app.Store[T],
+	s backend.Store[T],
 ) {
 	vals, appErr := s.GetAll(r.Context())
 	if appErr != nil {
@@ -26,7 +26,7 @@ func GetAll[T app.Resource](
 	p := map[string][]T{s.GetInfo().NamePlural: vals}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
-		appErr := app.NewErrActionFailed("marshal response JSON", err.Error())
+		appErr := backend.NewErrActionFailed("marshal response JSON", err.Error())
 
 		handleAppErr(w, appErr)
 

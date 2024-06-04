@@ -1,50 +1,43 @@
-package bars
+package models
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 )
 
-type LoadBarsFunc func(
-	symbol string,
-	ts timespan.TimeSpan,
-	loc *time.Location,
-) (models.Bars, error)
+type LoadBarsFunc func(d date.Date) (Bars, error)
 
 func LoadRunBars(
-	ctx context.Context,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loader models.DayBarsLoader,
+	load LoadBarsFunc,
 	warmupPeriod int,
-) (models.Bars, error) {
+) (Bars, error) {
 	startDate := date.NewAt(ts.Start())
 	endDate := date.NewAt(ts.End())
-	primaryBars := models.Bars{}
+	primaryBars := Bars{}
 
 	for d := startDate.Add(0); !d.After(endDate); d = d.Add(1) {
-		dayBars, err := loader.Load(ctx, d)
+		bars, err := load(d)
 		if err != nil {
-			return models.Bars{}, fmt.Errorf("failed to load day bars for %s: %w", d, err)
+			return Bars{}, fmt.Errorf("failed to load day bars for %s: %w", d, err)
 		}
 
-		primaryBars = append(primaryBars, dayBars.Bars...)
+		primaryBars = append(primaryBars, bars...)
 	}
 
 	// can't run on this day or unknown symbol
 	if len(primaryBars) == 0 {
-		return models.Bars{}, nil
+		return Bars{}, nil
 	}
 
-	warmupBars := models.Bars{}
+	warmupBars := Bars{}
 
 	// use bars before start time for warmup
 	if startIdx, startFound := primaryBars.IndexForward(ts.Start()); startFound {
@@ -66,12 +59,12 @@ func LoadRunBars(
 			ts.Start(),
 		)
 
-		dayBars, err := loader.Load(ctx, warmupDate)
+		bars, err := load(warmupDate)
 		if err != nil {
-			return models.Bars{}, fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
+			return Bars{}, fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
 		}
 
-		warmupBars = append(warmupBars, dayBars.Bars...)
+		warmupBars = append(warmupBars, bars...)
 	}
 
 	runBars := append(warmupBars.LastN(warmupPeriod), primaryBars...)

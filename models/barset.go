@@ -7,7 +7,7 @@ import (
 	"github.com/rickb777/date"
 )
 
-type DayBars struct {
+type BarSet struct {
 	Date string `json:"date" bson:"_id"`
 	Bars Bars   `json:"bars"`
 }
@@ -17,11 +17,11 @@ var (
 	errBarWithUnexpectedDate = errors.New("bar with unexpected date")
 )
 
-func (db *DayBars) GetKey() string {
+func (db *BarSet) GetKey() string {
 	return db.Date
 }
 
-func (db *DayBars) Validate() []error {
+func (db *BarSet) Validate() []error {
 	errs := []error{}
 
 	if !slices.IsSortedFunc(db.Bars, CompareBarsByTimestamp) {

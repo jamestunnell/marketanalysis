@@ -9,12 +9,15 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 
-	"github.com/jamestunnell/marketanalysis/app"
-	"github.com/jamestunnell/marketanalysis/app/backend/models"
+	"github.com/jamestunnell/marketanalysis/app/backend"
+	bemodels "github.com/jamestunnell/marketanalysis/app/backend/models"
+	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
@@ -29,21 +32,34 @@ func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
 
 	d, err := io.ReadAll(r.Body)
 	if err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("run request body", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("run request body", err.Error()))
 	}
 
 	runType := gjson.GetBytes(d, "type")
 	if !runType.Exists() {
-		handleAppErr(w, app.NewErrInvalidInput("run request JSON", "missing type"))
+		handleAppErr(w, backend.NewErrInvalidInput("run request JSON", "missing type"))
 	}
 
 	switch runType.String() {
-	case models.RunDay:
+	case bemodels.RunDay:
 		a.RunDay(r.Context(), w, cfg, d)
 	default:
 		msg := fmt.Sprintf("run type '%s'", runType)
 
-		handleAppErr(w, app.NewErrInvalidInput(msg, "type is unknown"))
+		handleAppErr(w, backend.NewErrInvalidInput(msg, "type is unknown"))
+	}
+}
+
+func (a *Graphs) makeLoadFunc(ctx context.Context, symbol string) models.LoadBarsFunc {
+	store := stores.NewBarSets(symbol, a.DB)
+
+	return func(d date.Date) (models.Bars, error) {
+		set, appErr := store.Get(ctx, d.String())
+		if appErr != nil {
+			return models.Bars{}, appErr
+		}
+
+		return set.Bars, nil
 	}
 }
 
@@ -53,9 +69,9 @@ func (a *Graphs) RunDay(
 	cfg *graph.Configuration,
 	requestData []byte,
 ) {
-	var runDay models.RunDayRequest
+	var runDay bemodels.RunDayRequest
 	if err := json.Unmarshal(requestData, &runDay); err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
@@ -66,17 +82,17 @@ func (a *Graphs) RunDay(
 	if err != nil {
 		msg := fmt.Sprintf("run time zone '%s'", runDay.TimeZone)
 
-		handleAppErr(w, app.NewErrInvalidInput(msg, err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput(msg, err.Error()))
 
 		return
 	}
 
-	loader := app.NewDayBarsLoader(a.DB, runDay.Symbol, loc)
+	load := a.makeLoadFunc(ctx, runDay.Symbol)
 
 	timeSeries, err := graph.RunDay(
-		ctx, cfg, runDay.Symbol, runDay.Date, loc, loader, runDay.ShowWarmup)
+		cfg, runDay.Symbol, runDay.Date, loc, load, runDay.ShowWarmup)
 	if err != nil {
-		appErr := app.NewErrActionFailed("run graph", err.Error())
+		appErr := backend.NewErrActionFailed("run graph", err.Error())
 
 		handleAppErr(w, appErr)
 
