@@ -103,5 +103,15 @@ func (blocks Blocks) Connect(
 			Msg("connected pair")
 	}
 
+	for blkName, block := range blocks {
+		for inName, in := range block.GetInputs() {
+			if !in.IsConnected() && !in.IsOptional() {
+				err := fmt.Errorf("block %s has unconnected required input '%s'", blkName, inName)
+
+				return nil, err
+			}
+		}
+	}
+
 	return g, nil
 }
