@@ -8,42 +8,56 @@ import (
 type EMV struct {
 	emv      float64
 	prevOHLC *models.OHLC
-	warm     bool
+	scale    float64
+	sma      *SMA
 }
 
-func NewEMV() *EMV {
+func NewEMV(period int, scale float64) *EMV {
 	return &EMV{
 		prevOHLC: nil,
 		emv:      0.0,
-		warm:     false,
+		scale:    scale,
+		sma:      NewSMA(period),
 	}
 }
 
-func (emv *EMV) WarmupPeriod() int {
-	return 2
+func (ind *EMV) WarmupPeriod() int {
+	return 1 + ind.sma.Period()
 }
 
-func (emv *EMV) Warm() bool {
-	return emv.warm
+func (ind *EMV) PartlyWarm() bool {
+	return ind.prevOHLC != nil
 }
 
-func (emv *EMV) Update(cur *models.Bar) {
-	if emv.prevOHLC == nil {
-		emv.prevOHLC = cur.OHLC
+func (ind *EMV) FullyWarm() bool {
+	return ind.sma.Warm()
+}
 
+func (ind *EMV) Update(cur *models.Bar) {
+	defer ind.udpatePrev(cur)
+
+	if ind.prevOHLC == nil {
 		return
 	}
 
-	a := (cur.High + cur.Low) / 2.0
-	b := (emv.prevOHLC.High + emv.prevOHLC.Low) / 2.0
-	c := float64(cur.Volume) / (cur.High - cur.Low)
+	distMoved := ((cur.High + cur.Low) / 2.0) - ((ind.prevOHLC.High + ind.prevOHLC.Low) / 2.0)
+	boxRatio := (float64(cur.Volume) / ind.scale) / (cur.High - cur.Low)
 
-	emv.emv = (a - b) / c
-	emv.prevOHLC = cur.OHLC
-	emv.warm = true
+	ind.emv = distMoved / boxRatio
+
+	ind.sma.Update(ind.emv)
 }
 
-// EMV returns the ease of movement value.
-func (emv *EMV) EMV() float64 {
-	return emv.emv
+// Curent returns the current 1-period ease of movement value.
+func (ind *EMV) Current() float64 {
+	return ind.emv
+}
+
+// Average returns the averaged EMV.
+func (ind *EMV) Average() float64 {
+	return ind.sma.Current()
+}
+
+func (ind *EMV) udpatePrev(cur *models.Bar) {
+	ind.prevOHLC = cur.OHLC
 }

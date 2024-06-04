@@ -7,19 +7,31 @@ import (
 )
 
 type EMV struct {
-	emv *indicators.EMV
-	out *blocks.TypedOutput[float64]
+	emv     *indicators.EMV
+	current *blocks.TypedOutput[float64]
+	average *blocks.TypedOutput[float64]
+
+	period *blocks.IntRange
+	scale  *blocks.FltRange
 }
 
 const (
 	Type  = "EMV"
 	Descr = "Ease of Movement Value"
+
+	NameScale = "scale"
+
+	NameCurrent = "current"
+	NameAverage = "average"
 )
 
 func New() blocks.Block {
 	return &EMV{
-		emv: nil,
-		out: blocks.NewTypedOutput[float64](),
+		emv:     nil,
+		current: blocks.NewTypedOutput[float64](),
+		average: blocks.NewTypedOutput[float64](),
+		period:  &blocks.IntRange{Default: 14, Min: 1, Max: 1000},
+		scale:   &blocks.FltRange{Default: 10000.0, Min: 1000.0, Max: 1000000.0},
 	}
 }
 
@@ -32,7 +44,10 @@ func (blk *EMV) GetDescription() string {
 }
 
 func (blk *EMV) GetParams() blocks.Params {
-	return blocks.Params{}
+	return blocks.Params{
+		blocks.NamePeriod: blk.period,
+		NameScale:         blk.scale,
+	}
 }
 
 func (blk *EMV) GetInputs() blocks.Inputs {
@@ -41,7 +56,8 @@ func (blk *EMV) GetInputs() blocks.Inputs {
 
 func (blk *EMV) GetOutputs() blocks.Outputs {
 	return blocks.Outputs{
-		blocks.NameOut: blk.out,
+		NameCurrent: blk.current,
+		NameAverage: blk.average,
 	}
 }
 
@@ -50,11 +66,11 @@ func (blk *EMV) GetWarmupPeriod() int {
 }
 
 func (blk *EMV) IsWarm() bool {
-	return blk.emv.Warm()
+	return blk.emv.FullyWarm()
 }
 
 func (blk *EMV) Init() error {
-	blk.emv = indicators.NewEMV()
+	blk.emv = indicators.NewEMV(blk.period.Value, blk.scale.Value)
 
 	return nil
 }
@@ -62,9 +78,15 @@ func (blk *EMV) Init() error {
 func (blk *EMV) Update(cur *models.Bar) {
 	blk.emv.Update(cur)
 
-	if !blk.emv.Warm() {
+	if !blk.emv.PartlyWarm() {
 		return
 	}
 
-	blk.out.SetValue(blk.emv.EMV())
+	blk.current.SetValue(blk.emv.Current())
+
+	if !blk.emv.FullyWarm() {
+		return
+	}
+
+	blk.average.SetValue(blk.emv.Average())
 }
