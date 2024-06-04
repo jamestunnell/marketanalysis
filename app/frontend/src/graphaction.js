@@ -7,12 +7,11 @@ import { ButtonGroupHideable } from './buttongroup.js'
 import capitalize from './capitalize.js'
 import { DownloadJSON } from "./download.js"
 import { IconDownload, IconClose, IconPlay, IconPlot } from './icons.js'
+import { INPUT_CLASS } from './input.js'
 import { ModalBackground } from './modal.js'
 import { PlotRecordingModal } from './plot.js'
 
 const {div, input, label, p} = van.tags
-
-const INPUT_CLASS = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring"
 
 const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}) => {
     const closed = van.state(false)
@@ -38,6 +37,9 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
         // text: "Close",
         onclick: ()=> closed.val = true},
     )
+
+    closeBtn.classList.add("self-end")
+    
     const runBtn = Button({
         disabled: van.derive(() => {
             return runDisabled.val || (date.val.length === 0) || (symbol.val.length === 0)
@@ -79,9 +81,6 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
             hidden: van.derive(() => !completed.val),
         })
     )
-
-    closeBtn.classList.add("self-end")
-
     const modal = ModalBackground(
         div(
             {id: "foreground", class: "flex flex-col space-y-3 block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
@@ -126,4 +125,4 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
     van.add(document.body, () => closed.val ? null : modal);
 }
 
-export {GraphActionModal, INPUT_CLASS};
+export {GraphActionModal};

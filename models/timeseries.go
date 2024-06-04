@@ -62,6 +62,10 @@ func (ts *TimeSeries) DropRecordsBefore(t time.Time) {
 	}
 }
 
+func (q *Quantity) AddRecord(r QuantityRecord) {
+	q.Records = append(q.Records, r)
+}
+
 func (q *Quantity) IsEmpty() bool {
 	return len(q.Records) == 0
 }
@@ -80,6 +84,12 @@ func (q *Quantity) FindRecord(t time.Time) (QuantityRecord, bool) {
 	}
 
 	return QuantityRecord{}, false
+}
+
+func (q *Quantity) FindRecordsAfter(t time.Time) []QuantityRecord {
+	return sliceutils.Where(q.Records, func(r QuantityRecord) bool {
+		return r.Time.After(t)
+	})
 }
 
 func (q *Quantity) DropRecordsBefore(t time.Time) {

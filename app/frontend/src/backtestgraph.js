@@ -1,6 +1,7 @@
 import van from 'vanjs-core'
 
-import { GraphActionModal, INPUT_CLASS } from './graphaction.js'
+import { GraphActionModal } from './graphaction.js'
+import { INPUT_CLASS } from './input.js'
 import { PostJSON } from './backend.js'
 import userTimeZone from './timezone.js'
 

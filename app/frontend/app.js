@@ -3,6 +3,8 @@ import { Route } from 'vanjs-router'
 import GraphsPage from './src/graphs.js'
 import GraphPage from './src/graph.js'
 import NavBar from './src/navbar.js'
+import SecuritiesPage from './src/securities.js'
+// import SecurityPage from './src/security.js'
 
 import './index.css';
 
@@ -10,6 +12,41 @@ const RouteHome = () => {
     return Route(
         { name: 'home' },
         NavBar({currentRoute: 'home'}),
+    )
+}
+
+const RouteSecurities = () => {
+    const symbol = van.state('');
+    
+    return Route(
+        {
+            name: 'securities',
+            onFirst() {
+            },
+            onLoad(route) {
+                if (route.args.length == 0) {
+                    symbol.val = '';
+
+                    return
+                }
+
+                symbol.val = route.args[0]
+            }
+        },
+        () => {
+            if (symbol.val === '') {
+                return NavBar({currentRoute: 'sercurities'})
+            }
+
+            return NavBar({currentRoute: `sercurities/${symbol.val}`})
+        },
+        () => {
+            if (symbol.val === '') {
+                return SecuritiesPage()
+            }
+
+            // return SecurityPage(symbol.val)
+        }
     )
 }
 
@@ -48,4 +85,4 @@ const RouteGraphs = () => {
     )
 }
 
-van.add(document.body, RouteHome(), RouteGraphs())
+van.add(document.body, RouteHome(), RouteSecurities(), RouteGraphs())

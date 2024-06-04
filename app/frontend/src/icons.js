@@ -58,6 +58,10 @@ const IconPlot = () => {
     return i({class: "fa-solid fa-chart-line"});
 }
 
+const IconRefresh = () => {
+    return i({class: "fa-solid fa-arrows-rotate"});
+}
+
 const IconSave = () => {
     return i({class: "fa-solid fa-floppy-disk"});
 }
@@ -85,6 +89,7 @@ export {
     IconMagnifyDollar,
     IconPlay,
     IconPlot,
+    IconRefresh,
     IconSave,
     IconStethoscope,
     IconView,

@@ -1,7 +1,8 @@
 import van from 'vanjs-core'
 
 import { PostJSON } from './backend.js'
-import { GraphActionModal, INPUT_CLASS } from './graphaction.js'
+import { GraphActionModal } from './graphaction.js'
+import { INPUT_CLASS } from './input.js'
 import userTimeZone from './timezone.js'
 
 const {input, label, option, select} = van.tags

@@ -20,8 +20,9 @@ const NavBar = ({currentRoute}) => {
                 {class: "container flex text-gray-500 order-3 w-full"},
                 ul(
                     {class: "flex items-center font-semibold flex-wrap"},
-                    NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute: currentRoute}),
-                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute: currentRoute}),
+                    NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute}),
+                    NavBarItem({text: 'Securities', route: 'securities', routeArgs: [], currentRoute}),
+                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute}),
                 )
             )
         )

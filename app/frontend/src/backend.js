@@ -43,7 +43,7 @@ const PostJSON = async ({route, object, options={}}) => {
     );
 }
 
-const Put = async ({route, object}) => {
+const PutJSON = async ({route, object}) => {
     const url = BASE_URL + route;
 
     console.log("fetch PUT %s", url);
@@ -60,4 +60,4 @@ const Put = async ({route, object}) => {
     );
 }
 
-export {Delete, Get, PostJSON, Put};
+export {Delete, Get, PostJSON, PutJSON};

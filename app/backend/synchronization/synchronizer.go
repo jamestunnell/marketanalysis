@@ -50,7 +50,7 @@ func (sync *synchronizer) Stop() {
 	sync.stop <- struct{}{}
 }
 
-func (sync *synchronizer) scanAllExisting() {
+func (sync *synchronizer) scanExisting() {
 	log.Debug().Msg("sync: scanning all existing")
 
 	store := stores.NewSecurities(sync.db)
@@ -78,12 +78,12 @@ func (sync *synchronizer) scanAllExisting() {
 	}
 }
 
-const scanInterval = 30 * time.Second
+const scanInterval = time.Minute
 
 func (sync *synchronizer) runUntilStopped() {
 	log.Debug().Msg("sync: running until stopped")
 
-	sync.scanAllExisting()
+	sync.scanExisting()
 
 	keepGoing := true
 
@@ -94,7 +94,7 @@ func (sync *synchronizer) runUntilStopped() {
 		case <-sync.stop:
 			keepGoing = false
 		case <-time.After(scanInterval):
-			sync.scanAllExisting()
+			sync.scanExisting()
 		}
 	}
 

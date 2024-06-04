@@ -3,9 +3,9 @@ import { routeTo } from 'vanjs-router'
 import {Modal} from "vanjs-ui"
 
 import {Delete, Get, PostJSON, PutJSON} from './backend.js'
-import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from "./buttons.js";
+import { Button, ButtonCancel, ButtonIcon  } from "./buttons.js";
 import { ButtonGroup } from './buttongroup.js'
-import { IconAdd, IconClose, IconDelete, IconEdit, IconRefresh, IconView } from './icons.js'
+import { IconAdd, IconClose, IconDelete, IconEdit } from './icons.js'
 import { INPUT_CLASS } from './input.js'
 import {Table, TableRow} from './table.js'
 import { ModalBackground } from "./modal.js";

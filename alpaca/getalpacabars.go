@@ -19,7 +19,7 @@ func GetBarsOneMin(
 	start, end := ts.Start(), ts.End()
 
 	// the most current end time alpaca allows for free
-	latestEndAllowed := time.Now().Add(-15 * time.Minute)
+	latestEndAllowed := time.Now().Add(-(15*time.Minute + time.Second))
 	if end.After(latestEndAllowed) {
 		end = latestEndAllowed
 	}

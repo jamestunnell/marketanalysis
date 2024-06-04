@@ -3,7 +3,7 @@ import hash from 'object-hash';
 import { nanoid } from 'nanoid'
 
 import { AppErrorAlert} from './apperror.js';
-import { Get, Put } from './backend.js';
+import { Get, PutJSON } from './backend.js';
 import { BacktestGraph } from './backtestgraph.js'
 import { SelectBlockTypeModal, BlockRow } from "./block.js";
 import { ButtonGroup } from './buttongroup.js'
@@ -85,7 +85,7 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
     console.log("saving graph", graph);
 
     try {
-        const resp = await Put({route:`/graphs/${graph.id}`, object: graph});
+        const resp = await PutJSON({route:`/graphs/${graph.id}`, object: graph});
 
         if (resp.status != 204) {
             const appErr = await resp.json()
