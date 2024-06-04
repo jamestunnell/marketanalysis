@@ -4,12 +4,12 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
-import {Delete, Get, PostJSON} from './backend.js'
+import { Delete, Get, PostJSON } from './backend.js'
 import { Button, ButtonIcon, ButtonCancel } from "./buttons.js";
 import { ButtonGroup } from './buttongroup.js'
 import { IconAdd, IconDelete, IconView } from './icons.js'
-import {Table, TableRow} from './table.js'
-import truncateString from "./truncatestring.js";
+import { Table, TableRow } from './table.js'
+import { truncateStringAddElipses } from "./truncatestring.js";
 
 const {div, input, label, p, tbody} = van.tags
 
@@ -117,7 +117,7 @@ const GraphTableRow = ({id, name}) => {
     });
 
     const buttons = ButtonGroup({buttons: [viewBtn, deleteBtn]});
-    const rowItems = [name, truncateString(id, 8), buttons];
+    const rowItems = [name, truncateStringAddElipses(id, 8), buttons];
 
     return () => deleted.val ? null : TableRow(rowItems);
 }

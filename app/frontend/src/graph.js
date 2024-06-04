@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 import { AppErrorAlert} from './apperror.js';
 import { Get, PutJSON } from './backend.js';
 import { BacktestGraph } from './backtestgraph.js'
-import { SelectBlockTypeModal, BlockRow } from "./block.js";
+import { AddBlockModal, BlockRow } from "./block.js";
 import { ButtonGroup } from './buttongroup.js'
 import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { ConnectionRow } from "./connection.js";
@@ -14,7 +14,7 @@ import { EvalGraph } from './evalgraph.js'
 import { IconAdd, IconExport, IconImport, IconMagnifyDollar, IconPlay, IconSave, IconStethoscope } from "./icons.js";
 import { RunGraph } from './rungraph.js'
 import { Table } from './table.js';
-import truncateString from "./truncatestring.js";
+import { truncateStringAddElipses } from "./truncatestring.js";
 import { UploadJSON } from "./upload.js";
 
 const {div, p, tbody} = van.tags
@@ -112,7 +112,7 @@ class PageContent {
     constructor({graph, infoByType}) {
         const digest = hash(graph)
 
-        console.log(`initial graph digest`, truncateString(digest, 10))
+        console.log(`initial graph digest`, truncateStringAddElipses(digest, 10))
 
         this.id = graph.id
         this.digest = van.state(digest)
@@ -203,15 +203,14 @@ class PageContent {
             icon: addIcon1,
             // text: "Add",
             onclick: () => {
-                SelectBlockTypeModal({
-                    types: Object.keys(this.infoByType),
-                    handleResult: (selectedType) => {
+                AddBlockModal({
+                    infoByType: this.infoByType,
+                    blockNames: this.blockNames(),
+                    handleResult: ({block, info}) => {
                         const id  = nanoid()
-                        const info = this.infoByType[selectedType]
-                        const block = {type: selectedType, name: "", paramVals: {}, recording: []}
                         const row = new BlockRow({id, block, info, parent: this})
                         
-                        console.log(`adding ${selectedType} block`, info)
+                        console.log(`adding ${info.type} block`, info)
                         
                         van.add(this.blockTableBody, row.render())
 
@@ -352,7 +351,7 @@ class PageContent {
     updateDigest() {
         const digest = hash(this.makeGraph())
 
-        console.log(`updated graph digest`, truncateString(digest, 10))
+        console.log(`updated graph digest`, truncateStringAddElipses(digest, 10))
 
         this.digest.val = digest
     }
