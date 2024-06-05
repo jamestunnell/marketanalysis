@@ -38,7 +38,7 @@ const backtestGraph = ({id, date, symbol, showWarmup, predictor}) => {
     });
 }
 
-const BacktestGraph = (graph, infoByType) => {
+const BacktestGraph = ({graph, selectedSymbol, infoByType}) => {
     const predictor = van.state("")
     const threshold = van.state(0.25)
 
@@ -81,7 +81,7 @@ const BacktestGraph = (graph, infoByType) => {
         }),
     ]
 
-    GraphActionModal({ actionName: "backtest", graph, inputElems, runDisabled, doAction })
+    GraphActionModal({ actionName: "backtest", graph, selectedSymbol, inputElems, runDisabled, doAction })
 }
 
 export { BacktestGraph };

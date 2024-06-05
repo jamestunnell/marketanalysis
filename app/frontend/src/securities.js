@@ -318,4 +318,4 @@ const SecuritiesPage = () => {
     )
 }
 
-export default SecuritiesPage;
+export {getSecurities, SecuritiesPage};

@@ -1,10 +1,11 @@
 import van from "vanjs-core"
+
 import { Route } from 'vanjs-router'
 import GraphsPage from './src/graphs.js'
 import GraphPage from './src/graph.js'
 import NavBar from './src/navbar.js'
-import SecuritiesPage from './src/securities.js'
-// import SecurityPage from './src/security.js'
+import { SecuritiesPage } from './src/securities.js'
+import GraphSettings from "./src/graphsettings.js"
 
 import './index.css';
 
@@ -51,7 +52,8 @@ const RouteSecurities = () => {
 }
 
 const RouteGraphs = () => {
-    const graphID = van.state('');
+    const graphID = van.state('')
+    const settings = new GraphSettings()
     
     return Route(
         {
@@ -59,6 +61,8 @@ const RouteGraphs = () => {
             onFirst() {
             },
             onLoad(route) {
+                settings.load()
+                
                 if (route.args.length == 0) {
                     graphID.val = '';
 
@@ -75,12 +79,13 @@ const RouteGraphs = () => {
 
             return NavBar({currentRoute: `graphs/${graphID.val}`})
         },
+        settings.render(),
         () => {
             if (graphID.val === '') {
                 return GraphsPage()
             }
 
-            return GraphPage(graphID.val)
+            return GraphPage({id: graphID.val, settings})
         }
     )
 }

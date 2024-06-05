@@ -41,7 +41,7 @@ const evalGraph = ({id, symbol, date, showWarmup, source, predictor, horizon}) =
 const HORIZON_MIN = 3
 const HORIZON_MAX = 100
 
-const EvalGraph = (graph, infoByType) => {
+const EvalGraph = ({graph, selectedSymbol, infoByType}) => {
     const horizon = van.state(HORIZON_MIN)
     const source = van.state("")
     const predictor = van.state("")
@@ -111,7 +111,7 @@ const EvalGraph = (graph, infoByType) => {
         }, predBlockOutOpts),
     ]
   
-    GraphActionModal({ actionName: "evaluate", graph, inputElems, runDisabled, doAction })
+    GraphActionModal({ actionName: "evaluate", graph, selectedSymbol, inputElems, runDisabled, doAction })
 }
 
 export { EvalGraph };

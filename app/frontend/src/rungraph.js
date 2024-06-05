@@ -35,14 +35,14 @@ const runGraph = ({id, symbol, date, showWarmup}) => {
     });
 }
 
-const RunGraph = (graph) => {
+const RunGraph = ({graph, selectedSymbol}) => {
     const runDisabled = van.state(false)
     const doAction = ({date, symbol, showWarmup}) => {
         return runGraph({id: graph.id, symbol, date, showWarmup})
     }
     const inputElems = []
 
-    GraphActionModal({ actionName: "run", graph, inputElems, runDisabled, doAction })
+    GraphActionModal({ actionName: "run", selectedSymbol, graph, inputElems, runDisabled, doAction })
 }
 
 export {RunGraph};

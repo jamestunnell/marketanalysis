@@ -109,11 +109,12 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
 }
 
 class PageContent {
-    constructor({graph, infoByType}) {
+    constructor({graph, infoByType, settings}) {
         const digest = hash(graph)
 
         console.log(`initial graph digest`, truncateStringAddElipses(digest, 10))
 
+        this.settings = settings
         this.id = graph.id
         this.digest = van.state(digest)
         this.digestSaved = van.state(digest)
@@ -193,6 +194,7 @@ class PageContent {
         console.log("rendering graph page content")
         
         const needsSaved = van.derive(() => this.digest.val !== this.digestSaved.val)
+        const disableRun = van.derive(() => needsSaved.val || this.settings.symbol.val === '')
         const addIcon1 = IconAdd()
         const addIcon2 = IconAdd()
         
@@ -237,20 +239,34 @@ class PageContent {
         const runBtn = ButtonIconDisableable({
             icon: IconPlay(),
             // text: "Run",
-            disabled: needsSaved,
-            onclick: () => RunGraph(this.makeGraph()),
+            disabled: disableRun,
+            onclick: () => {
+                console.log(`running graph with selected symbol ${this.settings.symbol.val}`)
+                RunGraph({
+                    graph: this.makeGraph(),
+                    selectedSymbol: this.settings.symbol.val,
+                })
+            },
         });
         const evalBtn = ButtonIconDisableable({
             icon: IconStethoscope(),
             // text: "Eval",
-            disabled: needsSaved,
-            onclick: () => EvalGraph(this.makeGraph(), this.infoByType),
+            disabled: disableRun,
+            onclick: () => EvalGraph({
+                graph: this.makeGraph(),
+                infoByType: this.infoByType,
+                selectedSymbol: this.settings.symbol.val,
+            }),
         });
         const backtestBtn = ButtonIconDisableable({
             icon: IconMagnifyDollar(),
             // text: "$$$",
-            disabled: needsSaved,
-            onclick: () => BacktestGraph(this.makeGraph(), this.infoByType),
+            disabled: disableRun,
+            onclick: () => BacktestGraph({
+                graph: this.makeGraph(),
+                infoByType: this.infoByType,
+                selectedSymbol: this.settings.symbol.val,
+            }),
         });
         const saveBtn = ButtonIconDisableable({
             icon: IconSave(),
@@ -396,7 +412,7 @@ class PageContent {
     }
 }
 
-const GraphPage = (id) => {
+const GraphPage = ({id, settings}) => {
     const page = div()
     
     Promise.all([
@@ -407,7 +423,7 @@ const GraphPage = (id) => {
         const graph = values[1]
         const infoByType = Object.fromEntries(allBlockInfo.map(info => [info.type, info]));
 
-        van.add(page, new PageContent({graph, infoByType}).render())
+        van.add(page, new PageContent({graph, infoByType, settings}).render())
     }).catch(appErr => {
         console.log("failed to resolve all promises", appErr)
 

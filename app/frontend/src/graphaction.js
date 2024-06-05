@@ -13,12 +13,12 @@ import { PlotRecordingModal } from './plot.js'
 
 const {div, input, label, p} = van.tags
 
-const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}) => {
+const GraphActionModal = ({actionName, graph, selectedSymbol, inputElems, runDisabled, doAction}) => {
     const closed = van.state(false)
     const completed = van.state(false)
     const showWarmup = van.state(false)
     const recording = van.state({})
-    const symbol = van.state("")
+    const symbol = van.state(selectedSymbol)
     const date = van.state("")
 
     const dateInput = input({
@@ -91,6 +91,7 @@ const GraphActionModal = ({actionName, graph, inputElems, runDisabled, doAction}
                 id: "actionSymbol",
                 class: INPUT_CLASS,
                 type: "text",
+                value: selectedSymbol,
                 placeholder: 'Symbol (SPY, QQQ, etc.)',
                 onchange: e => symbol.val = e.target.value,
             }),
