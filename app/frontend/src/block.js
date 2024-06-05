@@ -28,7 +28,7 @@ function validateBlock({block, info, otherNames}) {
             return null
         }
 
-        const err = validateParamVal(param, val)
+        const err = validateParamVal({param, value: val})
         if (err) {
             return new Error(`param ${param.name} has invalid value ${val}`)
         }

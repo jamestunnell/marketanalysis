@@ -10,48 +10,71 @@ import { Table, TableRow } from "./table.js";
 const { div, input, label, option, p, select, tbody} = van.tags
 
 const inputClass = "block border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
-const minSteps = 100.0
 
-function computeStep(min, max) {
-    const x = Math.log10((max - min) / minSteps)
+const EnterNumberRow = ({currentVal, param, step, updateVal, errMsg}) => {
+    const inputProps = {
+        id: param.name,
+        type: "number",
+        class: inputClass,
+        value: currentVal,
+        step,
+        onchange: (e) => {
+            const err = updateVal(e.target.value)
+            if (err) {
+                errMsg.val = err.message
+            } else {
+                errMsg.val = ""
+            }
+        },
+    }
+
+    let constraintText
     
-    return Math.pow(10.0, Math.ceil(x - 1.0))
-}
-
-const EnterNumberRow = ({name, currentVal, min, max, step, updateVal, errMsg}) => {
-    const labelText = `${capitalize(name)}: (${min}-${max}):`;
+    switch (param.constraint.type) {
+        case 'less':
+            inputProps.max = param.constraint.limits[0] - step
+            constraintText = `< ${param.constraint.limits[0]}`
+            break
+        case 'lessEqual':
+            inputProps.max = param.constraint.limits[0]
+            constraintText = `<= ${param.constraint.limits[0]}`
+            break
+        case 'greater':
+            inputProps.min = param.constraint.limits[0] + step
+            constraintText = `> ${param.constraint.limits[0]}`
+            break
+        case 'greaterEqual':
+            inputProps.min = param.constraint.limits[0]
+            constraintText = `>= ${param.constraint.limits[0]}`
+            break
+        case 'rangeIncl':
+            inputProps.min = param.constraint.limits[0]
+            inputProps.max = param.constraint.limits[1]
+            constraintText = `[${param.constraint.limits[0]}, ${param.constraint.limits[1]}]`
+            break
+        case 'rangeExcl':
+            inputProps.min = param.constraint.limits[0]
+            inputProps.max = param.constraint.limits[1] - step
+            constraintText = `[${param.constraint.limits[0]}, ${param.constraint.limits[1]})`
+            break
+    }
 
     const status = ButtonIconTooltip({
         icon: () => (errMsg.val.length > 0) ? IconError() : IconCheck(),
         tooltipText: van.derive(() => (errMsg.val.length > 0) ? `Value is invalid: ${errMsg.val}` : "Value is valid"),
     });
     const rowItems = [
-        label({for: name}, labelText),
-        input({
-            id: name,
-            type: "number",
-            class: inputClass,
-            value: currentVal,
-            min,
-            max,
-            step,
-            onchange: (e) => {
-                const err = updateVal(e.target.value)
-                if (err) {
-                    errMsg.val = err.message
-                } else {
-                    errMsg.val = ""
-                }
-            },
-        }),
+        label({for: param.name}, param.name),
+        constraintText,
+        input(inputProps),
         status,
     ]
 
     return TableRow(rowItems)
 }
 
-const SelectValueRow = ({name, allowedVals, currentVal, updateVal}) => {
-    const options = allowedVals.map(allowedVal => {
+const SelectValueRow = ({param, currentVal, updateVal}) => {
+    const options = param.constraint.limits.map(allowedVal => {
         let props = {value: allowedVal};
         
         if (allowedVal === currentVal) {
@@ -64,11 +87,13 @@ const SelectValueRow = ({name, allowedVals, currentVal, updateVal}) => {
     //     icon: () => (errMsg.val.length > 0) ? IconError() : IconCheck(),
     //     tooltipText: van.derive(() => (errMsg.val.length > 0) ? `Value is invalid: ${errMsg.val}` : "Value is valid"),
     // });
+    const constraintText = ""
 
     const rowItems = [
-        label({for: name}, capitalize(name)),
+        label({for: param.name}, capitalize(param.name)),
+        constraintText,
         select({
-            id: name,
+            id: param.name,
             class: inputClass,
             oninput: (e) => {
                 const err = updateVal(e.target.value)
@@ -94,48 +119,20 @@ const IntParamRow = ({param, value, errMsg}) => {
     
         value.val = newVal
     
-        return validateParamVal(param, newVal)
+        return validateParamVal({param, value: newVal})
     }
-    const name = param.name
-    const step = 1
-    const currentVal = value.val
-
-    let min
-    let max
 
     switch (param.constraint.type) {
         case 'oneOf':
-            return SelectValueRow({currentVal, name, updateVal, allowedVals: param.constraint.limits})
+            return SelectValueRow({currentVal: value.val, param, updateVal, errMsg})
         case 'less':
-            min = Number.MIN_SAFE_INTEGER
-            max = param.constraint.limits[0]-1
-
-            return EnterNumberRow({name, currentVal, step, max, updateVal})
         case 'lessEqual':
-            min = Number.MIN_SAFE_INTEGER
-            max = param.constraint.limits[0]
-
-            return EnterNumberRow({name, currentVal, step, max, updateVal})
         case 'greater':
-            min = param.constraint.limits[0]+1
-            max = Number.MAX_SAFE_INTEGER
-
-            return EnterNumberRow({name, currentVal, step, min, updateVal})
         case 'greaterEqual':
-            min = param.constraint.limits[0]
-            max = Number.MAX_SAFE_INTEGER
-
-            return EnterNumberRow({name, currentVal, step, min, updateVal})
         case 'rangeIncl':
-            min = param.constraint.limits[0]
-            max = param.constraint.limits[1]
-
-            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
         case 'rangeExcl':
-            min = param.constraint.limits[0]
-            max = param.constraint.limits[1]-1
-
-            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+        case 'none':
+            return EnterNumberRow({currentVal: value.val, step:1, param, updateVal, errMsg})
     }
 
     console.log(`unsupported int constraint type ${param.constraint.type}`)
@@ -152,58 +149,20 @@ const FloatParamRow = ({param, value, errMsg}) => {
 
         value.val = newVal
 
-        const err = validateParamVal(param, newVal)
-        if (err) {
-            errMsg.val = err.message
-        }
+        return validateParamVal({param, value: newVal})
     }
 
-    const name = param.name
-    const currentVal = value.val
-
-    let min
-    let max
-    let step
-    
     switch (param.constraint.type) {
         case 'oneOf':
-            return SelectValueRow({currentVal: value.val, name: param.name, allowedVals: param.limits, updateVal, errMsg})
+            return SelectValueRow({currentVal: value.val, param, updateVal, errMsg})
         case 'less':
-            min = Number.MIN_VALUE
-            max = param.constraint.limits[0]-Number.EPSILON
-            step = 0.01
-
-            return EnterNumberRow({name, currentVal, step, max, updateVal})
         case 'lessEqual':
-            min = Number.MIN_VALUE
-            max = param.constraint.limits[0]
-            step = 0.01
-
-            return EnterNumberRow({name, currentVal, step, max, updateVal})
         case 'greater':
-            min = param.constraint.limits[0]+Number.EPSILON
-            max = Number.MAX_VALUE
-            step = 0.01
-
-            return EnterNumberRow({name, currentVal, step, min, updateVal})
         case 'greaterEqual':
-            min = param.constraint.limits[0]
-            max = Number.MAX_VALUE
-            step = 0.01
-
-            return EnterNumberRow({name, currentVal, step, min, updateVal})
         case 'rangeIncl':
-            min = param.constraint.limits[0]
-            max = param.constraint.limits[1]
-            step = computeStep(param.limits[0], param.limits[1])
-
-            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
         case 'rangeExcl':
-            min = param.constraint.limits[0]
-            max = param.constraint.limits[1]-Number.EPSILON
-            step = computeStep(param.limits[0], param.limits[1])
-
-            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+        case 'none':
+            return EnterNumberRow({currentVal: value.val, step:0.01, param, updateVal, errMsg})
     }
 
     console.log(`unsupported float64 constraint type ${param.constraint.type}`)
@@ -224,24 +183,51 @@ const ParamRow = ({param, value, errMsg}) => {
     return null;
 }
 
-function validateParamVal(param, value) {
-    switch (param.type) {
-    case "IntEnum":
-    case "FltEnum":
-    case "StrEnum":
-        if (param.limits.indexOf(value) == -1) {
-            return new Error(`invalid value ${value} for param ${param.name}: not one of enum values ${param.limits}`)
+function validateParamVal({param, value}) {
+    const limits = param.constraint.limits
+
+    let err
+
+    switch (param.constraint.type) {
+    case "oneOf":
+        if (limits.indexOf(value) === -1) {
+            err = new Error(`${value} is not one of ${limits}`) 
         }
         break
-    case "IntRange":
-    case "FltRange":
-        if (value < param.limits[0] || value > param.limits[1]) {
-            return new Error(`invalid value ${value} for param ${param.name}: not in range [${param.limits[0]}, ${param.limits[1]}]`)
+    
+    case "less":
+        if (value >= limits[0]) {
+            err = new Error(`${value} is not < ${limits[0]}`) 
+        }
+        break
+    case "lessEqual":
+        if (value > limits[0]) {
+            err = new Error(`${value} is not <= ${limits[0]}`) 
+        }
+        break
+    case "greater":
+        if (value <= limits[0]) {
+            err = new Error(`${value} is not > ${limits[0]}`) 
+        }
+        break
+    case "greaterEqual":
+        if (value < limits[0]) {
+            err = new Error(`${value} is not >= ${limits[0]}`) 
+        }
+        break
+    case "rangeIncl":
+        if (value < limits[0] || value > limits[0]) {
+            err = new Error(`${value} is not in range [${limits[0]}, ${limits[1]}]`) 
+        }
+        break
+    case "rangeExcl":
+        if (value < limits[0] || value >= limits[0]) {
+            err = new Error(`${value} is not in range [${limits[0]}, ${limits[1]})`) 
         }
         break
     }
         
-    return null;
+    return err;
 }
 
 const EditParamValsModal = ({params, paramVals, onComplete}) => {
@@ -270,7 +256,7 @@ const EditParamValsModal = ({params, paramVals, onComplete}) => {
 
     const paramValTableBody = tbody({class:"table-auto"}); 
     const paramValTable = Table({
-        columnNames: ["Name", "Value", ""],
+        columnNames: ["Name", "Constraint", "Value", ""],
         tableBody: paramValTableBody,
     })
     const rows = params.map(p => {
