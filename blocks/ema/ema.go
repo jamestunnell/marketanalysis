@@ -7,7 +7,7 @@ import (
 )
 
 type EMA struct {
-	period *blocks.TypedParam[int]
+	period *blocks.IntParam
 	ema    *indicators.EMA
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutput[float64]
@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &EMA{
-		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
 		ema:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),

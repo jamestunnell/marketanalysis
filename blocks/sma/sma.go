@@ -7,7 +7,7 @@ import (
 )
 
 type SMA struct {
-	period *blocks.TypedParam[int]
+	period *blocks.IntParam
 	sma    *indicators.SMA
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutput[float64]
@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &SMA{
-		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
 		sma:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),

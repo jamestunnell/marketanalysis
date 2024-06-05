@@ -8,7 +8,7 @@ import (
 type MulK struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
-	k   *blocks.TypedParam[float64]
+	k   *blocks.FloatParam
 }
 
 const (
@@ -20,7 +20,7 @@ func NewMulK() blocks.Block {
 	return &MulK{
 		in:  blocks.NewTypedInput[float64](),
 		out: blocks.NewTypedOutput[float64](),
-		k:   blocks.NewTypedParam(1.0, blocks.NewNone[float64]()),
+		k:   blocks.NewFloatParam(1.0, blocks.NewNone[float64]()),
 	}
 }
 

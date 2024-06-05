@@ -13,8 +13,8 @@ type EMV struct {
 	current *blocks.TypedOutput[float64]
 	average *blocks.TypedOutput[float64]
 
-	period *blocks.TypedParam[int]
-	scale  *blocks.TypedParam[float64]
+	period *blocks.IntParam
+	scale  *blocks.FloatParam
 }
 
 const (
@@ -32,8 +32,8 @@ func New() blocks.Block {
 		emv:     nil,
 		current: blocks.NewTypedOutput[float64](),
 		average: blocks.NewTypedOutput[float64](),
-		period:  blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
-		scale:   blocks.NewTypedParam(100000.0, blocks.NewGreater(0.0)),
+		period:  blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
+		scale:   blocks.NewFloatParam(100000.0, blocks.NewGreater(0.0)),
 	}
 }
 

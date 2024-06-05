@@ -7,7 +7,7 @@ import (
 )
 
 type Aroon struct {
-	period *blocks.TypedParam[int]
+	period *blocks.IntParam
 	aroon  *indicators.Aroon
 	in     *blocks.TypedInput[float64]
 	up     *blocks.TypedOutput[float64]
@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &Aroon{
-		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
 		aroon:  nil,
 		in:     blocks.NewTypedInput[float64](),
 		up:     blocks.NewTypedOutput[float64](),

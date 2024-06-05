@@ -116,6 +116,8 @@ func (cfg *Configuration) Validate() []error {
 		// validate params
 		params := blk.GetParams()
 
+		var anyInvalid bool
+
 		for pName, val := range bc.ParamVals {
 			param, found := params[pName]
 			if !found {
@@ -130,7 +132,13 @@ func (cfg *Configuration) Validate() []error {
 				err = fmt.Errorf("block %s: param %s: value %v is invalid: %w", bName, pName, val, err)
 
 				errs = append(errs, err)
+
+				anyInvalid = true
 			}
+		}
+
+		if anyInvalid {
+			continue
 		}
 
 		if err := blk.GetParams().SetValuesOrDefault(bc.ParamVals); err != nil {

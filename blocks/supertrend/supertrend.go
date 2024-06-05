@@ -12,8 +12,8 @@ type Supertrend struct {
 	in                  *blocks.TypedInput[float64]
 	trend, lower, upper *blocks.TypedOutput[float64]
 
-	atrPeriod *blocks.TypedParam[int]
-	atrMul    *blocks.TypedParam[float64]
+	atrPeriod *blocks.IntParam
+	atrMul    *blocks.FloatParam
 	atr       *indicators.ATR
 	prevVal   *models.OHLC
 }
@@ -35,8 +35,8 @@ func New() blocks.Block {
 		trend:     blocks.NewTypedOutput[float64](),
 		lower:     blocks.NewTypedOutput[float64](),
 		upper:     blocks.NewTypedOutput[float64](),
-		atrPeriod: blocks.NewTypedParam(20, blocks.NewGreaterEqual(1)),
-		atrMul:    blocks.NewTypedParam(5.0, blocks.NewGreater(0.0)),
+		atrPeriod: blocks.NewIntParam(20, blocks.NewGreaterEqual(1)),
+		atrMul:    blocks.NewFloatParam(5.0, blocks.NewGreater(0.0)),
 		atr:       nil,
 	}
 }

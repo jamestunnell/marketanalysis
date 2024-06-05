@@ -12,7 +12,7 @@ import (
 type Pivots struct {
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutputAsync[float64]
-	length *blocks.TypedParam[int]
+	length *blocks.IntParam
 	ind    *p.Pivots
 }
 
@@ -25,7 +25,7 @@ func New() blocks.Block {
 	return &Pivots{
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutputAsync[float64](),
-		length: blocks.NewTypedParam(15, blocks.NewGreaterEqual(2)),
+		length: blocks.NewIntParam(15, blocks.NewGreaterEqual(2)),
 		ind:    nil,
 	}
 }

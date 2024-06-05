@@ -8,7 +8,7 @@ import (
 type AddK struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
-	k   *blocks.TypedParam[float64]
+	k   *blocks.FloatParam
 }
 
 const (
@@ -20,7 +20,7 @@ func NewAddK() blocks.Block {
 	return &AddK{
 		in:  blocks.NewTypedInput[float64](),
 		out: blocks.NewTypedOutput[float64](),
-		k:   blocks.NewTypedParam(0.0, blocks.NewNone[float64]()),
+		k:   blocks.NewFloatParam(0.0, blocks.NewNone[float64]()),
 	}
 }
 
@@ -33,7 +33,9 @@ func (blk *AddK) GetDescription() string {
 }
 
 func (blk *AddK) GetParams() blocks.Params {
-	return blocks.Params{}
+	return blocks.Params{
+		blocks.NameK: blk.k,
+	}
 }
 
 func (blk *AddK) GetInputs() blocks.Inputs {

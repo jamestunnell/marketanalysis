@@ -114,8 +114,6 @@ func Run(
 }
 
 func GetCoreHours(d date.Date) timespan.TimeSpan {
-	const layout = "2006-01-02T15:04"
-
 	switch d.Weekday() {
 	case time.Saturday, time.Sunday:
 		return timespan.TimeSpan{}

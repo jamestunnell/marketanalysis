@@ -7,7 +7,7 @@ import (
 )
 
 type DMI struct {
-	period              *blocks.TypedParam[int]
+	period              *blocks.IntParam
 	dmi                 *indicators.DMI
 	pdi, ndi, trend, dx *blocks.TypedOutput[float64]
 }
@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &DMI{
-		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
 		dmi:    nil,
 		pdi:    blocks.NewTypedOutput[float64](),
 		ndi:    blocks.NewTypedOutput[float64](),

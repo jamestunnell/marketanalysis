@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/hashicorp/go-multierror"
@@ -28,7 +29,7 @@ func (ps Params) GetNonDefaultValues() ParamVals {
 	vals := ParamVals{}
 
 	for name, ps := range ps {
-		if val := ps.GetCurrentVal(); val != ps.GetDefaultVal() {
+		if val := ps.GetCurrentVal(); !reflect.DeepEqual(val, ps.GetDefaultVal()) {
 			vals[name] = val
 		}
 	}

@@ -13,9 +13,9 @@ type MultiTrend struct {
 	inNames []string
 	out     *blocks.TypedOutput[float64]
 
-	numInputs   *blocks.TypedParam[int]
-	thresh      *blocks.TypedParam[float64]
-	votesNeeded *blocks.TypedParam[int]
+	numInputs   *blocks.IntParam
+	thresh      *blocks.FloatParam
+	votesNeeded *blocks.IntParam
 
 	dirs     []models.Direction
 	minVotes int
@@ -32,9 +32,9 @@ const (
 
 func New() blocks.Block {
 	return &MultiTrend{
-		numInputs:   blocks.NewTypedParam(2, blocks.NewGreaterEqual(1)),
-		thresh:      blocks.NewTypedParam(0.375, blocks.NewRangeExcl(0.0, 1.0)),
-		votesNeeded: blocks.NewTypedParam(1, blocks.NewGreaterEqual(1)),
+		numInputs:   blocks.NewIntParam(2, blocks.NewGreaterEqual(1)),
+		thresh:      blocks.NewFloatParam(0.375, blocks.NewRangeExcl(0.0, 1.0)),
+		votesNeeded: blocks.NewIntParam(1, blocks.NewGreaterEqual(1)),
 		ins:         []*blocks.TypedInput[float64]{},
 		inNames:     []string{},
 		out:         blocks.NewTypedOutput[float64](),
