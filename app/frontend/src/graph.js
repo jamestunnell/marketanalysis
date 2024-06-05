@@ -194,7 +194,9 @@ class PageContent {
         console.log("rendering graph page content")
         
         const needsSaved = van.derive(() => this.digest.val !== this.digestSaved.val)
-        const disableRun = van.derive(() => needsSaved.val || this.settings.symbol.val === '')
+        const disableRun = van.derive(() => {
+            return needsSaved.val || this.settings.symbol.val === '' || this.settings.date.val === ''
+        })
         const addIcon1 = IconAdd()
         const addIcon2 = IconAdd()
         
@@ -241,10 +243,9 @@ class PageContent {
             // text: "Run",
             disabled: disableRun,
             onclick: () => {
-                console.log(`running graph with selected symbol ${this.settings.symbol.val}`)
                 RunGraph({
                     graph: this.makeGraph(),
-                    selectedSymbol: this.settings.symbol.val,
+                    settings: this.settings,
                 })
             },
         });
@@ -255,7 +256,7 @@ class PageContent {
             onclick: () => EvalGraph({
                 graph: this.makeGraph(),
                 infoByType: this.infoByType,
-                selectedSymbol: this.settings.symbol.val,
+                settings: this.settings,
             }),
         });
         const backtestBtn = ButtonIconDisableable({
@@ -265,7 +266,7 @@ class PageContent {
             onclick: () => BacktestGraph({
                 graph: this.makeGraph(),
                 infoByType: this.infoByType,
-                selectedSymbol: this.settings.symbol.val,
+                settings: this.settings,
             }),
         });
         const saveBtn = ButtonIconDisableable({
