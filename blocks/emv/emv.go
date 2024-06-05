@@ -32,8 +32,8 @@ func New() blocks.Block {
 		emv:     nil,
 		current: blocks.NewTypedOutput[float64](),
 		average: blocks.NewTypedOutput[float64](),
-		period:  blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
-		scale:   blocks.NewTypedParam(100000.0, blocks.NewExclusiveMin(0.0)),
+		period:  blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		scale:   blocks.NewTypedParam(100000.0, blocks.NewGreater(0.0)),
 	}
 }
 

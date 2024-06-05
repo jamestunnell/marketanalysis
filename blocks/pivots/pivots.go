@@ -25,7 +25,7 @@ func New() blocks.Block {
 	return &Pivots{
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutputAsync[float64](),
-		length: blocks.NewTypedParam(15, blocks.NewInclusiveMin(2)),
+		length: blocks.NewTypedParam(15, blocks.NewGreaterEqual(2)),
 		ind:    nil,
 	}
 }

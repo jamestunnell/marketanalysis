@@ -20,7 +20,7 @@ func NewMulK() blocks.Block {
 	return &MulK{
 		in:  blocks.NewTypedInput[float64](),
 		out: blocks.NewTypedOutput[float64](),
-		k:   blocks.NewTypedParam(1.0),
+		k:   blocks.NewTypedParam(1.0, blocks.NewNone[float64]()),
 	}
 }
 

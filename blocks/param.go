@@ -4,35 +4,34 @@ import (
 	"reflect"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	goconstraints "golang.org/x/exp/constraints"
 )
 
 type Param interface {
 	GetValueType() string
 	GetDefaultVal() any
-	GetConstraints() []Constraint
+	GetConstraint() Constraint
 	GetCurrentVal() any
 	SetCurrentVal(any) error
 }
 
 type TypedParam[T goconstraints.Ordered] struct {
 	CurrentVal, DefaultVal T
-	Constraints            []*TypedConstraint[T]
+	Constraint             *TypedConstraint[T]
 	ValueType              string
 }
 
 func NewTypedParam[T goconstraints.Ordered](
 	defaultVal T,
-	constraints ...*TypedConstraint[T],
+	constr *TypedConstraint[T],
 ) *TypedParam[T] {
 	var zeroVal T
 
 	return &TypedParam[T]{
-		ValueType:   reflect.TypeOf(zeroVal).String(),
-		CurrentVal:  zeroVal,
-		DefaultVal:  defaultVal,
-		Constraints: constraints,
+		ValueType:  reflect.TypeOf(zeroVal).String(),
+		CurrentVal: zeroVal,
+		DefaultVal: defaultVal,
+		Constraint: constr,
 	}
 }
 
@@ -40,8 +39,8 @@ func (p *TypedParam[T]) GetDefaultVal() any {
 	return p.DefaultVal
 }
 
-func (p *TypedParam[T]) GetConstraints() []Constraint {
-	return sliceutils.Map(p.Constraints, func(c *TypedConstraint[T]) Constraint { return c })
+func (p *TypedParam[T]) GetConstraint() Constraint {
+	return p.Constraint
 }
 
 func (p *TypedParam[T]) GetValueType() string {
@@ -61,10 +60,8 @@ func (p *TypedParam[T]) SetCurrentVal(val any) error {
 		return commonerrs.NewErrWrongType(actual, expected)
 	}
 
-	for _, c := range p.Constraints {
-		if err := c.CheckVal(t); err != nil {
-			return err
-		}
+	if err := p.Constraint.CheckVal(t); err != nil {
+		return err
 	}
 
 	p.CurrentVal = t

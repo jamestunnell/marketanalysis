@@ -20,7 +20,7 @@ func NewAddK() blocks.Block {
 	return &AddK{
 		in:  blocks.NewTypedInput[float64](),
 		out: blocks.NewTypedOutput[float64](),
-		k:   blocks.NewTypedParam(0.0),
+		k:   blocks.NewTypedParam(0.0, blocks.NewNone[float64]()),
 	}
 }
 

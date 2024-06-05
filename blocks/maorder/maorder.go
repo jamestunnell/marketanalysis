@@ -32,9 +32,9 @@ func New() blocks.Block {
 	return &MAOrder{
 		in:          blocks.NewTypedInput[float64](),
 		out:         blocks.NewTypedOutput[float64](),
-		numPeriods:  blocks.NewTypedParam(5, blocks.NewInclusiveMin(2)),
-		periodStart: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
-		periodSpan:  blocks.NewTypedParam(20, blocks.NewInclusiveMin(2)),
+		numPeriods:  blocks.NewTypedParam(5, blocks.NewGreaterEqual(2)),
+		periodStart: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
+		periodSpan:  blocks.NewTypedParam(20, blocks.NewGreaterEqual(2)),
 		maOrdering:  nil,
 	}
 }

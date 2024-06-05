@@ -32,9 +32,9 @@ const (
 
 func New() blocks.Block {
 	return &MultiTrend{
-		numInputs:   blocks.NewTypedParam(2, blocks.NewInclusiveMin(1)),
-		thresh:      blocks.NewTypedParam(0.375, blocks.NewInclusiveMin(0.0), blocks.NewExclusiveMax(1.0)),
-		votesNeeded: blocks.NewTypedParam(1, blocks.NewInclusiveMin(1)),
+		numInputs:   blocks.NewTypedParam(2, blocks.NewGreaterEqual(1)),
+		thresh:      blocks.NewTypedParam(0.375, blocks.NewRangeExcl(0.0, 1.0)),
+		votesNeeded: blocks.NewTypedParam(1, blocks.NewGreaterEqual(1)),
 		ins:         []*blocks.TypedInput[float64]{},
 		inNames:     []string{},
 		out:         blocks.NewTypedOutput[float64](),

@@ -35,8 +35,8 @@ func New() blocks.Block {
 		trend:     blocks.NewTypedOutput[float64](),
 		lower:     blocks.NewTypedOutput[float64](),
 		upper:     blocks.NewTypedOutput[float64](),
-		atrPeriod: blocks.NewTypedParam(20, blocks.NewInclusiveMin(1)),
-		atrMul:    blocks.NewTypedParam(5.0, blocks.NewExclusiveMin(0.0)),
+		atrPeriod: blocks.NewTypedParam(20, blocks.NewGreaterEqual(1)),
+		atrMul:    blocks.NewTypedParam(5.0, blocks.NewGreater(0.0)),
 		atr:       nil,
 	}
 }

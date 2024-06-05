@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &SMA{
-		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
 		sma:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),

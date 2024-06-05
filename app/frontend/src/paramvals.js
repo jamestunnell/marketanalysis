@@ -18,26 +18,24 @@ function computeStep(min, max) {
     return Math.pow(10.0, Math.ceil(x - 1.0))
 }
 
-const RangeParamRow = ({param, currentVal, step, updateVal, errMsg}) => {
-    const min = param.limits[0]
-    const max = param.limits[1]
-    const labelText = `${capitalize(param.name)}: (${min}-${max}):`;
+const EnterNumberRow = ({name, currentVal, min, max, step, updateVal, errMsg}) => {
+    const labelText = `${capitalize(name)}: (${min}-${max}):`;
 
     const status = ButtonIconTooltip({
         icon: () => (errMsg.val.length > 0) ? IconError() : IconCheck(),
         tooltipText: van.derive(() => (errMsg.val.length > 0) ? `Value is invalid: ${errMsg.val}` : "Value is valid"),
     });
     const rowItems = [
-        label({for: param.name}, labelText),
+        label({for: name}, labelText),
         input({
-            id: param.name,
+            id: name,
             type: "number",
             class: inputClass,
             value: currentVal,
-            min: min,
-            max: max,
-            step: step,
-            onchange: e => {
+            min,
+            max,
+            step,
+            onchange: (e) => {
                 const err = updateVal(e.target.value)
                 if (err) {
                     errMsg.val = err.message
@@ -52,18 +50,8 @@ const RangeParamRow = ({param, currentVal, step, updateVal, errMsg}) => {
     return TableRow(rowItems)
 }
 
-const IntRangeParamRow = ({param, currentVal, updateVal, errMsg}) => {
-    return RangeParamRow({param, currentVal, step: 1, updateVal, errMsg})
-}
-
-const FltRangeParamRow = ({param, currentVal, updateVal, errMsg}) => {
-    const step = computeStep(param.limits[0], param.limits[1])
-
-    return RangeParamRow({param, currentVal, step, updateVal, errMsg})
-}
-
-const EnumParamRow = ({param, currentVal, updateVal, errMsg}) => {
-    const options = param.limits.map(allowedVal => {
+const SelectValueRow = ({name, allowedVals, currentVal, updateVal}) => {
+    const options = allowedVals.map(allowedVal => {
         let props = {value: allowedVal};
         
         if (allowedVal === currentVal) {
@@ -72,17 +60,17 @@ const EnumParamRow = ({param, currentVal, updateVal, errMsg}) => {
 
         return option(props, allowedVal);
     });
-    const status = ButtonIconTooltip({
-        icon: () => (errMsg.val.length > 0) ? IconError() : IconCheck(),
-        tooltipText: van.derive(() => (errMsg.val.length > 0) ? `Value is invalid: ${errMsg.val}` : "Value is valid"),
-    });
+    // const status = ButtonIconTooltip({
+    //     icon: () => (errMsg.val.length > 0) ? IconError() : IconCheck(),
+    //     tooltipText: van.derive(() => (errMsg.val.length > 0) ? `Value is invalid: ${errMsg.val}` : "Value is valid"),
+    // });
 
     const rowItems = [
-        label({for: param.name}, capitalize(param.name)),
+        label({for: name}, capitalize(name)),
         select({
-            id: param.name,
+            id: name,
             class: inputClass,
-            oninput: e => {
+            oninput: (e) => {
                 const err = updateVal(e.target.value)
                 if (err) {
                     errMsg.val = err.message
@@ -91,92 +79,147 @@ const EnumParamRow = ({param, currentVal, updateVal, errMsg}) => {
                 }
             },
         }, options),
-        status,
+        // status,
     ]
 
     return TableRow(rowItems)
 }
 
+const IntParamRow = ({param, value, errMsg}) => {
+    const updateVal = (strVal) => {
+        const newVal = parseInt(strVal)
+        if (isNaN(newVal)) {
+            return new Error(`${strVal} is not an integer`)
+        }
+    
+        value.val = newVal
+    
+        return validateParamVal(param, newVal)
+    }
+    const name = param.name
+    const step = 1
+    const currentVal = value.val
+
+    let min
+    let max
+
+    switch (param.constraint.type) {
+        case 'oneOf':
+            return SelectValueRow({currentVal, name, updateVal, allowedVals: param.constraint.limits})
+        case 'less':
+            min = Number.MIN_SAFE_INTEGER
+            max = param.constraint.limits[0]-1
+
+            return EnterNumberRow({name, currentVal, step, max, updateVal})
+        case 'lessEqual':
+            min = Number.MIN_SAFE_INTEGER
+            max = param.constraint.limits[0]
+
+            return EnterNumberRow({name, currentVal, step, max, updateVal})
+        case 'greater':
+            min = param.constraint.limits[0]+1
+            max = Number.MAX_SAFE_INTEGER
+
+            return EnterNumberRow({name, currentVal, step, min, updateVal})
+        case 'greaterEqual':
+            min = param.constraint.limits[0]
+            max = Number.MAX_SAFE_INTEGER
+
+            return EnterNumberRow({name, currentVal, step, min, updateVal})
+        case 'rangeIncl':
+            min = param.constraint.limits[0]
+            max = param.constraint.limits[1]
+
+            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+        case 'rangeExcl':
+            min = param.constraint.limits[0]
+            max = param.constraint.limits[1]-1
+
+            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+    }
+
+    console.log(`unsupported int constraint type ${param.constraint.type}`)
+
+    return null
+} 
+
+const FloatParamRow = ({param, value, errMsg}) => {
+    const updateVal = (strVal) => {
+        const newVal = parseFloat(strVal)
+        if (isNaN(newVal)) {
+            return new Error(`${strVal} is not an float`)
+        }
+
+        value.val = newVal
+
+        const err = validateParamVal(param, newVal)
+        if (err) {
+            errMsg.val = err.message
+        }
+    }
+
+    const name = param.name
+    const currentVal = value.val
+
+    let min
+    let max
+    let step
+    
+    switch (param.constraint.type) {
+        case 'oneOf':
+            return SelectValueRow({currentVal: value.val, name: param.name, allowedVals: param.limits, updateVal, errMsg})
+        case 'less':
+            min = Number.MIN_VALUE
+            max = param.constraint.limits[0]-Number.EPSILON
+            step = 0.01
+
+            return EnterNumberRow({name, currentVal, step, max, updateVal})
+        case 'lessEqual':
+            min = Number.MIN_VALUE
+            max = param.constraint.limits[0]
+            step = 0.01
+
+            return EnterNumberRow({name, currentVal, step, max, updateVal})
+        case 'greater':
+            min = param.constraint.limits[0]+Number.EPSILON
+            max = Number.MAX_VALUE
+            step = 0.01
+
+            return EnterNumberRow({name, currentVal, step, min, updateVal})
+        case 'greaterEqual':
+            min = param.constraint.limits[0]
+            max = Number.MAX_VALUE
+            step = 0.01
+
+            return EnterNumberRow({name, currentVal, step, min, updateVal})
+        case 'rangeIncl':
+            min = param.constraint.limits[0]
+            max = param.constraint.limits[1]
+            step = computeStep(param.limits[0], param.limits[1])
+
+            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+        case 'rangeExcl':
+            min = param.constraint.limits[0]
+            max = param.constraint.limits[1]-Number.EPSILON
+            step = computeStep(param.limits[0], param.limits[1])
+
+            return EnterNumberRow({name, currentVal, step, min, max, updateVal})
+    }
+
+    console.log(`unsupported float64 constraint type ${param.constraint.type}`)
+
+    return null
+}
+
 const ParamRow = ({param, value, errMsg}) => {
     switch (param.type) {
-    case "IntEnum":
-        return EnumParamRow({
-            param,
-            errMsg,
-            currentVal: value.val,
-            updateVal: (strVal) => {
-                const newVal = parseInt(strVal)
-                if (isNaN(newVal)) {
-                    return new Error(`${strVal} is not an integer`)
-                }
-
-                value.val = newVal
-
-                return validateParamVal(param, newVal)
-            },
-        })
-    case "FltEnum":
-        return EnumParamRow({
-            param,
-            errMsg,
-            currentVal: value.val,
-            updateVal: (strVal) => {
-                const newVal = parseFloat(strVal)
-                if (isNaN(newVal)) {
-                    return new Error(`${strVal} is not an float`)
-                }
-
-                value.val = newVal
-
-                return validateParamVal(param, newVal)
-            }
-        })
-    case "StrEnum":
-        return EnumParamRow({
-            param,
-            errMsg,
-            currentVal: value.val,
-            updateVal: (strVal) => {
-                value.val = strVal
-                
-                return validateParamVal(param, strVal)
-            },
-        })
-    case "IntRange":
-        return IntRangeParamRow({
-            param,
-            errMsg,
-            currentVal: value.val,
-            updateVal: (strVal) => {
-                const newVal = parseInt(strVal)
-                if (isNaN(newVal)) {
-                    return new Error(`${strVal} is not an integer`)
-                }
-
-                value.val = newVal
-
-                return validateParamVal(param, value.val)
-            },
-        })
-    case "FltRange":
-        return FltRangeParamRow({
-            param,
-            errMsg,
-            currentVal: value.val,
-            updateVal: (strVal) => {
-                const newVal = parseFloat(strVal)
-                if (isNaN(newVal)) {
-                    return new Error(`${strVal} is not an float`)
-                }
-
-                value.val = newVal
-
-                return validateParamVal(param, value.val)
-            }
-        })
+    case "int":
+        return IntParamRow({param, errMsg, value})
+    case "float64":
+        return FloatParamRow({param, errMsg, value})
     }
     
-    console.log(`unknown param type ${param.type}`)
+    console.log(`unsupported param type ${param.type}`)
 
     return null;
 }

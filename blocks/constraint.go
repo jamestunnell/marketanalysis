@@ -21,31 +21,43 @@ type TypedConstraint[T goconstraints.Ordered] struct {
 }
 
 const (
-	ExclusiveMax ConstraintType = iota
-	ExclusiveMin
-	InclusiveMax
-	InclusiveMin
+	None ConstraintType = iota
+	Less
+	LessEqual
+	Greater
+	GreaterEqual
+	RangeIncl
+	RangeExcl
 	OneOf
 
-	StrExclusiveMax = "ExclusiveMax"
-	StrExclusiveMin = "ExclusiveMin"
-	StrInclusiveMax = "InclusiveMax"
-	StrInclusiveMin = "InclusiveMin"
-	StrOneOf        = "OneOf"
+	StrNone         = "none"
+	StrLess         = "less"
+	StrLessEqual    = "lessEqal"
+	StrGreater      = "greater"
+	StrGreaterEqual = "greaterEqual"
+	StrRangeIncl    = "rangeIncl"
+	StrRangeExcl    = "rangeExcl"
+	StrOneOf        = "oneOf"
 )
 
 func (t ConstraintType) String() string {
 	var s string
 
 	switch t {
-	case ExclusiveMax:
-		s = StrExclusiveMax
-	case ExclusiveMin:
-		s = StrExclusiveMin
-	case InclusiveMax:
-		s = StrInclusiveMax
-	case InclusiveMin:
-		s = StrInclusiveMin
+	case None:
+		s = StrNone
+	case Less:
+		s = StrLess
+	case LessEqual:
+		s = StrLessEqual
+	case Greater:
+		s = StrGreater
+	case GreaterEqual:
+		s = StrGreaterEqual
+	case RangeExcl:
+		s = StrRangeExcl
+	case RangeIncl:
+		s = StrRangeIncl
 	case OneOf:
 		s = StrOneOf
 	}
@@ -53,20 +65,36 @@ func (t ConstraintType) String() string {
 	return s
 }
 
-func NewExclusiveMax[T goconstraints.Ordered](max T) *TypedConstraint[T] {
-	return &TypedConstraint[T]{Type: ExclusiveMax, Limits: []T{max}}
+func NewNone[T goconstraints.Ordered]() *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: None, Limits: []T{}}
 }
 
-func NewInclusiveMin[T goconstraints.Ordered](min T) *TypedConstraint[T] {
-	return &TypedConstraint[T]{Type: InclusiveMin, Limits: []T{min}}
+func NewLess[T goconstraints.Ordered](val T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: Less, Limits: []T{val}}
 }
 
-func NewExclusiveMin[T goconstraints.Ordered](min T) *TypedConstraint[T] {
-	return &TypedConstraint[T]{Type: ExclusiveMin, Limits: []T{min}}
+func NewLessEqual[T goconstraints.Ordered](val T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: LessEqual, Limits: []T{val}}
 }
 
-func NewInclusiveMax[T goconstraints.Ordered](max T) *TypedConstraint[T] {
-	return &TypedConstraint[T]{Type: InclusiveMax, Limits: []T{max}}
+func NewGreater[T goconstraints.Ordered](val T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: Greater, Limits: []T{val}}
+}
+
+func NewGreaterEqual[T goconstraints.Ordered](val T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: GreaterEqual, Limits: []T{val}}
+}
+
+func NewRangeExcl[T goconstraints.Ordered](start, end T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: RangeExcl, Limits: []T{start, end}}
+}
+
+func NewRangeIncl[T goconstraints.Ordered](start, end T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: RangeIncl, Limits: []T{start, end}}
+}
+
+func NewOneOf[T goconstraints.Ordered](vals []T) *TypedConstraint[T] {
+	return &TypedConstraint[T]{Type: OneOf, Limits: vals}
 }
 
 func (c *TypedConstraint[T]) GetType() ConstraintType {
@@ -81,21 +109,30 @@ func (c *TypedConstraint[T]) CheckVal(val T) error {
 	var err error
 
 	switch c.Type {
-	case ExclusiveMax:
+	case None:
+	case Less:
 		if val >= c.Limits[0] {
-			err = fmt.Errorf("%v is not less than %v", val, c.Limits[0])
+			err = fmt.Errorf("%v is not < %v", val, c.Limits[0])
 		}
-	case ExclusiveMin:
+	case Greater:
 		if val <= c.Limits[0] {
-			err = fmt.Errorf("%v is not greater than %v", val, c.Limits[0])
+			err = fmt.Errorf("%v is not > %v", val, c.Limits[0])
 		}
-	case InclusiveMax:
+	case LessEqual:
 		if val > c.Limits[0] {
-			err = fmt.Errorf("%v is greater than %v", val, c.Limits[0])
+			err = fmt.Errorf("%v is not <= %v", val, c.Limits[0])
 		}
-	case InclusiveMin:
+	case GreaterEqual:
 		if val < c.Limits[0] {
-			err = fmt.Errorf("%v is less than %v", val, c.Limits[0])
+			err = fmt.Errorf("%v is not >= %v", val, c.Limits[0])
+		}
+	case RangeExcl:
+		if val < c.Limits[0] || val >= c.Limits[1] {
+			err = fmt.Errorf("%v is not in range [%v, %v)", val, c.Limits[0], c.Limits[1])
+		}
+	case RangeIncl:
+		if val < c.Limits[0] || val > c.Limits[1] {
+			err = fmt.Errorf("%v is not in range [%v, %v]", val, c.Limits[0], c.Limits[1])
 		}
 	case OneOf:
 		if !slices.Contains(c.Limits, val) {

@@ -19,7 +19,7 @@ const (
 
 func New() blocks.Block {
 	return &ATR{
-		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
 		atr:    nil,
 		out:    blocks.NewTypedOutput[float64](),
 	}

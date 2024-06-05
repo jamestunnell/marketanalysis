@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &DMI{
-		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
 		dmi:    nil,
 		pdi:    blocks.NewTypedOutput[float64](),
 		ndi:    blocks.NewTypedOutput[float64](),

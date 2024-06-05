@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &Aroon{
-		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		period: blocks.NewTypedParam(10, blocks.NewGreaterEqual(1)),
 		aroon:  nil,
 		in:     blocks.NewTypedInput[float64](),
 		up:     blocks.NewTypedOutput[float64](),
