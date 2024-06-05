@@ -1,6 +1,8 @@
 package emv
 
 import (
+	"fmt"
+
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
@@ -11,8 +13,8 @@ type EMV struct {
 	current *blocks.TypedOutput[float64]
 	average *blocks.TypedOutput[float64]
 
-	period *blocks.IntRange
-	scale  *blocks.FltRange
+	period *blocks.TypedParam[int]
+	scale  *blocks.TypedParam[float64]
 }
 
 const (
@@ -30,8 +32,8 @@ func New() blocks.Block {
 		emv:     nil,
 		current: blocks.NewTypedOutput[float64](),
 		average: blocks.NewTypedOutput[float64](),
-		period:  &blocks.IntRange{Default: 14, Min: 1, Max: 1000},
-		scale:   &blocks.FltRange{Default: 10000.0, Min: 1000.0, Max: 1000000.0},
+		period:  blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		scale:   blocks.NewTypedParam(100000.0, blocks.NewExclusiveMin(0.0)),
 	}
 }
 
@@ -70,7 +72,12 @@ func (blk *EMV) IsWarm() bool {
 }
 
 func (blk *EMV) Init() error {
-	blk.emv = indicators.NewEMV(blk.period.Value, blk.scale.Value)
+	emv, err := indicators.NewEMV(blk.period.CurrentVal, blk.scale.CurrentVal)
+	if err != nil {
+		return fmt.Errorf("failed to make EMV indicator: %w", err)
+	}
+
+	blk.emv = emv
 
 	return nil
 }

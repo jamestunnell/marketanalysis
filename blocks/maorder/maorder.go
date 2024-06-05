@@ -11,9 +11,9 @@ type MAOrder struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
 
-	numPeriods  *blocks.IntRange
-	periodStart *blocks.IntRange
-	periodSpan  *blocks.IntRange
+	numPeriods  *blocks.TypedParam[int]
+	periodStart *blocks.TypedParam[int]
+	periodSpan  *blocks.TypedParam[int]
 
 	maOrdering *indicators.MAOrdering
 }
@@ -32,9 +32,9 @@ func New() blocks.Block {
 	return &MAOrder{
 		in:          blocks.NewTypedInput[float64](),
 		out:         blocks.NewTypedOutput[float64](),
-		numPeriods:  &blocks.IntRange{Default: 2, Min: 2, Max: 25},
-		periodStart: &blocks.IntRange{Default: 2, Min: 2, Max: 100},
-		periodSpan:  &blocks.IntRange{Default: 2, Min: 2, Max: 900},
+		numPeriods:  blocks.NewTypedParam(5, blocks.NewInclusiveMin(2)),
+		periodStart: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
+		periodSpan:  blocks.NewTypedParam(20, blocks.NewInclusiveMin(2)),
 		maOrdering:  nil,
 	}
 }
@@ -72,9 +72,9 @@ func (blk *MAOrder) IsWarm() bool {
 }
 
 func (blk *MAOrder) Init() error {
-	start := blk.periodStart.Value
-	span := blk.periodSpan.Value
-	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.Value)
+	start := blk.periodStart.CurrentVal
+	span := blk.periodSpan.CurrentVal
+	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.CurrentVal)
 
 	blk.maOrdering = indicators.NewMAOrdering(periods)
 

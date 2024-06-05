@@ -12,8 +12,8 @@ type Supertrend struct {
 	in                  *blocks.TypedInput[float64]
 	trend, lower, upper *blocks.TypedOutput[float64]
 
-	atrPeriod *blocks.IntRange
-	atrMul    *blocks.FltRange
+	atrPeriod *blocks.TypedParam[int]
+	atrMul    *blocks.TypedParam[float64]
 	atr       *indicators.ATR
 	prevVal   *models.OHLC
 }
@@ -35,8 +35,8 @@ func New() blocks.Block {
 		trend:     blocks.NewTypedOutput[float64](),
 		lower:     blocks.NewTypedOutput[float64](),
 		upper:     blocks.NewTypedOutput[float64](),
-		atrPeriod: &blocks.IntRange{Default: 20, Min: 1, Max: 1000},
-		atrMul:    &blocks.FltRange{Default: 5.0, Min: 0.1, Max: 100.0},
+		atrPeriod: blocks.NewTypedParam(20, blocks.NewInclusiveMin(1)),
+		atrMul:    blocks.NewTypedParam(5.0, blocks.NewExclusiveMin(0.0)),
 		atr:       nil,
 	}
 }
@@ -79,7 +79,7 @@ func (blk *Supertrend) IsWarm() bool {
 }
 
 func (blk *Supertrend) Init() error {
-	blk.atr = indicators.NewATR(blk.atrPeriod.Value)
+	blk.atr = indicators.NewATR(blk.atrPeriod.CurrentVal)
 
 	return nil
 }
@@ -93,7 +93,7 @@ func (blk *Supertrend) Update(cur *models.Bar) {
 		return
 	}
 
-	atr := blk.atr.Current() * blk.atrMul.Value
+	atr := blk.atr.Current() * blk.atrMul.CurrentVal
 	in := blk.in.GetValue()
 	upper := in + atr
 	lower := in - atr

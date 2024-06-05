@@ -7,7 +7,7 @@ import (
 )
 
 type SMA struct {
-	period *blocks.IntRange
+	period *blocks.TypedParam[int]
 	sma    *indicators.SMA
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutput[float64]
@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &SMA{
-		period: &blocks.IntRange{Default: 10, Min: 1, Max: 1000},
+		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
 		sma:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),
@@ -62,7 +62,7 @@ func (blk *SMA) IsWarm() bool {
 }
 
 func (blk *SMA) Init() error {
-	blk.sma = indicators.NewSMA(blk.period.Value)
+	blk.sma = indicators.NewSMA(blk.period.CurrentVal)
 
 	return nil
 }

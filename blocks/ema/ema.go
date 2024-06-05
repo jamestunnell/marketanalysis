@@ -7,7 +7,7 @@ import (
 )
 
 type EMA struct {
-	period *blocks.IntRange
+	period *blocks.TypedParam[int]
 	ema    *indicators.EMA
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutput[float64]
@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &EMA{
-		period: &blocks.IntRange{Default: 10, Min: 1, Max: 1000},
+		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
 		ema:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),
@@ -62,7 +62,7 @@ func (blk *EMA) IsWarm() bool {
 }
 
 func (blk *EMA) Init() error {
-	blk.ema = indicators.NewEMA(blk.period.Value)
+	blk.ema = indicators.NewEMA(blk.period.CurrentVal)
 
 	return nil
 }

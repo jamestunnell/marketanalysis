@@ -13,9 +13,9 @@ type MultiTrend struct {
 	inNames []string
 	out     *blocks.TypedOutput[float64]
 
-	numInputs   *blocks.IntRange
-	thresh      *blocks.FltRange
-	votesNeeded *blocks.IntRange
+	numInputs   *blocks.TypedParam[int]
+	thresh      *blocks.TypedParam[float64]
+	votesNeeded *blocks.TypedParam[int]
 
 	dirs     []models.Direction
 	minVotes int
@@ -32,9 +32,9 @@ const (
 
 func New() blocks.Block {
 	return &MultiTrend{
-		numInputs:   &blocks.IntRange{Min: 2, Max: 100, Default: 1},
-		thresh:      &blocks.FltRange{Min: 0.0, Max: 0.75, Default: 0.375},
-		votesNeeded: &blocks.IntRange{Min: 1, Max: 100, Default: 1},
+		numInputs:   blocks.NewTypedParam(2, blocks.NewInclusiveMin(1)),
+		thresh:      blocks.NewTypedParam(0.375, blocks.NewInclusiveMin(0.0), blocks.NewExclusiveMax(1.0)),
+		votesNeeded: blocks.NewTypedParam(1, blocks.NewInclusiveMin(1)),
 		ins:         []*blocks.TypedInput[float64]{},
 		inNames:     []string{},
 		out:         blocks.NewTypedOutput[float64](),
@@ -82,11 +82,11 @@ func (blk *MultiTrend) IsWarm() bool {
 }
 
 func (blk *MultiTrend) Init() error {
-	if blk.votesNeeded.Value > blk.numInputs.Value {
-		return commonerrs.NewErrMoreThanMax("votes needed", blk.votesNeeded.Value, blk.numInputs.Value)
+	if blk.votesNeeded.CurrentVal > blk.numInputs.CurrentVal {
+		return commonerrs.NewErrMoreThanMax("votes needed", blk.votesNeeded.CurrentVal, blk.numInputs.CurrentVal)
 	}
 
-	numIns := blk.numInputs.Value
+	numIns := blk.numInputs.CurrentVal
 	ins := make([]*blocks.TypedInput[float64], numIns)
 	inNames := make([]string, numIns)
 	dirs := make([]models.Direction, numIns)
@@ -116,7 +116,7 @@ func (blk *MultiTrend) Update(_ *models.Bar) {
 
 	// update directions for each input
 	for i, in := range blk.ins {
-		dir := UpdateDirection(in.GetValue(), blk.thresh.Value, blk.dirs[i])
+		dir := UpdateDirection(in.GetValue(), blk.thresh.CurrentVal, blk.dirs[i])
 
 		switch dir {
 		case models.DirUp:
@@ -128,9 +128,9 @@ func (blk *MultiTrend) Update(_ *models.Bar) {
 		blk.dirs[i] = dir
 	}
 
-	if votesUp >= blk.votesNeeded.Value {
+	if votesUp >= blk.votesNeeded.CurrentVal {
 		blk.out.SetValue(1.0)
-	} else if votesDown >= blk.votesNeeded.Value {
+	} else if votesDown >= blk.votesNeeded.CurrentVal {
 		blk.out.SetValue(-1.0)
 	} else {
 		blk.out.SetValue(0.0)

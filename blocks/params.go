@@ -28,7 +28,7 @@ func (ps Params) GetNonDefaultValues() ParamVals {
 	vals := ParamVals{}
 
 	for name, ps := range ps {
-		if val := ps.GetVal(); val != ps.GetDefault() {
+		if val := ps.GetCurrentVal(); val != ps.GetDefaultVal() {
 			vals[name] = val
 		}
 	}
@@ -42,10 +42,10 @@ func (ps Params) SetValuesOrDefault(vals ParamVals) error {
 	for name, p := range ps {
 		val, found := vals[name]
 		if !found {
-			val = p.GetDefault()
+			val = p.GetDefaultVal()
 		}
 
-		if err := p.SetVal(val); err != nil {
+		if err := p.SetCurrentVal(val); err != nil {
 			errs = append(errs, err)
 		}
 	}

@@ -126,7 +126,7 @@ func (cfg *Configuration) Validate() []error {
 				continue
 			}
 
-			if err := param.SetVal(val); err != nil {
+			if err := param.SetCurrentVal(val); err != nil {
 				err = fmt.Errorf("block %s: param %s: value %v is invalid: %w", bName, pName, val, err)
 
 				errs = append(errs, err)

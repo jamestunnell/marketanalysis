@@ -7,7 +7,7 @@ import (
 )
 
 type ATR struct {
-	period *blocks.IntRange
+	period *blocks.TypedParam[int]
 	atr    *indicators.ATR
 	out    *blocks.TypedOutput[float64]
 }
@@ -19,7 +19,7 @@ const (
 
 func New() blocks.Block {
 	return &ATR{
-		period: &blocks.IntRange{Default: 14, Min: 1, Max: 1000},
+		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
 		atr:    nil,
 		out:    blocks.NewTypedOutput[float64](),
 	}
@@ -58,7 +58,7 @@ func (blk *ATR) IsWarm() bool {
 }
 
 func (blk *ATR) Init() error {
-	blk.atr = indicators.NewATR(blk.period.Value)
+	blk.atr = indicators.NewATR(blk.period.CurrentVal)
 
 	return nil
 }

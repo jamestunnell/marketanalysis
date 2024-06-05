@@ -1,6 +1,7 @@
 package indicators
 
 import (
+	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -12,13 +13,19 @@ type EMV struct {
 	sma      *SMA
 }
 
-func NewEMV(period int, scale float64) *EMV {
-	return &EMV{
+func NewEMV(period int, scale float64) (*EMV, error) {
+	if scale <= 0.0 {
+		return nil, commonerrs.NewErrNotPositive("scale", scale)
+	}
+
+	emv := &EMV{
 		prevOHLC: nil,
 		emv:      0.0,
 		scale:    scale,
 		sma:      NewSMA(period),
 	}
+
+	return emv, nil
 }
 
 func (ind *EMV) WarmupPeriod() int {

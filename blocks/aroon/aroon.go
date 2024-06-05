@@ -7,7 +7,7 @@ import (
 )
 
 type Aroon struct {
-	period *blocks.IntRange
+	period *blocks.TypedParam[int]
 	aroon  *indicators.Aroon
 	in     *blocks.TypedInput[float64]
 	up     *blocks.TypedOutput[float64]
@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &Aroon{
-		period: &blocks.IntRange{Default: 10, Min: 1, Max: 1000},
+		period: blocks.NewTypedParam(10, blocks.NewInclusiveMin(1)),
 		aroon:  nil,
 		in:     blocks.NewTypedInput[float64](),
 		up:     blocks.NewTypedOutput[float64](),
@@ -67,7 +67,7 @@ func (blk *Aroon) IsWarm() bool {
 }
 
 func (blk *Aroon) Init() error {
-	blk.aroon = indicators.NewAroon(blk.period.Value)
+	blk.aroon = indicators.NewAroon(blk.period.CurrentVal)
 
 	return nil
 }
