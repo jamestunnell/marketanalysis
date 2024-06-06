@@ -1,11 +1,11 @@
 import van from "vanjs-core"
 import Datepicker from 'flowbite-datepicker/Datepicker'
 
-import { INPUT_CLASS } from "./input"
 import { Get, PostJSON, PutJSON } from "./backend"
 
 const { div, input, label, nav, ul } = van.tags
 
+const INPUT_CLASS = "px-1 py-1 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring"
 const SETTINGS_CONTAINER_ID = "settings"
 
 function loadSetting(name) {
@@ -143,20 +143,14 @@ class GraphSettings {
     render() {
         return div(
             nav(
-                {class: "nav font-semibold text-md bg-gray-100 shadow shadow-gray-200"},
+                {class: "nav bg-gray-100 shadow shadow-gray-200"},
                 div(
-                    {class: "container flex text-gray-300 w-full"},
-                    ul(
-                        {id: SETTINGS_CONTAINER_ID, class: "flex items-center font-semibold flex-wrap"},
-                        label({for: "date"}, "Symbol"),
-                        this.symbolInput,
-                        label({for: "date"}, "Date"),
-                        this.dateInput
-    
-                        // NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute}),
-                        // NavBarItem({text: 'Securities', route: 'securities', routeArgs: [], currentRoute}),
-                        // NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute}),
-                    )
+                    {id: SETTINGS_CONTAINER_ID, class: "container flex w-full pt-2 pb-2 space-x-2 items-center"},
+                    // {, class: "flex  flex-wrap"},
+                    label({for: "date", class: "pl-4 font-semibold"}, "Symbol"),
+                    this.symbolInput,
+                    label({for: "date", class: "pl-4 font-semibold"}, "Date"),
+                    this.dateInput
                 )
             )
         ) 
