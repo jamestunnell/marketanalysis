@@ -1,12 +1,12 @@
 import van from "vanjs-core"
 import Datepicker from 'flowbite-datepicker/Datepicker'
 
-import { getSecurities } from "./securities"
 import { INPUT_CLASS } from "./input"
 import { Get, PostJSON, PutJSON } from "./backend"
-import { AppErrorAlert } from './apperror'
 
-const { div, input, label, nav, option, select, ul } = van.tags
+const { div, input, label, nav, ul } = van.tags
+
+const SETTINGS_CONTAINER_ID = "settings"
 
 function loadSetting(name) {
     return new Promise((resolve, reject) => {
@@ -92,17 +92,16 @@ class GraphSettings {
         this.date = van.state('')
         this.symbol = van.state('')
 
-        this.selectSymbol = select({
+        this.symbolInput = input({
             id: "symbol",
             class: INPUT_CLASS,
+            type: "text",
+            placeholder: "SPY, QQQ, etc.",
             oninput: e => {
-                console.log(`changed symbol to ${e.target.value}`, e)
-
-                storeSetting({name: "symbol", value: e.target.value}).then(() => {
-                    this.symbol.val = e.target.value
-                })
-            }
-        }, option({value: ""}, ""))
+                this.symbol.val = e.target.value
+            },
+            onchange: e => storeSetting({name: "symbol", value: e.target.value}),
+        })
         this.dateInput = input({
             id: "actionDate",
             class: INPUT_CLASS,
@@ -120,7 +119,7 @@ class GraphSettings {
 
         const datePickerOpts = {
             autohide: true,
-            container: "#graphSettings",
+            container: `#${SETTINGS_CONTAINER_ID}`,
             daysOfWeekDisabled: [0, 6], // disable saturday and sunday
             format: "yyyy-mm-dd",
             maxDate: new Date(), // today
@@ -130,35 +129,14 @@ class GraphSettings {
     }
 
     load() {
-        // clear all the existing options
-        while (this.selectSymbol.firstChild) {
-            this.selectSymbol.removeChild(this.selectSymbol.firstChild)
-        }
-        
-        Promise.all([
-            getSecurities(),
-            loadSetting("symbol"),
-            loadSetting("date"),
-        ]).then(values => {
-            const symbols = values[0].map(obj => obj.symbol)
-            const selectedSymbol = values[1].value
-            const selectedDate = values[2].value
+        loadSetting("symbol").then(setting => {
+            this.symbolInput.value = setting.value
+            this.symbol.val = setting.value
+        })
 
-            const opts = symbols.map(sym => {
-                return option({value: sym, selected: sym === selectedSymbol}, sym)
-            });
-    
-            this.symbol.val = (symbols.indexOf(selectedSymbol) >= 0) ? selectedSymbol : ''
-            
-            van.add(this.selectSymbol, option({value: ""}, ""))
-            van.add(this.selectSymbol, opts);
-
-            this.date.val = selectedDate
-            this.dateInput.value = selectedDate
-        }).catch(appErr => {
-            console.log("failed to resolve all promises", appErr)
-    
-            AppErrorAlert(appErr)
+        loadSetting("date").then(setting => {
+            this.dateInput.value = setting.value
+            this.date.val = setting.value
         })
     }
 
@@ -169,10 +147,9 @@ class GraphSettings {
                 div(
                     {class: "container flex text-gray-300 w-full"},
                     ul(
-                        {id: "graphSettings", class: "flex items-center font-semibold flex-wrap"},
-                        "Settings",
+                        {id: SETTINGS_CONTAINER_ID, class: "flex items-center font-semibold flex-wrap"},
                         label({for: "date"}, "Symbol"),
-                        this.selectSymbol,
+                        this.symbolInput,
                         label({for: "date"}, "Date"),
                         this.dateInput
     

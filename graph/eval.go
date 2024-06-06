@@ -2,6 +2,7 @@ package graph
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -17,6 +18,7 @@ import (
 )
 
 func EvalSlope(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	evalDate date.Date,
@@ -43,7 +45,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, evalDate, loc, load, showWarmup)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, load, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}

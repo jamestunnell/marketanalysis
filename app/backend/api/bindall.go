@@ -4,14 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func BindAll(r *mux.Router, db *mongo.Database, sync backend.Synchronizer) {
+func BindAll(r *mux.Router, db *mongo.Database) {
 	graphs := NewGraphs(db)
-	securities := NewSecurities(db, sync)
 	settings := NewCRUDAPI(stores.NewSettings(db))
 
 	r.Handle("/blocks/{type}", NewGetBlockInfo()).Methods(http.MethodGet) //, http.MethodOptions)
@@ -21,6 +19,5 @@ func BindAll(r *mux.Router, db *mongo.Database, sync backend.Synchronizer) {
 	r.Handle("/bars/{symbol}/{date}", NewGetBars(db))
 
 	settings.Bind(r)
-	securities.Bind(r)
 	graphs.Bind(r)
 }

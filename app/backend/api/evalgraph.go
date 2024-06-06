@@ -64,11 +64,11 @@ func (a *Graphs) EvalSlope(
 		return
 	}
 
-	load := a.makeLoadFunc(ctx, eval.Symbol)
+	loader := backend.NewBarSetLoader(a.DB, eval.Symbol, loc)
 
 	recording, err := graph.EvalSlope(
-		cfg, eval.Symbol, eval.Date,
-		loc, load, eval.ShowWarmup,
+		ctx, cfg, eval.Symbol, eval.Date,
+		loc, loader.Load, eval.ShowWarmup,
 		eval.Source, eval.Predictor, eval.Horizon)
 	if err != nil {
 		appErr := backend.NewErrActionFailed("eval graph", err.Error())

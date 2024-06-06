@@ -42,10 +42,10 @@ func (a *Graphs) BacktestGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	load := a.makeLoadFunc(r.Context(), bt.Symbol)
+	loader := backend.NewBarSetLoader(a.DB, bt.Symbol, loc)
 
 	recording, err := graph.Backtest(
-		cfg, bt.Symbol, bt.Date, loc, load, bt.ShowWarmup, bt.Predictor, bt.Threshold)
+		r.Context(), cfg, bt.Symbol, bt.Date, loc, loader.Load, bt.ShowWarmup, bt.Predictor, bt.Threshold)
 	if err != nil {
 		appErr := backend.NewErrActionFailed("backtest graph", err.Error())
 

@@ -19,7 +19,6 @@ import (
 	"github.com/jamestunnell/marketanalysis/app/backend/api"
 	"github.com/jamestunnell/marketanalysis/app/backend/env"
 	"github.com/jamestunnell/marketanalysis/app/backend/server"
-	"github.com/jamestunnell/marketanalysis/app/backend/synchronization"
 )
 
 const (
@@ -53,7 +52,6 @@ func main() {
 	defer disconnectFromDB(client)
 
 	db := client.Database(DBName)
-	sync := synchronization.NewSynchronizer(db)
 
 	srv, router := server.New(vars.Port)
 
@@ -68,10 +66,7 @@ func main() {
 	// ))
 	router.Use(mux.MiddlewareFunc(loggingMiddleware))
 
-	api.BindAll(srv.GetRouter(), db, sync)
-
-	sync.Start()
-	defer sync.Stop()
+	api.BindAll(srv.GetRouter(), db)
 
 	srv.Start()
 	defer srv.Stop()

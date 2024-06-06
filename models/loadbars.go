@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"time"
@@ -10,9 +11,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type LoadBarsFunc func(d date.Date) (Bars, error)
+type LoadBarsFunc func(ctx context.Context, d date.Date) (Bars, error)
 
 func LoadRunBars(
+	ctx context.Context,
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
@@ -24,7 +26,7 @@ func LoadRunBars(
 	primaryBars := Bars{}
 
 	for d := startDate.Add(0); !d.After(endDate); d = d.Add(1) {
-		bars, err := load(d)
+		bars, err := load(ctx, d)
 		if err != nil {
 			return Bars{}, fmt.Errorf("failed to load day bars for %s: %w", d, err)
 		}
@@ -59,7 +61,7 @@ func LoadRunBars(
 			ts.Start(),
 		)
 
-		bars, err := load(warmupDate)
+		bars, err := load(ctx, warmupDate)
 		if err != nil {
 			return Bars{}, fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
 		}

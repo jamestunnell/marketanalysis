@@ -9,15 +9,12 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 
 	"github.com/jamestunnell/marketanalysis/app/backend"
 	bemodels "github.com/jamestunnell/marketanalysis/app/backend/models"
-	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
-	"github.com/jamestunnell/marketanalysis/models"
 )
 
 func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
@@ -50,19 +47,6 @@ func (a *Graphs) RunGraph(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Graphs) makeLoadFunc(ctx context.Context, symbol string) models.LoadBarsFunc {
-	store := stores.NewBarSets(symbol, a.DB)
-
-	return func(d date.Date) (models.Bars, error) {
-		set, appErr := store.Get(ctx, d.String())
-		if appErr != nil {
-			return models.Bars{}, appErr
-		}
-
-		return set.Bars, nil
-	}
-}
-
 func (a *Graphs) RunDay(
 	ctx context.Context,
 	w http.ResponseWriter,
@@ -87,10 +71,10 @@ func (a *Graphs) RunDay(
 		return
 	}
 
-	load := a.makeLoadFunc(ctx, runDay.Symbol)
+	loader := backend.NewBarSetLoader(a.DB, runDay.Symbol, loc)
 
 	timeSeries, err := graph.RunDay(
-		cfg, runDay.Symbol, runDay.Date, loc, load, runDay.ShowWarmup)
+		ctx, cfg, runDay.Symbol, runDay.Date, loc, loader.Load, runDay.ShowWarmup)
 	if err != nil {
 		appErr := backend.NewErrActionFailed("run graph", err.Error())
 

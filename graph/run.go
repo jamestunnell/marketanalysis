@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -33,6 +34,7 @@ func init() {
 }
 
 func RunDay(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	d date.Date,
@@ -40,10 +42,11 @@ func RunDay(
 	load models.LoadBarsFunc,
 	showWarmup bool,
 ) (*models.TimeSeries, error) {
-	return Run(cfg, symbol, GetCoreHours(d), loc, load, showWarmup)
+	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, load, showWarmup)
 }
 
 func Run(
+	ctx context.Context,
 	cfg *Configuration,
 	symbol string,
 	ts timespan.TimeSpan,
@@ -68,7 +71,7 @@ func Run(
 	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := models.LoadRunBars(symbol, ts, loc, load, g.GetWarmupPeriod())
+	bars, err := models.LoadRunBars(ctx, symbol, ts, loc, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}

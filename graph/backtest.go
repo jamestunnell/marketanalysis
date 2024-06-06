@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -13,6 +14,7 @@ import (
 )
 
 func Backtest(
+	ctx context.Context,
 	graphConfig *Configuration,
 	symbol string,
 	testDate date.Date,
@@ -42,7 +44,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(graphConfig, symbol, testDate, loc, load, showWarmup)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, load, showWarmup)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
