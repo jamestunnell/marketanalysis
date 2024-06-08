@@ -20,11 +20,10 @@ func Backtest(
 	testDate date.Date,
 	loc *time.Location,
 	load models.LoadBarsFunc,
-	showWarmup bool,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
-	graphConfig.ClearAllRecording()
+	graphConfig.ClearAllRecorded()
 
 	log.Debug().
 		Stringer("date", testDate).
@@ -32,10 +31,10 @@ func Backtest(
 		Msg("backtesting graph")
 
 	sourceBlkCfg := &BlockConfig{
-		Name:      "source-" + nanoid.Must(),
-		Type:      "Bar",
-		ParamVals: map[string]any{},
-		Recording: []string{"close"},
+		Name:            "source-" + nanoid.Must(),
+		Type:            "Bar",
+		ParamVals:       map[string]any{},
+		RecordedOutputs: []string{"close"},
 	}
 
 	graphConfig.Blocks = append(graphConfig.Blocks, sourceBlkCfg)

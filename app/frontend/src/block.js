@@ -2,12 +2,11 @@ import van from "vanjs-core"
 import hash from 'object-hash';
 
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.js';
-import { ButtonGroup } from "./buttongroup.js";
 import { IconCheck, IconClose, IconCollapsed, IconDelete, IconError, IconExpanded } from "./icons.js";
+import { InputSourcesTable } from './inputsource.js'
 import { ParamValsTable, validateParamVal } from './paramvals.js'
-import { EditRecordingModal } from "./recording.js";
 import { ModalBackground, ModalForeground } from "./modal.js";
-import { TableRow } from './table.js';
+import { RecordedOutputsTable } from './recordedoutput.js'
 import { truncateString } from "./truncatestring.js";
 
 const {div, input, li, ul, option, p, select, span} = van.tags
@@ -42,14 +41,16 @@ function validateBlock({block, info, otherNames}) {
         return paramErrs[0]
     }
 
-    const recordingErrs = block.recording.map(name => {
+    // TODO - validate inputs sources
+
+    const recordedOutsErrs = block.recordedOutputs.map(name => {
         const out = info.outputs.find(o => o.name === name)
 
         return out ? null : new Error(`failed to find output ${name} marked for recording`)
     }).filter(err => err)
 
-    if (recordingErrs.length > 0) {
-        return recordingErrs[0]
+    if (recordedOutsErrs.length > 0) {
+        return recordedOutsErrs[0]
     }
 
     return null
@@ -84,24 +85,11 @@ class BlockItem {
 
     editModal() {
         const blockBefore = this.block.val
-        const connectionsBefore = this.parent.connections
         const closed = van.state(false)
-        const onComplete = ({block, connections}) => {
-            let changed = false
-
+        const onComplete = (block) => {
             if (hash(block) !== hash(blockBefore)) {
                 this.block.val = block
                 
-                changed = true
-            }
-
-            if (hash(connections) !== hash(connectionsBefore)) {
-                this.parent.connections = connections
-
-                changed = true
-            }
-
-            if (changed) {
                 this.parent.updateDigest()
             }
     
@@ -117,7 +105,7 @@ class BlockItem {
             block: blockBefore,
             info: this.info,
             otherNames: this.parent.blockNames().filter(name => name !== blockBefore.name),
-            connections: connectionsBefore,
+            possibleSources: this.parent.getPossibleSources(),
             onComplete, onCancel, onDelete,
         })
         const modal = ModalBackground(
@@ -127,11 +115,13 @@ class BlockItem {
             ),
         )
     
+        console.log("editing block", blockBefore)
+
         van.add(document.body, () => closed.val ? null : modal);
     }
 }
 
-const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCancel, onDelete}) => {
+const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, onCancel, onDelete}) => {
     const type = block.type
     const nameWorking = van.state(block.name)
     const paramValsWorking = Object.fromEntries(info.params.map(p => {
@@ -139,19 +129,47 @@ const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCanc
 
         return [p.name, van.state(nonDefaultVal ?? p.default)]
     }))
+    const inputSourcesWorking = Object.fromEntries(info.inputs.map(input => {
+        const nonEmptySource  = block.inputSources[input.name]
+
+        return [input.name, van.state(nonEmptySource ?? "")]
+    }))
+    const recordedOutputsWorking = Object.fromEntries(info.outputs.map(output => {
+        const idx = block.recordedOutputs.indexOf(output.name)
+
+        return [output.name, van.state(idx >= 0)]
+    }))
     const paramsCollapsed = van.state(false)
     const inputsCollapsed = van.state(false)
     const outputsCollapsed = van.state(false)
     const modifiedBlock = van.derive(() => {
-        const nonDefaultVals = {}
+        const paramVals = {}
+        const inputSources = {}
+        const recordedOutputs = []
 
         Object.entries(paramValsWorking).forEach(([name, value]) => {
             if (value.val !== info.params.find(p => p.name === name).default) {
-                nonDefaultVals[name] = value.val
+                paramVals[name] = value.val
             }
         })
 
-        return {name: nameWorking.val, type: block.type, paramVals: nonDefaultVals, recording: block.recording}
+        Object.entries(inputSourcesWorking).forEach(([name, source]) => {
+            if (source.val.length > 0) {
+                inputSources[name] = source.val
+            }
+        })
+
+        Object.entries(recordedOutputsWorking).forEach(([name, checked]) => {
+            if (checked.val) {
+                recordedOutputs.push(name)
+            }
+        })
+
+        return {
+            name: nameWorking.val,
+            type: block.type,
+            paramVals, inputSources, recordedOutputs,
+        }
     })
     const nameInput = input({
         class: inputClass,
@@ -178,7 +196,7 @@ const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCanc
     const ok = Button({
         child: "OK",
         disabled: validateErr,
-        onclick: () => onComplete({block: modifiedBlock.val}),
+        onclick: () => onComplete(modifiedBlock.val),
     })
     const cancel = ButtonCancel({child: "Cancel", onclick: onCancel})
 
@@ -214,7 +232,7 @@ const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCanc
                 ParamValsTable({
                     params: info.params,
                     paramVals: paramValsWorking,
-                }),    
+                }),
             ),
             span({class: "mb-2"}),
         ),
@@ -230,7 +248,11 @@ const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCanc
             ),
             div(
                 {hidden: inputsCollapsed},
-                info.inputs.map(input => span(input.name)),
+                InputSourcesTable({
+                    inputs: info.inputs,
+                    inputSources: inputSourcesWorking,
+                    possibleSources,
+                }),
             ),
             span({class: "mb-2"}),
         ),
@@ -246,7 +268,10 @@ const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCanc
             ),
             div(
                 {hidden: outputsCollapsed},
-                info.outputs.map(output => span(output.name)),
+                RecordedOutputsTable({
+                    outputs: info.outputs,
+                    recordedOutputs: recordedOutputsWorking,
+                })
             ),
             span({class: "mb-2"}),
         ),
@@ -286,7 +311,7 @@ const AddBlockForm = ({infoByType, blockNames, onComplete, onCancel}) => {
                 name = candidate()
             }
 
-            const block = {type: selectedType.val, name, paramVals: {}, recording: []}
+            const block = {type: selectedType.val, name, paramVals: {}, inputSources: {}, recordedOutputs: []}
     
             onComplete({info, block})
         },

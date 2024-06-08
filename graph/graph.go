@@ -95,7 +95,7 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 
 func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, error) {
 	blks := Blocks{}
-	conns := slices.Clone(m.Connections)
+	conns := []*Connection{}
 	recordName := "record-" + nanoid.Must()
 	recordIns := map[string]*blocks.TypedInput[float64]{}
 	recordInsAsync := map[string]*blocks.TypedInputAsync[float64]{}
@@ -118,7 +118,11 @@ func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, er
 
 		blks[cfg.Name] = blk
 
-		for _, outName := range cfg.Recording {
+		for inputName, sourceAddr := range cfg.InputSources {
+			conns = append(conns, &Connection{Source: sourceAddr, Target: &Address{A: cfg.Name, B: inputName}})
+		}
+
+		for _, outName := range cfg.RecordedOutputs {
 			out, found := blk.GetOutputs()[outName]
 			if !found {
 				err := fmt.Errorf("block %s: recording output '%s' not found", cfg.Name, outName)

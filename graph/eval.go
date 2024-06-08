@@ -24,11 +24,10 @@ func EvalSlope(
 	evalDate date.Date,
 	loc *time.Location,
 	load models.LoadBarsFunc,
-	showWarmup bool,
 	source, predictor *Address,
 	horizon int,
 ) (*models.TimeSeries, error) {
-	graphConfig.ClearAllRecording()
+	graphConfig.ClearAllRecorded()
 
 	log.Debug().
 		Stringer("date", evalDate).

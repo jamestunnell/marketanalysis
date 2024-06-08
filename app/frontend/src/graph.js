@@ -7,12 +7,11 @@ import { Get, PutJSON } from './backend.js';
 import { BacktestGraph } from './backtestgraph.js'
 import { AddBlockModal, BlockItem } from "./block.js";
 import { ButtonGroup } from './buttongroup.js'
-import { ButtonIcon, ButtonIconDisableable } from "./buttons.js";
-import { ConnectionRow } from "./connection.js";
+import { Button, ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { DownloadJSON } from "./download.js";
 import { EvalGraph } from './evalgraph.js'
 import GraphSettings from "./graphsettings.js"
-import { IconAdd, IconExport, IconImport, IconMagnifyDollar, IconPlay, IconSave, IconStethoscope } from "./icons.js";
+import { IconAdd, IconExport, IconSave } from "./icons.js";
 import { PlotRecording } from './plot.js'
 import { runDay } from './rungraph.js'
 import { Table } from './table.js';
@@ -122,6 +121,7 @@ class PageContent {
         this.id = graph.id
         this.digest = van.state(digest)
         this.digestSaved = van.state(digest)
+        this.digestsAgree = van.derive(() => this.digest.val === this.digestSaved.val)
         this.name = van.state(graph.name)
         this.infoByType = infoByType
 
@@ -141,9 +141,10 @@ class PageContent {
             div(
                 {class: "grid grid-cols-5 items-center"},
                 div(
-                    {class:"flex flex-row"},
+                    {class:"flex flex-row space-x-3"},
                     p({class: "pl-4 text-lg font-semibold"}, this.name),
                     this.renderExportButton(),
+                    this.renderSaveButton(),
                 ),
                 div(
                     {class: "col-span-4 flex flex-row-reverse pt-2 pb-2 space-x-2 items-center"},
@@ -164,7 +165,6 @@ class PageContent {
             this.plotArea,
         )
         this.recording = null
-        this.connections = graph.connections
 
         // Create a new ResizeObserver instance
         const pageResizeObserver = new ResizeObserver(entries => {
@@ -214,6 +214,19 @@ class PageContent {
         return this.blockItems.map(item => item.getName())
     }
 
+    getPossibleSources(targetBlockName) {
+        const sources = []
+
+        this.blockItems.forEach(item => {
+            const blockName = item.getName()
+            if (blockName === targetBlockName) { return }
+
+            item.info.outputs.forEach(output => sources.push(blockName +"." + output.name))
+        })
+
+        return sources
+    }
+
     // onBlockNameChange() {
     //     Object.values(this.connRowsByID).forEach(row => row.onBlockNameChange())
     // }
@@ -251,40 +264,30 @@ class PageContent {
         });
     }
 
-    renderViewBlockButton(name) {
-        const addIcon = IconAdd()
-        
-        addIcon.classList.add("text-white", "text-xl")
-
-        return ButtonIcon({
-            icon: addIcon,
-            // text: "Add",
+    renderSaveButton() {
+        return Button({
+            child: IconSave(),
+            disabled: this.digestsAgree,
             onclick: () => {
-                AddBlockModal({
-                    infoByType: this.infoByType,
-                    blockNames: this.blockNames(),
-                    handleResult: ({block, info}) => {
-                        const item = new BlockItem({id: nanoid(), block, info, parent: this})
-                        
-                        this.blockItems.push(item)
+                const graph = this.makeGraph()
 
-                        console.log(`adding ${info.type} block`, info)
+                putGraph({
+                    graph: graph,
+                    onErr: (appErr) => AppErrorAlert(appErr),
+                    onSuccess: () => {
+                        const digest = hash(graph)
                         
-                        this.rebuildBlockButtonsArea()
-                        this.updateDigest()
-                    },
-                })
+                        this.digest.val = digest
+                        this.digestSaved.val = digest
+                    }
+                });
             },
         });
     }
 
     renderExportButton() {
-        const icon = IconExport()
-
-        icon.classList.add("text-white")
-
-        return ButtonIcon({
-            icon,
+        return Button({
+            child: IconExport(),
             // text: "Export",
             onclick: () => DownloadJSON({
                 object: this.makeGraph(),
@@ -332,175 +335,6 @@ class PageContent {
 
     render() { return this.page }
 
-    render2() {
-        const needsSaved = van.derive(() => this.digest.val !== this.digestSaved.val)
-        const disableRun = van.derive(() => {
-            return needsSaved.val || this.settings.symbol.val === '' || this.settings.date.val === ''
-        })
-        const addIcon1 = IconAdd()
-        const addIcon2 = IconAdd()
-        
-        addIcon1.classList.add("text-xl")
-        addIcon2.classList.add("text-xl")
-
-        // const addBlockBtn = ButtonIcon({
-        //     icon: addIcon1,
-        //     // text: "Add",
-        //     onclick: () => {
-        //         AddBlockModal({
-        //             infoByType: this.infoByType,
-        //             blockNames: this.blockNames(),
-        //             handleResult: ({block, info}) => {
-        //                 const id  = nanoid()
-        //                 const row = new BlockRow({id, block, info, parent: this})
-                        
-        //                 console.log(`adding ${info.type} block`, info)
-                        
-        //                 van.add(this.blockTableBody, row.render())
-
-        //                 this.blockRowsByID[id] = row
-        //                 this.updateDigest()
-        //             },
-        //         })
-        //     },
-        // });
-        const addConnBtn = ButtonIcon({
-            icon: addIcon2,
-            // text: "Add",
-            onclick: () => {
-                const connection = {source: "", target: ""}
-                const id = nanoid()
-                const row = new ConnectionRow({id, connection, parent: this})
-
-                van.add(this.connTableBody, row.render())
-
-                this.connRowsByID[id] = row
-                this.updateDigest()
-            },
-        });
-        const runBtn = ButtonIconDisableable({
-            icon: IconPlay(),
-            // text: "Run",
-            disabled: disableRun,
-            onclick: () => {
-                RunGraph({
-                    graph: this.makeGraph(),
-                    settings: this.settings,
-                })
-            },
-        });
-        const evalBtn = ButtonIconDisableable({
-            icon: IconStethoscope(),
-            // text: "Eval",
-            disabled: disableRun,
-            onclick: () => EvalGraph({
-                graph: this.makeGraph(),
-                infoByType: this.infoByType,
-                settings: this.settings,
-            }),
-        });
-        const backtestBtn = ButtonIconDisableable({
-            icon: IconMagnifyDollar(),
-            // text: "$$$",
-            disabled: disableRun,
-            onclick: () => BacktestGraph({
-                graph: this.makeGraph(),
-                infoByType: this.infoByType,
-                settings: this.settings,
-            }),
-        });
-        const saveBtn = ButtonIconDisableable({
-            icon: IconSave(),
-            // text: "Save",
-            disabled: van.derive(() => !needsSaved.val),
-            onclick: () => {
-                const graph = this.makeGraph()
-
-                putGraph({
-                    graph: graph,
-                    onErr: (appErr) => AppErrorAlert(appErr),
-                    onSuccess: () => {
-                        const digest = hash(graph)
-                        
-                        this.digest.val = digest
-                        this.digestSaved.val = digest
-                    }
-                });
-            },
-        });
-
-        // const importBtn = ButtonIcon({
-        //     icon: IconImport(),
-        //     // text: "Import",
-        //     onclick: () => {
-        //         UploadJSON({
-        //             onSuccess: (g) => {
-        //                 if (g.id === this.id) {
-        //                     this.importGraph(g)
-    
-        //                     console.log("imported graph file")
-    
-        //                     return
-        //                 }
-                        
-        //                 AppErrorAlert({
-        //                     title: "Invalid Input",
-        //                     message: "Graph IDs do not match",
-        //                     details: ["Go to the Graphs page to import as a different graph."],
-        //                 })
-        //             },
-        //             onErr: (appErr) => AppErrorAlert(appErr),
-        //         })
-        //     },
-        //     disabled: van.derive(() => Object.keys(this.infoByType).length == 0),
-        // });
-
-        return div(
-            {class: "container p-4 w-full flex flex-col divide-y divide-gray-400"},
-            div(
-                {class: "grid grid-cols-2"},
-                div(
-                    {class: "flex flex-row p-3"},
-                    p({class: "text-2xl font-medium font-bold"}, this.name),
-                ),
-                ButtonGroup({
-                    buttons: [saveBtn, runBtn, evalBtn, backtestBtn, exportBtn],
-                    moreClass: "place-self-end",
-                })
-            ),
-            div(
-                {class: "flex flex-col mt-4"},
-                div(
-                    {class: "grid grid-cols-2"},
-                    div(
-                        {class: "flex flex-row p-2"},
-                        p({class: "p-3 m-1 text-xl font-medium"}, "Blocks"),
-                    ),
-                    div(
-                        {class: "flex flex-row-reverse p-2"},
-                        addBlockBtn,
-                    )
-                ),
-                Table({columnNames: ["Name", "Type", "Parameters", "Recording", "", ""], tableBody: this.blockTableBody}),
-            ),
-            div(
-                {class: "flex flex-col mt-4"},
-                div(
-                    {class: "grid grid-cols-2"},
-                    div(
-                        {class: "flex flex-row p-2"},
-                        p({class: "p-3 m-1 text-xl font-medium"}, "Connections"),
-                    ),
-                    div(
-                        {class: "flex flex-row-reverse p-2"},
-                        addConnBtn,
-                    )
-                ),
-                Table({columnNames: ["Block", "Output", "Block", "Input", "", ""], tableBody: this.connTableBody}),
-            )
-        )
-    }
-
     updateDigest() {
         const graph = this.makeGraph()
         const digest = hash(graph)
@@ -517,7 +351,6 @@ class PageContent {
             id: this.id,
             name: this.name.val,
             blocks: Object.values(this.blockItems).map(item => item.makeBlock()),
-            connections: this.connections,//Object.values(this.connRowsByID).map(row => row.makeConnection()),
         }
 
         console.log("made graph", graph)

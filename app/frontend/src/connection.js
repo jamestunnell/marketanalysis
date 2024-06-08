@@ -5,7 +5,7 @@ import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.j
 import { IconCheck, IconDelete, IconError } from './icons.js'
 import { TableRow } from './table.js'
 
-const {datalist, div, input, label, option, p} = van.tags
+const {datalist, div, input, label, option, p, select} = van.tags
 
 const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 
@@ -43,6 +43,87 @@ function validateConnection({connection, findBlockInfo}) {
     }
 
     return null
+}
+
+class ConnectionItem {
+    constructor({id, connection, parent}) {
+        this.connection = van.state(connection)
+        this.parent = parent
+    }
+
+    makeConnection() {
+        return this.connection.val
+    }
+
+    renderSelectSourceRow({targetBlock, targetInput, validateErr}) {
+        connection = this.connection.val
+        target = targetBlock + "." + targetInput
+        source = van.state(connection.source)
+
+        van.derive(() => {
+            if (source.val.length === 0) {
+                validateErr.val = new Error("connection has no source")
+            } else {
+                validateErr.val = validateConnection({
+                    connection: {source: source.val, target},
+                    findBlockInfo: (name) => this.parent.findBlockInfo(name),
+                })
+            }
+        })
+        const statusBtn = ButtonIconTooltip({
+            icon: () => validateErr.val ? IconError() : IconCheck(),
+            tooltipText: van.derive(() => validateErr.val ? `Connection is invalid: ${validateErr.val.message}` : "Connection is valid"),
+        });
+        const sourceOpts = this.parent.possibleSources()
+        const selectSource = select({}, sourceOpts)
+
+        const rowItems = [
+            span(this.connection.target),
+            div(
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.sourceOutputsDatalist.getAttribute('id'),
+                    value: this.sourceOutput.val,
+                    placeholder: "<block output>",
+                    oninput: e => this.sourceOutput.val = e.target.value,
+                }),
+                this.sourceOutputsDatalist,
+            ),
+            div(
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.targetBlocksDatalist.getAttribute('id'),
+                    value: this.targetBlock.val,
+                    placeholder: "<target block>",
+                    oninput: e => {
+                        const targetBlock = e.target.value
+                        
+                        this.targetBlock.val = targetBlock
+                        
+                        this.updateTargetDatalistOptions(targetBlock, this.targetInput.val)
+                    },
+                }),
+                this.targetBlocksDatalist,
+            ),
+            div(
+                input({
+                    class: inputClass,
+                    type: "text",
+                    list: this.targetInputsDatalist.getAttribute('id'),
+                    value: this.targetInput.val,
+                    placeholder: "<block input>",
+                    oninput: e => this.targetInput.val = e.target.value,
+                }),
+                this.targetInputsDatalist,
+            ),
+            deleteBtn,
+            statusBtn
+        ];
+    
+        return () => this.deleted.val ? null : TableRow(rowItems);
+    }
 }
 
 class ConnectionRow {
@@ -288,4 +369,4 @@ const DoConnectionModal = ({connection, handleResult}) => {
     );
 }
 
-export {ConnectionRow, DoConnectionModal, validateConnection};
+export {ConnectionItem, DoConnectionModal, validateConnection};
