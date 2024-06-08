@@ -61,7 +61,7 @@ func (blk *Div2) Init() error {
 	return nil
 }
 
-func (blk *Div2) Update(_ *models.Bar) {
+func (blk *Div2) Update(_ *models.Bar, isLast bool) {
 	if !blk.in1.IsValueSet() || !blk.in2.IsValueSet() {
 		return
 	}

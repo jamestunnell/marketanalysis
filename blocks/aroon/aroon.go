@@ -72,7 +72,7 @@ func (blk *Aroon) Init() error {
 	return nil
 }
 
-func (blk *Aroon) Update(_ *models.Bar) {
+func (blk *Aroon) Update(_ *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

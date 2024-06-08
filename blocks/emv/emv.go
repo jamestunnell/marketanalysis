@@ -82,7 +82,7 @@ func (blk *EMV) Init() error {
 	return nil
 }
 
-func (blk *EMV) Update(cur *models.Bar) {
+func (blk *EMV) Update(cur *models.Bar, isLast bool) {
 	blk.emv.Update(cur)
 
 	if !blk.emv.PartlyWarm() {

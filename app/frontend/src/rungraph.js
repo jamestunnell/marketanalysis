@@ -35,14 +35,4 @@ const runDay = ({graph, symbol, date}) => {
     });
 }
 
-// const RunGraph = ({graph, settings}) => {
-//     const runDisabled = van.state(false)
-//     const doAction = ({date, symbol, showWarmup}) => {
-//         return runGraph({id: graph.id, symbol, date, showWarmup})
-//     }
-//     const inputElems = []
-
-//     GraphActionModal({ actionName: "run", settings, graph, inputElems, runDisabled, doAction })
-// }
-
 export {runDay};

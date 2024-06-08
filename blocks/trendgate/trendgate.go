@@ -87,7 +87,7 @@ func (blk *TrendGate) Init() error {
 	return nil
 }
 
-func (blk *TrendGate) Update(cur *models.Bar) {
+func (blk *TrendGate) Update(cur *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

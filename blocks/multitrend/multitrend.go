@@ -104,7 +104,7 @@ func (blk *MultiTrend) Init() error {
 	return nil
 }
 
-func (blk *MultiTrend) Update(_ *models.Bar) {
+func (blk *MultiTrend) Update(_ *models.Bar, isLast bool) {
 	for _, in := range blk.ins {
 		if !in.IsValueSet() {
 			return

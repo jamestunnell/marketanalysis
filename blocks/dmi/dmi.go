@@ -73,7 +73,7 @@ func (blk *DMI) Init() error {
 	return nil
 }
 
-func (blk *DMI) Update(cur *models.Bar) {
+func (blk *DMI) Update(cur *models.Bar, isLast bool) {
 	blk.dmi.Update(cur)
 
 	if !blk.dmi.Warm() {

@@ -13,7 +13,7 @@ type Block interface {
 	IsWarm() bool
 
 	Init() error
-	Update(*models.Bar)
+	Update(current *models.Bar, isLast bool)
 }
 
 func ClearOutputs(blk Block) {

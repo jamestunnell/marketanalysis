@@ -97,8 +97,8 @@ func Run(
 		Int("run bars", len(bars)-wuPeriod).
 		Msgf("running model")
 
-	for _, bar := range bars {
-		g.Update(bar)
+	for i, bar := range bars {
+		g.Update(bar, i == (len(bars)-1))
 	}
 
 	if err = r.Finalize(); err != nil {

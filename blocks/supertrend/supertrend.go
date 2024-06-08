@@ -84,7 +84,7 @@ func (blk *Supertrend) Init() error {
 	return nil
 }
 
-func (blk *Supertrend) Update(cur *models.Bar) {
+func (blk *Supertrend) Update(cur *models.Bar, isLast bool) {
 	defer blk.updatePrev(cur.OHLC)
 
 	blk.atr.Update(cur.OHLC)

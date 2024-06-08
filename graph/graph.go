@@ -184,7 +184,7 @@ func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []strin
 	return maxWU, nil
 }
 
-func (m *Graph) Update(bar *models.Bar) {
+func (m *Graph) Update(bar *models.Bar, isLast bool) {
 	log.Trace().Msg("updating graph")
 
 	for _, blk := range m.blocks {
@@ -196,6 +196,6 @@ func (m *Graph) Update(bar *models.Bar) {
 
 		log.Trace().Str("name", name).Msg("running block")
 
-		blk.Update(bar)
+		blk.Update(bar, isLast)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/blocks/aroon"
 	"github.com/jamestunnell/marketanalysis/blocks/atr"
+	"github.com/jamestunnell/marketanalysis/blocks/backtest"
 	"github.com/jamestunnell/marketanalysis/blocks/bar"
 	"github.com/jamestunnell/marketanalysis/blocks/dmi"
 	"github.com/jamestunnell/marketanalysis/blocks/ema"
@@ -32,6 +33,7 @@ var reg = map[string]NewBlockFunc{}
 func init() {
 	Add(aroon.Type, aroon.New)
 	Add(atr.Type, atr.New)
+	Add(backtest.Type, backtest.New)
 	Add(bar.Type, bar.New)
 	Add(dmi.Type, dmi.New)
 	Add(ema.Type, ema.New)

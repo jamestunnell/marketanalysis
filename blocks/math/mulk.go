@@ -62,7 +62,7 @@ func (blk *MulK) Init() error {
 	return nil
 }
 
-func (blk *MulK) Update(_ *models.Bar) {
+func (blk *MulK) Update(_ *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

@@ -11,7 +11,7 @@ import userTimeZone from './timezone.js'
 
 const {div, p} = van.tags
 
-const COLORS = ["royalblue", "seagreen", "plum", "tomato", "goldenrod", "sienna"]
+const COLORS = ["royalblue", "seagreen", "mediumvioletred", "tomato", "goldenrod", "sienna"]
 
 mouseWheelZoom(Highcharts)
 
@@ -95,30 +95,4 @@ function PlotRecording({recording, totalHeight}) {
     return plots
 }
 
-const PlotRecordingModal = (recording) => {
-    const closed = van.state(false);
-    const closeBtn = ButtonIcon({
-        icon: IconClose(),
-        // text: "Close",
-        onclick: () => closed.val = true},
-    )
-    
-    const modal = ModalBackground(
-        div(
-            {class: "block p-8 rounded-lg bg-white min-w-[70%] max-w-[90%] min-h-[70%] max-h-[90%] overflow-y-auto"},
-            div(
-                {class: "flex flex-col"},
-                div(
-                    p({class: "text-xl"}, "Run Results"),
-                    div({class: "float-end"}, closeBtn),
-                ),
-                PlotRecording({recording, totalHeight})
-            )
-        ),
-    )
-
-    // plot results in a follow-up modal
-    van.add(document.body, () => closed.val ? null : modal)
-}
-
-export { PlotRecording, PlotRecordingModal }
+export { PlotRecording }

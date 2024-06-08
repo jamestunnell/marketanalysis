@@ -63,7 +63,7 @@ func (blk *ATR) Init() error {
 	return nil
 }
 
-func (blk *ATR) Update(cur *models.Bar) {
+func (blk *ATR) Update(cur *models.Bar, isLast bool) {
 	blk.atr.Update(cur.OHLC)
 
 	if !blk.atr.Warm() {

@@ -75,7 +75,7 @@ func (blk *Pivots) Init() error {
 	return nil
 }
 
-func (blk *Pivots) Update(cur *models.Bar) {
+func (blk *Pivots) Update(cur *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

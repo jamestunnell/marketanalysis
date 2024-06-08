@@ -85,7 +85,7 @@ func (blk *MAOrder) Init() error {
 	return nil
 }
 
-func (blk *MAOrder) Update(_ *models.Bar) {
+func (blk *MAOrder) Update(_ *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

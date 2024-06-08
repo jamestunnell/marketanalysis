@@ -62,7 +62,7 @@ func (blk *AddK) Init() error {
 	return nil
 }
 
-func (blk *AddK) Update(_ *models.Bar) {
+func (blk *AddK) Update(_ *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

@@ -67,7 +67,7 @@ func (blk *EMA) Init() error {
 	return nil
 }
 
-func (blk *EMA) Update(cur *models.Bar) {
+func (blk *EMA) Update(cur *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

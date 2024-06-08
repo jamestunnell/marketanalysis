@@ -125,17 +125,17 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
     const type = block.type
     const nameWorking = van.state(block.name)
     const paramValsWorking = Object.fromEntries(info.params.map(p => {
-        const nonDefaultVal = block.paramVals[p.name]
+        const nonDefaultVal = block.paramVals ? block.paramVals[p.name] : null
 
         return [p.name, van.state(nonDefaultVal ?? p.default)]
     }))
     const inputSourcesWorking = Object.fromEntries(info.inputs.map(input => {
-        const nonEmptySource  = block.inputSources[input.name]
+        const nonEmptySource  = block.inputSources ? block.inputSources[input.name] : null
 
         return [input.name, van.state(nonEmptySource ?? "")]
     }))
     const recordedOutputsWorking = Object.fromEntries(info.outputs.map(output => {
-        const idx = block.recordedOutputs.indexOf(output.name)
+        const idx = block.recordedOutputs ? block.recordedOutputs.indexOf(output.name) : -1
 
         return [output.name, van.state(idx >= 0)]
     }))

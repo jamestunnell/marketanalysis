@@ -4,12 +4,10 @@ import { nanoid } from 'nanoid'
 
 import { AppErrorAlert} from './apperror.js';
 import { Get, PutJSON } from './backend.js';
-import { BacktestGraph } from './backtestgraph.js'
 import { AddBlockModal, BlockItem } from "./block.js";
 import { ButtonGroup } from './buttongroup.js'
 import { Button, ButtonIcon, ButtonIconDisableable } from "./buttons.js";
 import { DownloadJSON } from "./download.js";
-import { EvalGraph } from './evalgraph.js'
 import GraphSettings from "./graphsettings.js"
 import { IconAdd, IconExport, IconSave } from "./icons.js";
 import { PlotRecording } from './plot.js'
