@@ -82,7 +82,7 @@ const GraphNameForm = ({onOK, onCancel}) => {
         label({for: "name"}, "Name"),
         input({
             id: "name",
-            class: "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring",
+            class: "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring",
             type: "text",
             value: name,
             placeholder: "Unique, non-empty name",

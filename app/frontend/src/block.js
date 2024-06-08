@@ -3,8 +3,8 @@ import hash from 'object-hash';
 
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from './buttons.js';
 import { ButtonGroup } from "./buttongroup.js";
-import { IconCheck, IconEdit, IconDelete, IconError, IconView } from "./icons.js";
-import { EditParamValsModal, validateParamVal } from './paramvals.js'
+import { IconCheck, IconClose, IconCollapsed, IconDelete, IconError, IconExpanded } from "./icons.js";
+import { ParamValsTable, validateParamVal } from './paramvals.js'
 import { EditRecordingModal } from "./recording.js";
 import { ModalBackground, ModalForeground } from "./modal.js";
 import { TableRow } from './table.js';
@@ -12,10 +12,14 @@ import { truncateString } from "./truncatestring.js";
 
 const {div, input, li, ul, option, p, select, span} = van.tags
 
-const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 
 function validateBlock({block, info, otherNames}) {
     console.log("validating block", block)
+
+    if (block.name.length === 0) {
+        return new Error("Name is empty")
+    }
 
     if (otherNames.indexOf(block.name) >= 0) {
         return new Error(`Name '${block.name}' is not unique`)
@@ -51,17 +55,15 @@ function validateBlock({block, info, otherNames}) {
     return null
 }
 
-class BlockRow {
+class BlockItem {
     constructor({id, block, info, parent}) {
         this.id = id
         this.info = info
         this.parent = parent
-        this.deleted = van.state(false)
-
         this.type = block.type
-        this.name = van.state(block.name)
-        this.paramVals = van.state(block.paramVals)
-        this.recording = van.state(block.recording)
+
+        this.block = van.state(block)
+        this.name = van.derive(() => this.block.val.name)
     }
 
     getName() {
@@ -69,119 +71,187 @@ class BlockRow {
     }
     
     makeBlock() {
-        return {
-            name: this.name.val,
-            type: this.type,
-            paramVals: this.paramVals.val,
-            recording: this.recording.val,
-        }
+        return this.block.val
     }
 
     delete() {
-        this.deleted.val = true
+        this.parent.deleteBlock(this.id)
     }
 
-    render() {
-        const nameInput = input({
-            class: inputClass,
-            type: "text",
-            value: this.name.val,
-            placeholder: "Non-empty, unique",
-            oninput: e => {
-                this.name.val = e.target.value
+    renderButton() {
+        return Button({child: this.name, onclick: () => this.editModal()})
+    }
 
-                this.parent.onBlockNameChange()
+    editModal() {
+        const blockBefore = this.block.val
+        const connectionsBefore = this.parent.connections
+        const closed = van.state(false)
+        const onComplete = ({block, connections}) => {
+            let changed = false
+
+            if (hash(block) !== hash(blockBefore)) {
+                this.block.val = block
+                
+                changed = true
+            }
+
+            if (hash(connections) !== hash(connectionsBefore)) {
+                this.parent.connections = connections
+
+                changed = true
+            }
+
+            if (changed) {
                 this.parent.updateDigest()
-            },
-        })
-        const deleteBtn = ButtonIcon({
-            icon: IconDelete(),
-            // text: "Delete",
-            onclick: () => {
-                this.deleted.val = true
+            }
     
-                this.parent.deleteBlockRow(this.id)
-            },
-        });
-        const validateErr = van.derive(() => {
-            const otherRows = this.parent.blockRowsWithoutID(this.id)
-            const otherNames = otherRows.map(r => r.name.val)
-            
-            console.log("using other names", otherNames)
-            
-            return validateBlock({
-                block : this.makeBlock(),
-                info: this.info,
-                otherNames: otherNames,
-            })
-        })
-        const statusBtn = ButtonIconTooltip({
-            icon: () => validateErr.val ? IconError() : IconCheck(),
-            tooltipText: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
-        });
-        const viewParamsBtn = ButtonIconTooltip({
-            icon: IconView(),
-            // text: "View",
-            tooltipText: () => {
-                const items = Object.entries(this.paramVals.val).map(([name, val]) => {
-                    return li(`${name}: ${val}`)
-                })
+            closed.val = true
+        }
+        const onCancel = () => closed.val = true;
+        const onDelete  = () => {
+            closed.val = true
 
-                return items.length === 0 ? p("All values set to defaults") : ul(items)
-            },
+            this.parent.deleteBlock(this.id)
+        }
+        const form = EditBlockForm({
+            block: blockBefore,
+            info: this.info,
+            otherNames: this.parent.blockNames().filter(name => name !== blockBefore.name),
+            connections: connectionsBefore,
+            onComplete, onCancel, onDelete,
         })
-        const viewRecordingBtn = ButtonIconTooltip({
-            icon: IconView(),
-            // text: "View",
-            tooltipText: () => {
-                const items = this.recording.val.map(name => li(name))
-
-                return items.length === 0 ? p("No outputs set to record") : ul(items)
-            },
-        })
-        const editParamsBtn = ButtonIcon({
-            icon: IconEdit(),
-            // text: "Edit",
-            onclick: () => {
-                EditParamValsModal({
-                    params: this.info.params,
-                    paramVals: this.paramVals.val,
-                    onComplete: (paramVals) => {
-                        if (hash(paramVals) === hash(this.paramVals.val)) {
-                            return
-                        }
-
-                        this.paramVals.val = paramVals
-                        this.parent.updateDigest()
-                    },
-                })
-            },
-        })
-        const editRecordingBtn = ButtonIcon({
-            icon: IconEdit(),
-            // text: "Edit",
-            onclick: () => {
-                EditRecordingModal({
-                    outputNames: this.info.outputs.map(o => o.name),
-                    recording: this.recording.val,
-                    onComplete: (recording) => {
-                        if (hash(recording) === hash(this.recording.val)) {
-                            return
-                        }
-
-                        this.recording.val = recording
-                        this.parent.updateDigest()
-                    },
-                })
-            },
-        })
-
-        const paramButtons = ButtonGroup({buttons: [viewParamsBtn, editParamsBtn]})
-        const recordingButtons = ButtonGroup({buttons: [viewRecordingBtn, editRecordingBtn]})
-        const rowItems = [ nameInput, this.type, paramButtons, recordingButtons, deleteBtn, statusBtn]
+        const modal = ModalBackground(
+            div(
+                {class: "block p-8 rounded-lg bg-white z-11"},
+                form,
+            ),
+        )
     
-        return () => this.deleted.val ? null : TableRow(rowItems);
+        van.add(document.body, () => closed.val ? null : modal);
     }
+}
+
+const EditBlockForm = ({block, info, otherNames, connections, onComplete, onCancel, onDelete}) => {
+    const type = block.type
+    const nameWorking = van.state(block.name)
+    const paramValsWorking = Object.fromEntries(info.params.map(p => {
+        const nonDefaultVal = block.paramVals[p.name]
+
+        return [p.name, van.state(nonDefaultVal ?? p.default)]
+    }))
+    const paramsCollapsed = van.state(false)
+    const inputsCollapsed = van.state(false)
+    const outputsCollapsed = van.state(false)
+    const modifiedBlock = van.derive(() => {
+        const nonDefaultVals = {}
+
+        Object.entries(paramValsWorking).forEach(([name, value]) => {
+            if (value.val !== info.params.find(p => p.name === name).default) {
+                nonDefaultVals[name] = value.val
+            }
+        })
+
+        return {name: nameWorking.val, type: block.type, paramVals: nonDefaultVals, recording: block.recording}
+    })
+    const nameInput = input({
+        class: inputClass,
+        type: "text",
+        value: nameWorking,
+        placeholder: "Non-empty, unique",
+        oninput: e => nameWorking.val = e.target.value,
+    })
+    const closeBtn = ButtonIcon({icon: IconClose(), onclick: onCancel})
+    const deleteBtn = ButtonIcon({icon: IconDelete(), onclick: onDelete});
+    const validateErr = van.derive(() => {
+        console.log("using other names", otherNames)
+        
+        return validateBlock({
+            block: modifiedBlock.val,
+            info,
+            otherNames,
+        })
+    })
+    const statusBtn = ButtonIconTooltip({
+        icon: () => validateErr.val ? IconError() : IconCheck(),
+        tooltipText: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
+    });
+    const ok = Button({
+        child: "OK",
+        disabled: validateErr,
+        onclick: () => onComplete({block: modifiedBlock.val}),
+    })
+    const cancel = ButtonCancel({child: "Cancel", onclick: onCancel})
+
+    return div(
+        {class: "flex flex-col divide-y"},
+        div(
+            {class: "grid grid-cols-3"},
+            deleteBtn, statusBtn, closeBtn
+        ),
+        div(
+            {class: "grid grid-cols-2 space-y-2"},
+
+            span({class: "text-md font-medium font-bold"}, "Name"),
+            nameInput,
+
+            span({class: "text-md font-medium font-bold"},"Type"),
+            span(type),
+
+            span({class: "mb-2"}),
+        ),
+        div(
+            {class:"flex flex-col"},
+            div(
+                {class: "flex flex-row items-center"},
+                span({class: "text-xl mt-2 font-medium font-bold"}, "Parameters"),
+                ButtonIcon({
+                    icon: () => paramsCollapsed.val ? IconCollapsed() : IconExpanded(),
+                    onclick: () => paramsCollapsed.val = !paramsCollapsed.val,
+                })
+            ),
+            div(
+                {hidden: paramsCollapsed},
+                ParamValsTable({
+                    params: info.params,
+                    paramVals: paramValsWorking,
+                }),    
+            ),
+            span({class: "mb-2"}),
+        ),
+        div(
+            {class:"flex flex-col"},
+            div(
+                {class: "flex flex-row items-center"},
+                span({class: "text-xl mt-2 font-medium font-bold"}, "Inputs"),
+                ButtonIcon({
+                    icon: () => inputsCollapsed.val ? IconCollapsed() : IconExpanded(),
+                    onclick: () => inputsCollapsed.val = !inputsCollapsed.val,
+                })
+            ),
+            div(
+                {hidden: inputsCollapsed},
+                info.inputs.map(input => span(input.name)),
+            ),
+            span({class: "mb-2"}),
+        ),
+        div(
+            {class:"flex flex-col"},
+            div(
+                {class: "flex flex-row items-center"},
+                span({class: "text-xl mt-2 font-medium font-bold"}, "Outputs"),
+                ButtonIcon({
+                    icon: () => outputsCollapsed.val ? IconCollapsed() : IconExpanded(),
+                    onclick: () => outputsCollapsed.val = !outputsCollapsed.val,
+                })
+            ),
+            div(
+                {hidden: outputsCollapsed},
+                info.outputs.map(output => span(output.name)),
+            ),
+            span({class: "mb-2"}),
+        ),
+        div({class: "flex flex-row-reverse"}, ok, cancel),
+    )
 }
 
 const AddBlockForm = ({infoByType, blockNames, onComplete, onCancel}) => {
@@ -250,4 +320,4 @@ const AddBlockModal = ({infoByType, blockNames, handleResult}) => {
     van.add(document.body, () => closed.val ? null : modal);
 }
 
-export {BlockRow, AddBlockModal};
+export {BlockItem, AddBlockModal};

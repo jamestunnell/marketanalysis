@@ -1,6 +1,7 @@
 import van from 'vanjs-core'
 import { parseISO } from 'date-fns'
 import Highcharts from 'highcharts'
+import mouseWheelZoom from "highcharts/modules/mouse-wheel-zoom";
 
 import { ButtonIcon } from './buttons.js'
 import { IconClose } from './icons.js'
@@ -11,6 +12,8 @@ import userTimeZone from './timezone.js'
 const {div, p} = van.tags
 
 const COLORS = ["royalblue", "seagreen", "plum", "tomato", "goldenrod", "sienna"]
+
+mouseWheelZoom(Highcharts)
 
 function plotColor(idx) {
     return COLORS[idx % COLORS.length]
@@ -26,8 +29,15 @@ const makePlot = ({series, height}) => {
     const plotArea = div()
     const chart = Highcharts.chart(plotArea, {
         chart: {
+            panning: true,
+            panKey: 'shift',
+            animation: false,
             type: 'line',
-            zooming: {type: 'x'},
+            zooming: {
+                enabled: true,
+                mouseWheel: true,
+                type: "x",
+              },
             height,
         },
         title: {enabled: false, text: ""},
@@ -48,7 +58,7 @@ const makePlot = ({series, height}) => {
     return plotArea
 }
 
-function plotRecording({recording, totalHeight}) {
+function PlotRecording({recording, totalHeight}) {
     const qs = {}
 
     recording.quantities.forEach(q => {
@@ -58,7 +68,7 @@ function plotRecording({recording, totalHeight}) {
             return
         }
 
-        console.log(`keeping quantities ${q.name}`)
+        // console.log(`keeping quantities ${q.name}`)
 
         qs[q.name] = q
     })
@@ -76,7 +86,7 @@ function plotRecording({recording, totalHeight}) {
         const series = members.map((name, i) => {
             const valuePairs = qs[name].records.map(r => [tsToUnix(r.t), r.v])
             
-            return {name, data: valuePairs, color: plotColor(i)}
+            return {name, data: valuePairs, color: plotColor(i), animation: false}
         })
     
         return makePlot({series, height})
@@ -92,8 +102,7 @@ const PlotRecordingModal = (recording) => {
         // text: "Close",
         onclick: () => closed.val = true},
     )
-    const totalHeight = window.screen.availHeight * 0.9 * 0.75
-
+    
     const modal = ModalBackground(
         div(
             {class: "block p-8 rounded-lg bg-white min-w-[70%] max-w-[90%] min-h-[70%] max-h-[90%] overflow-y-auto"},
@@ -103,7 +112,7 @@ const PlotRecordingModal = (recording) => {
                     p({class: "text-xl"}, "Run Results"),
                     div({class: "float-end"}, closeBtn),
                 ),
-                plotRecording({recording, totalHeight})
+                PlotRecording({recording, totalHeight})
             )
         ),
     )
@@ -112,4 +121,4 @@ const PlotRecordingModal = (recording) => {
     van.add(document.body, () => closed.val ? null : modal)
 }
 
-export { PlotRecordingModal }
+export { PlotRecording, PlotRecordingModal }

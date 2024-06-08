@@ -4,9 +4,10 @@ import { Route } from 'vanjs-router'
 import GraphsPage from './src/graphs.js'
 import GraphPage from './src/graph.js'
 import NavBar from './src/navbar.js'
-import GraphSettings from "./src/graphsettings.js"
 
 import './index.css';
+
+const {div} = van.tags
 
 const RouteHome = () => {
     return Route(
@@ -16,41 +17,30 @@ const RouteHome = () => {
 }
 
 const RouteGraphs = () => {
-    const graphID = van.state('')
-    const settings = new GraphSettings()
-    
+    const page = div({class:"overflow-hidden"})
+
     return Route(
         {
             name: 'graphs',
             onFirst() {
             },
             onLoad(route) {
-                settings.load()
-                
-                if (route.args.length == 0) {
-                    graphID.val = '';
+                console.log("loaded route", route)
 
-                    return
+                while (page.firstChild) {
+                    page.removeChild(page.firstChild)
                 }
 
-                graphID.val = route.args[0]
+                if (route.args.length === 0) {
+                    van.add(page, NavBar({currentRoute: 'graphs'}))
+                    van.add(page, GraphsPage())
+                } else {
+                    van.add(page, NavBar({currentRoute: `graphs/${route.args[0]}`}))
+                    van.add(page, GraphPage(route.args[0]))
+                }
             }
         },
-        () => {
-            if (graphID.val === '') {
-                return NavBar({currentRoute: 'graphs'})
-            }
-
-            return NavBar({currentRoute: `graphs/${graphID.val}`})
-        },
-        settings.render(),
-        () => {
-            if (graphID.val === '') {
-                return GraphsPage()
-            }
-
-            return GraphPage({id: graphID.val, settings})
-        }
+        page
     )
 }
 

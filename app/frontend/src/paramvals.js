@@ -9,9 +9,10 @@ import { Table, TableRow } from "./table.js";
 
 const { div, input, label, option, p, select, tbody} = van.tags
 
-const inputClass = "block border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+const inputClass = "block border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 
-const EnterNumberRow = ({currentVal, param, step, updateVal, errMsg}) => {
+const EnterNumberRow = ({currentVal, param, step, updateVal}) => {
+    const errMsg = van.state("")
     const inputProps = {
         id: param.name,
         type: "number",
@@ -74,6 +75,7 @@ const EnterNumberRow = ({currentVal, param, step, updateVal, errMsg}) => {
 }
 
 const SelectValueRow = ({param, currentVal, updateVal}) => {
+    const errMsg = van.state("")
     const options = param.constraint.limits.map(allowedVal => {
         let props = {value: allowedVal};
         
@@ -124,7 +126,7 @@ const IntParamRow = ({param, value, errMsg}) => {
 
     switch (param.constraint.type) {
         case 'oneOf':
-            return SelectValueRow({currentVal: value.val, param, updateVal, errMsg})
+            return SelectValueRow({currentVal: value.val, param, updateVal})
         case 'less':
         case 'lessEqual':
         case 'greater':
@@ -132,7 +134,7 @@ const IntParamRow = ({param, value, errMsg}) => {
         case 'rangeIncl':
         case 'rangeExcl':
         case 'none':
-            return EnterNumberRow({currentVal: value.val, step:1, param, updateVal, errMsg})
+            return EnterNumberRow({currentVal: value.val, step:1, param, updateVal})
     }
 
     console.log(`unsupported int constraint type ${param.constraint.type}`)
@@ -154,7 +156,7 @@ const FloatParamRow = ({param, value, errMsg}) => {
 
     switch (param.constraint.type) {
         case 'oneOf':
-            return SelectValueRow({currentVal: value.val, param, updateVal, errMsg})
+            return SelectValueRow({currentVal: value.val, param, updateVal})
         case 'less':
         case 'lessEqual':
         case 'greater':
@@ -162,7 +164,7 @@ const FloatParamRow = ({param, value, errMsg}) => {
         case 'rangeIncl':
         case 'rangeExcl':
         case 'none':
-            return EnterNumberRow({currentVal: value.val, step:0.01, param, updateVal, errMsg})
+            return EnterNumberRow({currentVal: value.val, step:0.01, param, updateVal})
     }
 
     console.log(`unsupported float64 constraint type ${param.constraint.type}`)
@@ -230,79 +232,19 @@ function validateParamVal({param, value}) {
     return err;
 }
 
-const EditParamValsModal = ({params, paramVals, onComplete}) => {
-    const closed = van.state(false)
-
-    params.sort((a,b) => {
-        if (a.name < b.name) {
-            return -1
-        }
-
-        if (a.name > b.name) {
-            return 1
-        }
-
-        return 0
-    })
-
-    const paramValsWorking = Object.fromEntries(params.map(p => {
-        const nonDefaultVal = paramVals[p.name]
-
-        return [p.name, van.state(nonDefaultVal ?? p.default)]
-    }))
-    const errMessages = Object.fromEntries(params.map(p => {
-        return [p.name, van.state("")]
-    }))
-
-    const paramValTableBody = tbody({class:"table-auto"}); 
-    const paramValTable = Table({
-        columnNames: ["Name", "Constraint", "Value", ""],
-        tableBody: paramValTableBody,
-    })
-    const rows = params.map(p => {
+const ParamValsTable = ({params, paramVals}) => {
+    const names = params.map(p => p.name).sort()
+    const rows = names.map(name => {
         return ParamRow({
-            param: p,
-            value: paramValsWorking[p.name],
-            errMsg: errMessages[p.name],
+            param: params.find(p => p.name === name),
+            value: paramVals[name],
         })
     })
-    
-    van.add(paramValTableBody, rows)
 
-    const cancelBtn = ButtonCancel({
-        child: "Cancel",
-        onclick: () => closed.val = true,
+    return Table({
+        columnNames: ["Name", "Constraint", "Value", ""],
+        tableBody: tbody({class:"table-auto"}, rows),
     })
-    const okBtn = Button({
-        child: "OK",
-        disabled: van.derive(() => {
-            return Object.values(errMessages).map(msg => msg.val.length > 0).reduce((result, current) => result || current, false)
-        }),
-        onclick: () => {
-            const nonDefaultVals = {}
-
-            Object.entries(paramValsWorking).forEach(([name, value]) => {
-                if (value.val !== params.find(p => p.name === name).default) {
-                    nonDefaultVals[name] = value.val
-                }
-            })
-
-            onComplete(nonDefaultVals)
-
-            closed.val = true
-        },
-    })
-    const buttons = ButtonGroup({buttons: [cancelBtn, okBtn], moreClass: "self-end"})
-    const modal = ModalBackground(
-        div(
-            {id: "foreground", class: "flex flex-col block p-16 rounded-lg bg-white min-w-[25%] max-w-[50%]"},
-            p({class: "text-lg font-medium font-bold text-center"}, "Edit Parameters"),
-            paramValTable,
-            buttons,
-        )
-    )
-
-    van.add(document.body, () => closed.val ? null : modal);
 }
 
-export {EditParamValsModal, validateParamVal};
+export {ParamValsTable, validateParamVal};

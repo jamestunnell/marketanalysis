@@ -5,7 +5,7 @@ import { Get, PostJSON, PutJSON } from "./backend"
 
 const { div, input, label, nav, ul } = van.tags
 
-const INPUT_CLASS = "px-1 py-1 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring"
+const INPUT_CLASS = "px-1 py-1 text-gray-500 rounded-md focus:ring-gray-500 focus:border-gray-500 focus:ring"
 const SETTINGS_CONTAINER_ID = "settings"
 
 function loadSetting(name) {
@@ -88,10 +88,10 @@ function storeSetting({name, value}) {
 }
 
 class GraphSettings {
-    constructor() {
+    constructor({containerID}) {
         this.date = van.state('')
         this.symbol = van.state('')
-
+        this.containerID = containerID
         this.symbolInput = input({
             id: "symbol",
             class: INPUT_CLASS,
@@ -119,7 +119,7 @@ class GraphSettings {
 
         const datePickerOpts = {
             autohide: true,
-            container: `#${SETTINGS_CONTAINER_ID}`,
+            container: this.containerID,
             daysOfWeekDisabled: [0, 6], // disable saturday and sunday
             format: "yyyy-mm-dd",
             maxDate: new Date(), // today
@@ -138,22 +138,6 @@ class GraphSettings {
             this.dateInput.value = setting.value
             this.date.val = setting.value
         })
-    }
-
-    render() {
-        return div(
-            nav(
-                {class: "nav bg-gray-100 shadow shadow-gray-200"},
-                div(
-                    {id: SETTINGS_CONTAINER_ID, class: "container flex w-full pt-2 pb-2 space-x-2 items-center"},
-                    // {, class: "flex  flex-wrap"},
-                    label({for: "date", class: "pl-4 font-semibold"}, "Symbol"),
-                    this.symbolInput,
-                    label({for: "date", class: "pl-4 font-semibold"}, "Date"),
-                    this.dateInput
-                )
-            )
-        ) 
     }
 }
 

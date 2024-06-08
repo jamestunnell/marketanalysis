@@ -45,7 +45,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, load, showWarmup)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, load)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}

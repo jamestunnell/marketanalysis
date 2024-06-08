@@ -1,14 +1,14 @@
 import van from 'vanjs-core'
 
-import { GraphActionModal } from './graphaction.js'
+// import { GraphActionModal } from './graphaction.js'
 import { PostJSON } from './backend.js'
 import userTimeZone from './timezone.js';
 
-const runGraph = ({id, symbol, date, showWarmup}) => {
+const runDay = ({graph, symbol, date}) => {
     return new Promise((resolve, reject) => {
-        const route = `/graphs/${id}/run`
+        const route = `/graphs/run-day`
         const timeZone = userTimeZone()
-        const object = {type: "day", symbol, date, timeZone, showWarmup}
+        const object = {graph, symbol, date, timeZone}
         const options = {accept: 'application/json'}
 
         console.log("running graph", object)
@@ -35,14 +35,14 @@ const runGraph = ({id, symbol, date, showWarmup}) => {
     });
 }
 
-const RunGraph = ({graph, settings}) => {
-    const runDisabled = van.state(false)
-    const doAction = ({date, symbol, showWarmup}) => {
-        return runGraph({id: graph.id, symbol, date, showWarmup})
-    }
-    const inputElems = []
+// const RunGraph = ({graph, settings}) => {
+//     const runDisabled = van.state(false)
+//     const doAction = ({date, symbol, showWarmup}) => {
+//         return runGraph({id: graph.id, symbol, date, showWarmup})
+//     }
+//     const inputElems = []
 
-    GraphActionModal({ actionName: "run", settings, graph, inputElems, runDisabled, doAction })
-}
+//     GraphActionModal({ actionName: "run", settings, graph, inputElems, runDisabled, doAction })
+// }
 
-export {RunGraph};
+export {runDay};

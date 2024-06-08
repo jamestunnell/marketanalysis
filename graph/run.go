@@ -40,9 +40,8 @@ func RunDay(
 	d date.Date,
 	loc *time.Location,
 	load models.LoadBarsFunc,
-	showWarmup bool,
 ) (*models.TimeSeries, error) {
-	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, load, showWarmup)
+	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, load)
 }
 
 func Run(
@@ -52,7 +51,6 @@ func Run(
 	ts timespan.TimeSpan,
 	loc *time.Location,
 	load models.LoadBarsFunc,
-	showWarmup bool,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
 		log.Debug().Msg("timespan is empty, returning empty time series")
@@ -107,11 +105,9 @@ func Run(
 		return nil, fmt.Errorf("failed to finalize recording: %w", err)
 	}
 
-	if !showWarmup {
-		log.Debug().Msg("dropping warmup records")
+	log.Debug().Msg("dropping warmup records")
 
-		r.DropRecordsBefore(ts.Start())
-	}
+	r.DropRecordsBefore(ts.Start())
 
 	return r.TimeSeries, nil
 }

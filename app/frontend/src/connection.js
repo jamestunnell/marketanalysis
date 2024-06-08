@@ -7,7 +7,7 @@ import { TableRow } from './table.js'
 
 const {datalist, div, input, label, option, p} = van.tags
 
-const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 
 function validateConnection({connection, findBlockInfo}) {
     const srcParts = connection.source.split(".")
@@ -225,7 +225,7 @@ class ConnectionRow {
 }
 
 const ConnectionForm = ({source, target, onOK, onCancel}) => {
-    const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-indigo-500 focus:outline-none focus:ring";
+    const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 
     return div(
         {class: "flex flex-col rounded-md space-y-4"},
