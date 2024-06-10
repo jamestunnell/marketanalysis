@@ -1,13 +1,11 @@
 import van from "vanjs-core"
 
-import capitalize from './capitalize.js';
-import { ModalBackground } from "./modal.js";
-import { Button, ButtonCancel, ButtonIconTooltip } from "./buttons.js";
-import { ButtonGroup } from "./buttongroup.js";
-import { IconCheck, IconError } from "./icons.js";
-import { Table, TableRow } from "./table.js";
+import { ButtonIconTooltip } from '../buttons.js'
+import capitalize from '../capitalize.js';
+import { IconCheck, IconError } from "../icons.js";
+import { Table, TableRow } from "../table.js";
 
-const { div, input, label, option, p, select, tbody} = van.tags
+const { input, label, option, select, tbody} = van.tags
 
 const inputClass = "block border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 

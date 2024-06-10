@@ -4,12 +4,12 @@ import {Modal} from "vanjs-ui"
 import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
-import { Delete, Get, PostJSON } from './backend.js'
-import { Button, ButtonIcon, ButtonCancel } from "./buttons.js";
-import { ButtonGroup } from './buttongroup.js'
-import { IconAdd, IconDelete, IconView } from './icons.js'
-import { Table, TableRow } from './table.js'
-import { truncateStringAddElipses } from "./truncatestring.js";
+import { Delete, Get, PostJSON } from '../backend.js'
+import { Button, ButtonIcon, ButtonCancel } from "../buttons.js";
+import { ButtonGroup } from '../buttongroup.js'
+import { IconAdd, IconDelete, IconView } from '../icons.js'
+import { Table, TableRow } from '../table.js'
+import { truncateStringAddElipses } from "../truncatestring.js";
 
 const {div, input, label, p, tbody} = van.tags
 

@@ -2,19 +2,17 @@ import van from "vanjs-core"
 import hash from 'object-hash';
 import { nanoid } from 'nanoid'
 
-import { AppErrorAlert} from './apperror.js';
-import { Get, PutJSON } from './backend.js';
-import { AddBlockModal, BlockItem } from "./block.js";
-import { ButtonGroup } from './buttongroup.js'
-import { Button, ButtonIcon, ButtonIconDisableable } from "./buttons.js";
-import { DownloadJSON } from "./download.js";
+import { AppErrorAlert} from '../apperror.js';
+import { Get, PutJSON } from '../backend.js';
+import { BlockItem } from "./block.js";
+import { AddBlockModal } from "./addblock.js";
+import { Button, ButtonIcon, ButtonIconDisableable } from "../buttons.js";
+import { DownloadJSON } from "../download.js";
 import GraphSettings from "./graphsettings.js"
-import { IconAdd, IconExport, IconSave } from "./icons.js";
-import { PlotRecording } from './plot.js'
+import { IconAdd, IconExport, IconSave } from "../icons.js";
+import { PlotRecording } from '../plot.js'
 import { runDay } from './rungraph.js'
-import { Table } from './table.js';
-import { truncateStringAddElipses } from "./truncatestring.js";
-import { UploadJSON } from "./upload.js";
+import { truncateStringAddElipses } from "../truncatestring.js";
 
 const {div, label, p, nav} = van.tags
 

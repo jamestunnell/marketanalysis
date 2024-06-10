@@ -1,12 +1,11 @@
 import van from "vanjs-core"
 import Datepicker from 'flowbite-datepicker/Datepicker'
 
-import { Get, PostJSON, PutJSON } from "./backend"
+import { Get, PostJSON, PutJSON } from "../backend"
 
-const { div, input, label, nav, ul } = van.tags
+const { input } = van.tags
 
 const INPUT_CLASS = "px-1 py-1 text-gray-500 rounded-md focus:ring-gray-500 focus:border-gray-500 focus:ring"
-const SETTINGS_CONTAINER_ID = "settings"
 
 function loadSetting(name) {
     return new Promise((resolve, reject) => {
@@ -97,10 +96,11 @@ class GraphSettings {
             class: INPUT_CLASS,
             type: "text",
             placeholder: "SPY, QQQ, etc.",
-            oninput: e => {
+            onchange: e => {
                 this.symbol.val = e.target.value
+
+                storeSetting({name: "symbol", value: e.target.value})
             },
-            onchange: e => storeSetting({name: "symbol", value: e.target.value}),
         })
         this.dateInput = input({
             id: "actionDate",

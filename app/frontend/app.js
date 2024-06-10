@@ -1,8 +1,8 @@
 import van from "vanjs-core"
 
 import { Route } from 'vanjs-router'
-import GraphsPage from './src/graphs.js'
-import GraphPage from './src/graph.js'
+import GraphsPage from './src/graphs/graphs.js'
+import GraphPage from './src/graphs/graph.js'
 import NavBar from './src/navbar.js'
 
 import './index.css';

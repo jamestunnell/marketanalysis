@@ -1,8 +1,8 @@
 import van from 'vanjs-core'
 
 // import { GraphActionModal } from './graphaction.js'
-import { PostJSON } from './backend.js'
-import userTimeZone from './timezone.js';
+import { PostJSON } from '../backend.js'
+import userTimeZone from '../timezone.js';
 
 const runDay = ({graph, symbol, date}) => {
     return new Promise((resolve, reject) => {

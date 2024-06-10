@@ -1,8 +1,8 @@
 import van from "vanjs-core"
 
-import { Table, TableRow } from "./table"
+import { Table, TableRow } from "../table"
 
-const { div, input, label, option, p, select, tbody} = van.tags
+const { input, option, select, tbody} = van.tags
 
 const inputClass = "block border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
 

@@ -1,7 +1,5 @@
 import van from "vanjs-core"
 import { Tooltip } from 'vanjs-ui'
-import { Toggle } from "vanjs-ui"
-import { validateConnection } from "./connection"
 
 const { button, div, input, label, span } = van.tags
 
