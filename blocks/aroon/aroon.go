@@ -10,15 +10,18 @@ type Aroon struct {
 	period *blocks.IntParam
 	aroon  *indicators.Aroon
 	in     *blocks.TypedInput[float64]
-	up     *blocks.TypedOutput[float64]
+	diff   *blocks.TypedOutput[float64]
 	dn     *blocks.TypedOutput[float64]
+	up     *blocks.TypedOutput[float64]
 }
 
 const (
-	Type     = "Aroon"
-	Descr    = "Aroon indicator identifies trend changes in the price of an asset, as well as the strength of that trend."
-	NameUp   = "up"
+	Type  = "Aroon"
+	Descr = "Aroon indicator identifies trend changes in the price of an asset, as well as the strength of that trend."
+
+	NameDiff = "diff"
 	NameDown = "down"
+	NameUp   = "up"
 )
 
 func New() blocks.Block {
@@ -28,6 +31,7 @@ func New() blocks.Block {
 		in:     blocks.NewTypedInput[float64](),
 		up:     blocks.NewTypedOutput[float64](),
 		dn:     blocks.NewTypedOutput[float64](),
+		diff:   blocks.NewTypedOutput[float64](),
 	}
 }
 
@@ -53,8 +57,9 @@ func (blk *Aroon) GetInputs() blocks.Inputs {
 
 func (blk *Aroon) GetOutputs() blocks.Outputs {
 	return blocks.Outputs{
-		NameUp:   blk.up,
+		NameDiff: blk.diff,
 		NameDown: blk.dn,
+		NameUp:   blk.up,
 	}
 }
 
@@ -83,6 +88,7 @@ func (blk *Aroon) Update(_ *models.Bar, isLast bool) {
 		return
 	}
 
-	blk.up.SetValue(blk.aroon.Up())
+	blk.diff.SetValue(blk.aroon.Up() - blk.aroon.Down())
 	blk.dn.SetValue(blk.aroon.Down())
+	blk.up.SetValue(blk.aroon.Up())
 }
