@@ -20,6 +20,8 @@ const EnterNumberRow = ({currentVal, param, step, updateVal}) => {
         value: currentVal,
         step,
         onchange: (e) => {
+            console.log(`updating ${param.name} with value ${e.target.value}`)
+
             const err = updateVal(e.target.value)
             if (err) {
                 errMsg.val = err.message
@@ -218,12 +220,12 @@ function validateParamVal({param, value}) {
         }
         break
     case "rangeIncl":
-        if (value < limits[0] || value > limits[0]) {
+        if (value < limits[0] || value > limits[1]) {
             err = new Error(`${value} is not in range [${limits[0]}, ${limits[1]}]`) 
         }
         break
     case "rangeExcl":
-        if (value < limits[0] || value >= limits[0]) {
+        if (value < limits[0] || value >= limits[1]) {
             err = new Error(`${value} is not in range [${limits[0]}, ${limits[1]})`) 
         }
         break
