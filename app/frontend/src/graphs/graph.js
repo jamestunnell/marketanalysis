@@ -10,7 +10,7 @@ import { Button, ButtonIcon, ButtonIconDisableable } from "../buttons.js";
 import { DownloadJSON } from "../download.js";
 import GraphSettings from "./graphsettings.js"
 import { IconAdd, IconExport, IconSave } from "../icons.js";
-import { PlotRecording } from '../plot.js'
+import { MakeEmptyChart, UpdateCharts } from '../charts.js'
 import { runDay } from './rungraph.js'
 import { truncateStringAddElipses } from "../truncatestring.js";
 
@@ -145,6 +145,8 @@ class PageContent {
                 div(
                     {class: "col-span-4 flex flex-row-reverse pt-2 pb-2 space-x-2 items-center"},
                     div({class:"pr-4"}),
+                    this.settings.numChartsInput,
+                    label({for: "numCharts", class: "pr-2 font-semibold"}, "Charts"),
                     this.settings.dateInput,
                     label({for: "date", class: "pr-2 font-semibold"}, "Date"),
                     this.settings.symbolInput,
@@ -153,14 +155,14 @@ class PageContent {
             )
         ),
         this.blockButtonsArea = div({class: "flex flex-row bg-gray-400"})
-        this.plotArea = div({class: "flex flex-col ml-4 mr-8 max-w-max"})
+        this.charts = []
+        this.chartsArea = div({class: "grid grid-cols-2flex flex-col ml-4 mr-8 max-w-max"})
         this.page = div(
             {class: "flex flex-col"},
             this.settingsArea,
             this.blockButtonsArea,
-            this.plotArea,
+            this.chartsArea,
         )
-        this.recording = null
 
         // Create a new ResizeObserver instance
         const pageResizeObserver = new ResizeObserver(entries => {
@@ -182,14 +184,59 @@ class PageContent {
             const date = this.settings.date.val
             const symbol = this.settings.symbol.val
             const digest = this.digest.val
-            
+            const numCharts = this.settings.numCharts.val
+
             if (date.length === 0 || symbol.length === 0) {
                 return
             }
 
-            console.log(`running graph with digest ${digest}`)
+            if (numCharts != this.charts.length) {
+                this.rebuildChartsArea()
+            }
 
-            this.runDayAndRebuildPlotArea(this.makeGraph())
+            this.runAndUpdateCharts()
+        })
+    }
+
+    rebuildChartsArea() {
+        const numCharts = this.settings.numCharts.val
+
+        console.log(`building charts area`, {numCharts})
+
+        while (this.chartsArea.firstChild) {
+            this.chartsArea.removeChild(this.chartsArea.firstChild)
+        }
+
+        const totalHeight = 0.7 * (window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight)
+        const height = totalHeight / Math.min(3, numCharts)
+
+        this.charts = new Array(numCharts)
+        const chartDivs = new Array(numCharts)
+
+        for (let i = 0; i < numCharts; i++) {
+            chartDivs[i] = div({class:"mt-8"})
+            this.charts[i] = MakeEmptyChart({container: chartDivs[i], height})
+        }
+
+        van.add(this.chartsArea, chartDivs)
+    }
+    
+    runAndUpdateCharts() {
+        console.log(`running graph with digest ${this.digest.val}`)
+
+        const graph = this.makeGraph()
+
+        runDay({
+            graph,
+            date: this.settings.date.val,
+            symbol: this.settings.symbol.val,
+            numCharts: this.settings.numCharts.val,
+        }).then(obj => {
+            console.log(`run day succeeded`)
+            
+            UpdateCharts({charts: this.charts, recording: obj})
+        }).catch(appErr => {
+            AppErrorAlert(appErr)
         })
     }
 
@@ -220,7 +267,7 @@ class PageContent {
             item.info.outputs.forEach(output => sources.push(blockName +"." + output.name))
         })
 
-        return sources
+        return sources.sort()
     }
 
     // onBlockNameChange() {
@@ -302,31 +349,6 @@ class PageContent {
         btns.push(this.renderAddBlockButton())
 
         van.add(this.blockButtonsArea, btns)
-    }
-
-    runDayAndRebuildPlotArea(graph) {
-        while (this.plotArea.firstChild) {
-            this.plotArea.removeChild(this.plotArea.firstChild)
-        }
-
-        runDay({
-            graph,
-            date: this.settings.date.val,
-            symbol: this.settings.symbol.val,
-        }).then(obj => {
-            console.log(`run day succeeded`)
-            
-            const plots = PlotRecording({
-                recording: obj,
-                totalHeight: 0.7 * (window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight),
-            })
-
-            van.add(this.plotArea, plots.map(plot => {
-                return div({class:"mt-8"}, plot)
-            }))
-        }).catch(appErr => {
-            AppErrorAlert(appErr)
-        })
     }
 
     render() { return this.page }

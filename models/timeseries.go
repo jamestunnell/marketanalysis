@@ -1,22 +1,19 @@
 package models
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
+	"github.com/montanaflynn/stats"
+	"github.com/rs/zerolog/log"
+	"github.com/soniakeys/cluster"
 )
 
 type TimeSeries struct {
 	Quantities []*Quantity `json:"quantities"`
 }
-
-type Quantity struct {
-	Name    string           `json:"name"`
-	Records []QuantityRecord `json:"records"`
-}
-
-type QuantityRecord = TimeValue[float64]
 
 func NewTimeSeries() *TimeSeries {
 	return &TimeSeries{
@@ -62,38 +59,79 @@ func (ts *TimeSeries) DropRecordsBefore(t time.Time) {
 	}
 }
 
-func (q *Quantity) AddRecord(r QuantityRecord) {
-	q.Records = append(q.Records, r)
-}
+type MakePointFunc func(q *Quantity) (cluster.Point, error)
 
-func (q *Quantity) IsEmpty() bool {
-	return len(q.Records) == 0
-}
-
-func (q *Quantity) SortByTime() {
-	slices.SortStableFunc(q.Records, func(a, b QuantityRecord) int {
-		return a.Time.Compare(b.Time)
-	})
-}
-
-func (q *Quantity) FindRecord(t time.Time) (QuantityRecord, bool) {
-	for _, record := range q.Records {
-		if record.Time == t {
-			return record, true
-		}
+func (ts *TimeSeries) Cluster(k int, makePoint MakePointFunc) error {
+	if k < 1 {
+		return fmt.Errorf("k %d is not positive", k)
 	}
 
-	return QuantityRecord{}, false
+	if k == 1 {
+		for _, q := range ts.Quantities {
+			q.Attributes[AttrCluster] = 0
+		}
+
+		return nil
+	}
+
+	points := []cluster.Point{}
+	qs := []*Quantity{}
+	for _, q := range ts.Quantities {
+		p, err := makePoint(q)
+		if err != nil {
+			log.Warn().Err(err).Str("name", q.Name).Msg("cannot make clustering points for quantity")
+
+			continue
+		}
+
+		qs = append(qs, q)
+		points = append(points, p)
+	}
+
+	if len(qs) == 0 {
+		return errors.New("failed to make clustering points for all quantities")
+	}
+
+	centers, cNums, _, _ := cluster.KMPP(points, k)
+
+	// clone and reverse sort center points
+	revSortedCenters := slices.Clone(centers)
+
+	slices.SortFunc(revSortedCenters, func(a, b cluster.Point) int {
+		return slices.Compare(a, b)
+	})
+	slices.Reverse(revSortedCenters)
+
+	for i, cNum := range cNums {
+		tgt := centers[cNum]
+
+		// find the sorted index
+		sortedIdx := slices.IndexFunc(revSortedCenters, func(c cluster.Point) bool {
+			return slices.Compare(c, tgt) == 0
+		})
+
+		qs[i].Attributes[AttrCluster] = sortedIdx
+	}
+
+	return nil
 }
 
-func (q *Quantity) FindRecordsAfter(t time.Time) []QuantityRecord {
-	return sliceutils.Where(q.Records, func(r QuantityRecord) bool {
-		return r.Time.After(t)
-	})
-}
+func QuantityMeanStddev(q *Quantity) (cluster.Point, error) {
+	vals := q.RecordValues()
 
-func (q *Quantity) DropRecordsBefore(t time.Time) {
-	q.Records = sliceutils.Where(q.Records, func(r QuantityRecord) bool {
-		return !r.Time.Before(t)
-	})
+	if len(vals) == 0 {
+		return cluster.Point{}, fmt.Errorf("quantity %s has no values", q.Name)
+	}
+
+	mean, err := stats.Mean(vals)
+	if err != nil {
+		return cluster.Point{}, fmt.Errorf("failed to calc mean for quantity %s: %w", q.Name, err)
+	}
+
+	sd, err := stats.StandardDeviation(vals)
+	if err != nil {
+		return cluster.Point{}, fmt.Errorf("failed to calc stddev for quantity %s: %w", q.Name, err)
+	}
+
+	return cluster.Point{mean, sd}, nil
 }

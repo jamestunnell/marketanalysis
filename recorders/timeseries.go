@@ -30,10 +30,7 @@ func (rec *TimeSeries) Init(valNames []string) error {
 	log.Debug().Strs("names", valNames).Msg("recording values")
 
 	rec.Quantities = sliceutils.Map(valNames, func(name string) *models.Quantity {
-		return &models.Quantity{
-			Name:    name,
-			Records: []models.QuantityRecord{},
-		}
+		return models.NewQuantity(name)
 	})
 
 	return nil

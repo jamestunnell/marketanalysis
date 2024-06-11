@@ -90,7 +90,28 @@ class GraphSettings {
     constructor({containerID}) {
         this.date = van.state('')
         this.symbol = van.state('')
+        this.numCharts = van.state(1)
         this.containerID = containerID
+        this.numChartsInput = input({
+            id: "numCharts",
+            class: INPUT_CLASS,
+            type: "number",
+            min: 1,
+            step: 1,
+            onchange: e => {
+                const strVal = e.target.value
+                const newVal = parseInt(strVal)
+                if (isNaN(newVal)) {
+                    console.log(`ignoring NaN numCharts ${strVal}`)
+
+                    return
+                }
+
+                this.numCharts.val = newVal
+
+                storeSetting({name: "numCharts", value: newVal})
+            },
+        })
         this.symbolInput = input({
             id: "symbol",
             class: INPUT_CLASS,
@@ -137,6 +158,11 @@ class GraphSettings {
         loadSetting("date").then(setting => {
             this.dateInput.value = setting.value
             this.date.val = setting.value
+        })
+
+        loadSetting("numCharts").then(setting => {
+            this.numChartsInput.value = setting.value
+            this.numCharts.val = setting.value
         })
     }
 }

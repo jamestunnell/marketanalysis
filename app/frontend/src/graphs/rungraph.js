@@ -4,11 +4,11 @@ import van from 'vanjs-core'
 import { PostJSON } from '../backend.js'
 import userTimeZone from '../timezone.js';
 
-const runDay = ({graph, symbol, date}) => {
+const runDay = ({graph, symbol, date, numCharts}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/run-day`
         const timeZone = userTimeZone()
-        const object = {graph, symbol, date, timeZone}
+        const object = {graph, symbol, date, timeZone, numCharts}
         const options = {accept: 'application/json'}
 
         console.log("running graph", object)

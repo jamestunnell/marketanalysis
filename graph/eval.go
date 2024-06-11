@@ -59,15 +59,8 @@ func EvalSlope(
 		return nil, errors.New("failed to find predictor quantity")
 	}
 
-	slopeQ := &models.Quantity{
-		Name:    "Source Future Slope",
-		Records: []models.QuantityRecord{},
-	}
-
-	pivotsQ := &models.Quantity{
-		Name:    "Source Pivots",
-		Records: []models.QuantityRecord{},
-	}
+	slopeQ := models.NewQuantity("Source Future Slope")
+	pivotsQ := models.NewQuantity("Source Pivots")
 
 	pivotsInd, err := pivots.New(horizon * 2)
 	if err != nil {
@@ -145,10 +138,7 @@ func EvalSlope(
 		record.Value /= maxSlopeMagn
 	}
 
-	evalQ := &models.Quantity{
-		Name:    "Predictor Slope Agreement",
-		Records: []models.QuantityRecord{},
-	}
+	evalQ := models.NewQuantity("Predictor Slope Agreement")
 
 	log.Debug().Int("pred records", len(predQ.Records)).Msg("eval: evaluating predictor slope agreement")
 

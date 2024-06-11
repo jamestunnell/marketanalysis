@@ -59,15 +59,10 @@ func Backtest(
 	}
 
 	currentEquity := 0.0
-	equityQ := &models.Quantity{
-		Name: "Equity",
-		Records: []models.QuantityRecord{
-			{
-				Time:  sourceQ.Records[0].Time,
-				Value: 0.0,
-			},
-		},
-	}
+	equityQ := models.NewQuantity("Equity", models.QuantityRecord{
+		Time:  sourceQ.Records[0].Time,
+		Value: 0.0,
+	})
 	dir := models.DirNone
 
 	var position *models.Position

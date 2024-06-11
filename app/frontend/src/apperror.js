@@ -34,13 +34,13 @@ const AppErrorAlert = (appErr) => {
     const substance = div(
         {class: "flex flex-col space-y-2"},
         p(`Message: ${appErr.message}`),
-        div(
+        () => appErr.details ? div(
             p(`Details:`),
             ul(
                 {class: "list-disc list-inside"},
                 appErr.details.map(detail => li(detail))
             ),
-        )
+        ) : nil,
     )
 
     const alert = new AlertError({title: appErr.title, substance: substance})

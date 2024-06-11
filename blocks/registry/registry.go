@@ -18,6 +18,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/pivots"
 	"github.com/jamestunnell/marketanalysis/blocks/sma"
 	"github.com/jamestunnell/marketanalysis/blocks/supertrend"
+	"github.com/jamestunnell/marketanalysis/blocks/trendgate"
 )
 
 type NewBlockFunc func() blocks.Block
@@ -40,10 +41,11 @@ func init() {
 	Add(emv.Type, emv.New)
 	Add(heikinashi.Type, heikinashi.New)
 	Add(maorder.Type, maorder.New)
-	Add(multitrend.Type, multitrend.New)
+	Add(multitrend.TypeMultitrend2, multitrend.NewMultitrend2)
 	Add(pivots.Type, pivots.New)
 	Add(sma.Type, sma.New)
 	Add(supertrend.Type, supertrend.New)
+	Add(trendgate.Type, trendgate.New)
 
 	Add(math.TypeAdd2, math.NewAdd2)
 	Add(math.TypeAddK, math.NewAddK)

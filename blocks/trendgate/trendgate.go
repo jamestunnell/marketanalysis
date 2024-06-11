@@ -10,11 +10,12 @@ import (
 )
 
 type TrendGate struct {
-	openThresh   *blocks.FloatParam
-	closeThresh  *blocks.FloatParam
-	in           *blocks.TypedInput[float64]
-	out          *blocks.TypedOutput[float64]
-	stateMachine *statemachine.StateMachine[float64]
+	openThresh     *blocks.FloatParam
+	closeThresh    *blocks.FloatParam
+	debouncePeriod *blocks.IntParam
+	in             *blocks.TypedInput[float64]
+	out            *blocks.TypedOutput[float64]
+	stateMachine   *statemachine.StateMachine[float64]
 }
 
 type StateInput struct{}
@@ -23,17 +24,19 @@ const (
 	Type  = "TrendGate"
 	Descr = "Silence signal below threshold"
 
-	NameOpenThresh  = "openThreshold"
-	NameCloseThresh = "closeThreshold"
+	NameDebouncePeriod = "debouncePeriod"
+	NameOpenThresh     = "openThreshold"
+	NameCloseThresh    = "closeThreshold"
 )
 
 func New() blocks.Block {
 	return &TrendGate{
-		openThresh:   blocks.NewFloatParam(0.5, blocks.NewRangeExcl(0.0, 1.0)),
-		closeThresh:  blocks.NewFloatParam(0.25, blocks.NewRangeExcl(0.0, 1.0)),
-		in:           blocks.NewTypedInput[float64](),
-		out:          blocks.NewTypedOutput[float64](),
-		stateMachine: nil,
+		openThresh:     blocks.NewFloatParam(0.5, blocks.NewRangeExcl(0.0, 1.0)),
+		closeThresh:    blocks.NewFloatParam(0.25, blocks.NewRangeExcl(0.0, 1.0)),
+		debouncePeriod: blocks.NewIntParam(0, blocks.NewGreaterEqual(0)),
+		in:             blocks.NewTypedInput[float64](),
+		out:            blocks.NewTypedOutput[float64](),
+		stateMachine:   nil,
 	}
 }
 
@@ -47,8 +50,9 @@ func (blk *TrendGate) GetDescription() string {
 
 func (blk *TrendGate) GetParams() blocks.Params {
 	return blocks.Params{
-		NameOpenThresh:  blk.openThresh,
-		NameCloseThresh: blk.closeThresh,
+		NameOpenThresh:     blk.openThresh,
+		NameCloseThresh:    blk.closeThresh,
+		NameDebouncePeriod: blk.debouncePeriod,
 	}
 }
 
@@ -82,7 +86,7 @@ func (blk *TrendGate) Init() error {
 		Float64("closeThresh", blk.closeThresh.CurrentVal).
 		Msg("trend gate initialized")
 
-	blk.stateMachine = statemachine.New("gate", NewClosed(blk))
+	blk.stateMachine = statemachine.New("gate", NewNone(blk))
 
 	return nil
 }

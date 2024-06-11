@@ -12,7 +12,7 @@ import (
 type Backtest struct {
 	source    *blocks.TypedInput[float64]
 	predictor *blocks.TypedInput[float64]
-	equity    *blocks.TypedOutputAsync[float64]
+	equity    *blocks.TypedOutput[float64]
 	threshold *blocks.FloatParam
 
 	firstUpdate   bool
@@ -35,7 +35,7 @@ func New() blocks.Block {
 	return &Backtest{
 		source:    blocks.NewTypedInput[float64](),
 		predictor: blocks.NewTypedInput[float64](),
-		equity:    blocks.NewTypedOutputAsync[float64](),
+		equity:    blocks.NewTypedOutput[float64](),
 		threshold: blocks.NewFloatParam(0.5, blocks.NewRangeExcl(0.0, 1.0)),
 	}
 }
@@ -89,13 +89,9 @@ func (blk *Backtest) Update(cur *models.Bar, isLast bool) {
 		return
 	}
 
-	if blk.firstUpdate {
-		blk.equity.SetTimeValue(cur.Timestamp, 0.0)
-
-		defer func() {
-			blk.firstUpdate = false
-		}()
-	}
+	defer func() {
+		blk.equity.SetValue(blk.currentEquity)
+	}()
 
 	t := cur.Timestamp
 	source := blk.source.GetValue()
@@ -181,8 +177,6 @@ func (blk *Backtest) closePosition(t time.Time, value float64, reason string) {
 		Float64("profitLoss", blk.position.ClosedPL).
 		Str("reason", blk.position.ExitReason).
 		Msg("closed position")
-
-	blk.equity.SetTimeValue(t, blk.currentEquity)
 
 	blk.position = nil
 }

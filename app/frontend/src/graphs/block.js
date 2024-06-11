@@ -56,7 +56,7 @@ class BlockItem {
             block: blockBefore,
             info: this.info,
             otherNames: this.parent.blockNames().filter(name => name !== blockBefore.name),
-            possibleSources: this.parent.getPossibleSources(),
+            possibleSources: this.parent.getPossibleSources(blockBefore.name),
             onComplete, onCancel, onDelete,
         })
         const modal = ModalBackground(
