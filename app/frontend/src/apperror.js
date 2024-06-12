@@ -1,8 +1,9 @@
 import van from "vanjs-core"
 
 import {AlertError} from './alerts.js'
+import capitalize from "./capitalize.js"
 
-const { li, p, ul } = van.tags
+const { div, li, p, ul } = van.tags
 
 // const DoAppErrorModal = (appErr) => {
 //     const closed = van.state(false)
@@ -30,17 +31,21 @@ const { li, p, ul } = van.tags
 const AppErrorAlert = (appErr) => {
     console.log("adding app error alert", appErr)
 
-    const substance = [
-        p(appErr.message),
-        ul(
-            {class: "mt-4"},
-            appErr.details.map(detail => li(detail))
-        ),
-    ]
+    const substance = div(
+        {class: "flex flex-col space-y-2"},
+        p(`Message: ${appErr.message}`),
+        () => appErr.details ? div(
+            p(`Details:`),
+            ul(
+                {class: "list-disc list-inside"},
+                appErr.details.map(detail => li(detail))
+            ),
+        ) : nil,
+    )
 
-    const alert = AlertError({title: appErr.title, substance: substance})
+    const alert = new AlertError({title: appErr.title, substance: substance})
 
-    van.add(document.body, alert);
+    van.add(document.body, alert.render());
 }
 
 export {AppErrorAlert};

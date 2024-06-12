@@ -81,7 +81,7 @@ func (blk *HeikinAshi) Init() error {
 	return nil
 }
 
-func (blk *HeikinAshi) Update(cur *models.Bar) {
+func (blk *HeikinAshi) Update(cur *models.Bar, isLast bool) {
 	defer blk.updatePrev(cur)
 
 	if blk.prev == nil {

@@ -5,25 +5,25 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 )
 
-func Update[T app.Resource](
+func Update[T backend.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
-	s app.Store[T],
+	s backend.Store[T],
+	postHook func(T),
 ) {
-	val := app.NewResource[T]()
+	val := backend.NewResource[T]()
 	if err := json.NewDecoder(r.Body).Decode(val); err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
 
 	key := mux.Vars(r)[s.GetInfo().KeyName]
 	if jsonKey := val.GetKey(); jsonKey != key {
-		handleAppErr(w, app.NewErrInvalidInput("key in request JSON", "does not match key in URL"))
+		handleAppErr(w, backend.NewErrInvalidInput("key in request JSON", "does not match key in URL"))
 
 		return
 	}
@@ -32,6 +32,10 @@ func Update[T app.Resource](
 		handleAppErr(w, appErr)
 
 		return
+	}
+
+	if postHook != nil {
+		postHook(val)
 	}
 
 	w.WriteHeader(http.StatusNoContent)

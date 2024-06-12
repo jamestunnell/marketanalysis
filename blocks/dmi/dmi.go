@@ -7,7 +7,7 @@ import (
 )
 
 type DMI struct {
-	period              *blocks.IntRange
+	period              *blocks.IntParam
 	dmi                 *indicators.DMI
 	pdi, ndi, trend, dx *blocks.TypedOutput[float64]
 }
@@ -23,7 +23,7 @@ const (
 
 func New() blocks.Block {
 	return &DMI{
-		period: &blocks.IntRange{Default: 10, Min: 1, Max: 1000},
+		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
 		dmi:    nil,
 		pdi:    blocks.NewTypedOutput[float64](),
 		ndi:    blocks.NewTypedOutput[float64](),
@@ -68,12 +68,12 @@ func (blk *DMI) IsWarm() bool {
 }
 
 func (blk *DMI) Init() error {
-	blk.dmi = indicators.NewDMI(blk.period.Value)
+	blk.dmi = indicators.NewDMI(blk.period.CurrentVal)
 
 	return nil
 }
 
-func (blk *DMI) Update(cur *models.Bar) {
+func (blk *DMI) Update(cur *models.Bar, isLast bool) {
 	blk.dmi.Update(cur)
 
 	if !blk.dmi.Warm() {

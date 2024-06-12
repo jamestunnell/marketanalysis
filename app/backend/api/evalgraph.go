@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
@@ -28,12 +28,12 @@ func (a *Graphs) EvalGraph(w http.ResponseWriter, r *http.Request) {
 
 	d, err := io.ReadAll(r.Body)
 	if err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("eval request body", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("eval request body", err.Error()))
 	}
 
 	runType := gjson.GetBytes(d, "type")
 	if !runType.Exists() {
-		handleAppErr(w, app.NewErrInvalidInput("eval request JSON", "missing type"))
+		handleAppErr(w, backend.NewErrInvalidInput("eval request JSON", "missing type"))
 	}
 
 	switch runType.String() {
@@ -50,7 +50,7 @@ func (a *Graphs) EvalSlope(
 ) {
 	var eval models.EvalSlopeRequest
 	if err := json.Unmarshal(requestData, &eval); err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("request JSON", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
@@ -59,19 +59,19 @@ func (a *Graphs) EvalSlope(
 
 	loc, err := time.LoadLocation(eval.TimeZone)
 	if err != nil {
-		handleAppErr(w, app.NewErrInvalidInput("eval timeZone", err.Error()))
+		handleAppErr(w, backend.NewErrInvalidInput("eval timeZone", err.Error()))
 
 		return
 	}
 
-	loader := app.NewDayBarsLoader(a.DB, eval.Symbol, loc)
+	loader := backend.NewBarSetLoader(a.DB, eval.Symbol, loc)
 
 	recording, err := graph.EvalSlope(
 		ctx, cfg, eval.Symbol, eval.Date,
-		loc, loader, eval.ShowWarmup,
+		loc, loader.Load,
 		eval.Source, eval.Predictor, eval.Horizon)
 	if err != nil {
-		appErr := app.NewErrActionFailed("eval graph", err.Error())
+		appErr := backend.NewErrActionFailed("eval graph", err.Error())
 
 		handleAppErr(w, appErr)
 

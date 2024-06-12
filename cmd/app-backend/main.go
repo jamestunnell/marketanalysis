@@ -49,6 +49,9 @@ func main() {
 	}
 
 	client := connectToLocalDB(vars)
+	defer disconnectFromDB(client)
+
+	db := client.Database(DBName)
 
 	srv, router := server.New(vars.Port)
 
@@ -63,12 +66,10 @@ func main() {
 	// ))
 	router.Use(mux.MiddlewareFunc(loggingMiddleware))
 
-	api.BindAll(srv.GetRouter(), client.Database(DBName))
+	api.BindAll(srv.GetRouter(), db)
 
 	srv.Start()
-
 	defer srv.Stop()
-	defer disconnectFromDB(client)
 
 	server.BlockUntilSignaled(syscall.SIGINT, syscall.SIGTERM)
 }
@@ -80,8 +81,8 @@ func loadAppVars() *AppVariables {
 	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	port := app.Flag("port", "Server port").Default("0").Int()
 	dbConn := app.Flag("dbconn", "Database connection").Default("").String()
-	// dbUser := app.Flag("dbuser", "Database user").Default("").String()
-	// dbPass := app.Flag("dbpass", "Database password").Default("").String()
+	// dbUser := backend.Flag("dbuser", "Database user").Default("").String()
+	// dbPass := backend.Flag("dbpass", "Database password").Default("").String()
 
 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
 

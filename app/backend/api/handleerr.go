@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/rs/zerolog/log"
 )
 
@@ -14,18 +14,18 @@ type ErrorResponse struct {
 	Details []string `json:"details,omitempty"`
 }
 
-func handleAppErr(w http.ResponseWriter, appErr app.Error) {
+func handleAppErr(w http.ResponseWriter, appErr backend.Error) {
 	var statusCode int
 	var title string
 
 	switch appErr.GetType() {
-	case app.NotFound:
+	case backend.NotFound:
 		statusCode = http.StatusNotFound
 		title = "Not Found"
-	case app.InvalidInput:
+	case backend.InvalidInput:
 		statusCode = http.StatusBadRequest
 		title = "Invalid Input"
-	case app.ActionFailed:
+	case backend.ActionFailed:
 		statusCode = http.StatusInternalServerError
 		title = "Action Failed"
 	default:

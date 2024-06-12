@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 )
@@ -24,7 +24,7 @@ func (h *getBlockInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	new, found := registry.Get(typ)
 	if !found {
-		appErr := app.NewErrNotFound(fmt.Sprintf("block with type '%s'", typ))
+		appErr := backend.NewErrNotFound(fmt.Sprintf("block with type '%s'", typ))
 
 		handleAppErr(w, appErr)
 

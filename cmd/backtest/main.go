@@ -17,12 +17,12 @@ package main
 
 // var (
 // 	app           = kingpin.New("backtest", "Backtest trading strategy.")
-// 	debug         = app.Flag("debug", "Enable debug mode.").Bool()
-// 	dataDir       = app.Flag("datadir", "Collection dir path.").Required().String()
-// 	predFile      = app.Flag("predfile", "Predictor JSON file.").Required().String()
-// 	takeProfit    = app.Flag("takeprofit", "Take profit level in price points. Default is 1").Float64()
-// 	stopLoss      = app.Flag("stoploss", "Stop loss level in price points. Default is 0.5").Float64()
-// 	savePositions = app.Flag("savepositions", "Save positions to a JSONL file. Default is false.").Bool()
+// 	debug         = backend.Flag("debug", "Enable debug mode.").Bool()
+// 	dataDir       = backend.Flag("datadir", "Collection dir path.").Required().String()
+// 	predFile      = backend.Flag("predfile", "Predictor JSON file.").Required().String()
+// 	takeProfit    = backend.Flag("takeprofit", "Take profit level in price points. Default is 1").Float64()
+// 	stopLoss      = backend.Flag("stoploss", "Stop loss level in price points. Default is 0.5").Float64()
+// 	savePositions = backend.Flag("savepositions", "Save positions to a JSONL file. Default is false.").Bool()
 // )
 
 // const (
@@ -35,7 +35,7 @@ package main
 
 // 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-// 	_ = kingpin.MustParse(app.Parse(os.Args[1:]))
+// 	_ = kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 // 	if *debug {
 // 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

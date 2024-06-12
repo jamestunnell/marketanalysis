@@ -1,7 +1,5 @@
 import van from "vanjs-core"
 import { Tooltip } from 'vanjs-ui'
-import { Toggle } from "vanjs-ui"
-import { validateConnection } from "./connection"
 
 const { button, div, input, label, span } = van.tags
 
@@ -12,8 +10,8 @@ const Button = ({child, onclick, disabled}) => {
         child: child,
         onclick: onclick,
         disabled: disabled,
-        classNormal: 'rounded-md p-1 mt-3 mb-3 text-white bg-indigo-500 hover:bg-indigo-600',
-        classDisabled: 'rounded-md p-1 mt-3 mb-3 text-white bg-indigo-300 cursor-not-allowed',
+        classNormal: 'rounded-md p-1 m-1 text-white bg-gray-500 hover:bg-gray-600',
+        classDisabled: 'rounded-md p-1 m-1 text-white bg-gray-300 cursor-not-allowed',
     })
 }
 
@@ -22,18 +20,18 @@ const ButtonDanger = ({child, onclick, disabled}) => {
         child: child,
         onclick: onclick,
         disabled: disabled,
-        classNormal: 'rounded-md p-1 mt-3 mb-3 text-white bg-pink-500 hover:bg-pink-600',
-        classDisabled: 'rounded-md p-1 mt-3 mb-3 text-white bg-pink-300 cursor-not-allowed',
+        classNormal: 'rounded-md p-1 m-1 text-white bg-pink-500 hover:bg-pink-600',
+        classDisabled: 'rounded-md p-1 m-1 text-white bg-pink-300 cursor-not-allowed',
     })
 }
 
-const iconClassNormal = 'rounded-md p-1 m-3 text-gray-700 hover:text-black'
+const iconClassNormal = 'rounded-md p-1 m-1 text-gray-700 hover:text-black'
 
 const ButtonIconDisableable = ({icon, text, disabled, onclick}) => {
     return button(
         {
             class: van.derive(() => {
-                return disabled.val ? 'rounded-md p-1 m-3 text-gray-400' : iconClassNormal
+                return disabled.val ? 'rounded-md p-1 m-1 text-gray-400' : iconClassNormal
             }),
             disabled: disabled,
             onclick: onclick,
@@ -144,7 +142,7 @@ const ButtonIconTooltip = ({icon, text, tooltipText}) => {
 const ButtonCancel = ({child, onclick}) => {
     return button(
         {
-            class: 'rounded-md p-1 mt-3 mb-3 text-black bg-gray-200 hover:bg-gray-300',
+            class: 'rounded-md p-1 m-3 text-black bg-gray-200 hover:bg-gray-300',
             onclick: onclick,
         },
         child,

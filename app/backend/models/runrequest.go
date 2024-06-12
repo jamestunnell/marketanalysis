@@ -1,13 +1,14 @@
 package models
 
-import "github.com/rickb777/date"
-
-const RunDay = "day"
+import (
+	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/rickb777/date"
+)
 
 type RunDayRequest struct {
-	Symbol     string    `json:"symbol"`
-	Date       date.Date `json:"date"`
-	Format     string    `json:"format"`
-	TimeZone   string    `json:"timeZone"`
-	ShowWarmup bool      `json:"showWarmup,omitempty"`
+	Graph     *graph.Configuration `json:"graph"`
+	Symbol    string               `json:"symbol"`
+	Date      date.Date            `json:"date"`
+	TimeZone  string               `json:"timeZone"`
+	NumCharts int                  `json:"numCharts"`
 }

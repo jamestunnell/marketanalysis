@@ -12,7 +12,7 @@ import (
 type Pivots struct {
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutputAsync[float64]
-	length *blocks.IntRange
+	length *blocks.IntParam
 	ind    *p.Pivots
 }
 
@@ -25,7 +25,7 @@ func New() blocks.Block {
 	return &Pivots{
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutputAsync[float64](),
-		length: &blocks.IntRange{Default: 15, Min: 2, Max: 1000},
+		length: blocks.NewIntParam(15, blocks.NewGreaterEqual(2)),
 		ind:    nil,
 	}
 }
@@ -65,7 +65,7 @@ func (blk *Pivots) IsWarm() bool {
 }
 
 func (blk *Pivots) Init() error {
-	ind, err := p.New(blk.length.Value)
+	ind, err := p.New(blk.length.CurrentVal)
 	if err != nil {
 		return fmt.Errorf("failed to make pivots indicator: %w", err)
 	}
@@ -75,7 +75,7 @@ func (blk *Pivots) Init() error {
 	return nil
 }
 
-func (blk *Pivots) Update(cur *models.Bar) {
+func (blk *Pivots) Update(cur *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

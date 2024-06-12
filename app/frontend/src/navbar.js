@@ -4,7 +4,7 @@ import { routeTo } from 'vanjs-router'
 const {  button, div, li, nav, ul } = van.tags
 
 const NavBarItem = ({text, route, routeArgs, currentRoute}) => {
-    const textCls = route === currentRoute ? "text-indigo-500": "hover:text-indigo-400";
+    const textCls = currentRoute.includes(route) ? "bg-gray-400": "hover:bg-gray-600";
     
     return li(
         {class: `md:px-4 md:py-2 ${textCls}`},
@@ -15,13 +15,13 @@ const NavBarItem = ({text, route, routeArgs, currentRoute}) => {
 const NavBar = ({currentRoute}) => {
     return div(
         nav(
-            {class: "nav font-semibold text-lg bg-gray-200 shadow shadow-gray-300"},
+            {class: "nav bg-gray-500 text-white"},
             div(
-                {class: "container flex text-gray-500 order-3 w-full"},
+                {class: "container flex order-3 w-full"},
                 ul(
-                    {class: "flex items-center font-semibold flex-wrap"},
-                    NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute: currentRoute}),
-                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute: currentRoute}),
+                    {class: "flex flex-wrap items-center text-lg font-semibold"},
+                    NavBarItem({text: 'Home', route: 'home', routeArgs: [], currentRoute}),
+                    NavBarItem({text: 'Graphs', route: 'graphs', routeArgs: [], currentRoute}),
                 )
             )
         )

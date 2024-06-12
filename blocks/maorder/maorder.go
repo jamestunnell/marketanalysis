@@ -5,15 +5,16 @@ import (
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util"
+	"github.com/rs/zerolog/log"
 )
 
 type MAOrder struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
 
-	numPeriods  *blocks.IntRange
-	periodStart *blocks.IntRange
-	periodSpan  *blocks.IntRange
+	numPeriods  *blocks.IntParam
+	periodStart *blocks.IntParam
+	periodSpan  *blocks.IntParam
 
 	maOrdering *indicators.MAOrdering
 }
@@ -32,9 +33,9 @@ func New() blocks.Block {
 	return &MAOrder{
 		in:          blocks.NewTypedInput[float64](),
 		out:         blocks.NewTypedOutput[float64](),
-		numPeriods:  &blocks.IntRange{Default: 2, Min: 2, Max: 25},
-		periodStart: &blocks.IntRange{Default: 2, Min: 2, Max: 100},
-		periodSpan:  &blocks.IntRange{Default: 2, Min: 2, Max: 900},
+		numPeriods:  blocks.NewIntParam(5, blocks.NewGreaterEqual(2)),
+		periodStart: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
+		periodSpan:  blocks.NewIntParam(20, blocks.NewGreaterEqual(2)),
 		maOrdering:  nil,
 	}
 }
@@ -72,16 +73,19 @@ func (blk *MAOrder) IsWarm() bool {
 }
 
 func (blk *MAOrder) Init() error {
-	start := blk.periodStart.Value
-	span := blk.periodSpan.Value
-	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.Value)
+	start := blk.periodStart.CurrentVal
+	span := blk.periodSpan.CurrentVal
+
+	log.Debug().Msgf("MAO num periods: %v", blk.numPeriods.CurrentVal)
+
+	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.CurrentVal)
 
 	blk.maOrdering = indicators.NewMAOrdering(periods)
 
 	return nil
 }
 
-func (blk *MAOrder) Update(_ *models.Bar) {
+func (blk *MAOrder) Update(_ *models.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

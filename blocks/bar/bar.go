@@ -94,7 +94,7 @@ func (blk *Bar) Init() error {
 	return nil
 }
 
-func (blk *Bar) Update(cur *models.Bar) {
+func (blk *Bar) Update(cur *models.Bar, isLast bool) {
 	blk.open.SetValue(cur.Open)
 	blk.high.SetValue(cur.High)
 	blk.low.SetValue(cur.Low)

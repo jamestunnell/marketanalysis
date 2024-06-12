@@ -2,7 +2,7 @@
   "name": "marketanalysis",
   "version": "0.1.0",
   "description": "Frontend UI for a market analysis app",
-  "main": "app.js",
+  "main": "backend.js",
   "scripts": {
     "dev": "vite",
     "test": "vitest run --disable-console-intercept",

@@ -16,9 +16,9 @@ import (
 
 func main() {
 	app := kingpin.New("model", "Work with a model.")
-	debug := app.Flag("debug", "Enable debug mode").Bool()
+	debug := backend.Flag("debug", "Enable debug mode").Bool()
 
-	run := app.Command("run", "Run the model with bar data from given date")
+	run := backend.Command("run", "Run the model with bar data from given date")
 
 	runData := run.Flag("data", "Data collection root dir").Required().String()
 	runModel := run.Flag("model", "Model JSON file path").Required().String()
@@ -26,7 +26,7 @@ func main() {
 	runDate := run.Flag("date", "Date to test (YYYY-MM-DD)").String()
 	runTZ := run.Flag("tz", "Recording time zone location").String()
 
-	cmdName := kingpin.MustParse(app.Parse(os.Args[1:]))
+	cmdName := kingpin.MustParse(backend.Parse(os.Args[1:]))
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 

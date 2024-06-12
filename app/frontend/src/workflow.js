@@ -52,7 +52,9 @@ const StepModal = ({step, makePrev=null, makeNext=null, onCancel, onComplete}) =
         onclick: () => {
             const err = step.consumeInput()
             if (err) {
-                AlertError({title: "Invalid Input", substance: err.message})
+                alert = new AlertError({title: "Invalid Input", substance: err.message})
+
+                van.add(document.body, alert.render());
 
                 return
             }

@@ -61,7 +61,7 @@ func (blk *Record) Init() error {
 	return blk.Recorder.Init(inputNames)
 }
 
-func (blk *Record) Update(cur *models.Bar) {
+func (blk *Record) Update(cur *models.Bar, isLast bool) {
 	tvs := map[string]models.TimeValue[float64]{}
 
 	for name, in := range blk.Inputs {

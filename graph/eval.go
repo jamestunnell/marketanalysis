@@ -1,10 +1,12 @@
 package graph
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/rickb777/date"
@@ -21,12 +23,11 @@ func EvalSlope(
 	symbol string,
 	evalDate date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
-	showWarmup bool,
+	load models.LoadBarsFunc,
 	source, predictor *Address,
 	horizon int,
 ) (*models.TimeSeries, error) {
-	graphConfig.ClearAllRecording()
+	graphConfig.ClearAllRecorded()
 
 	log.Debug().
 		Stringer("date", evalDate).
@@ -43,7 +44,7 @@ func EvalSlope(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, loader, showWarmup)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, evalDate, loc, load)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", evalDate, err)
 	}
@@ -58,17 +59,10 @@ func EvalSlope(
 		return nil, errors.New("failed to find predictor quantity")
 	}
 
-	slopeQ := &models.Quantity{
-		Name:    "Source Future Slope",
-		Records: []models.QuantityRecord{},
-	}
+	slopeQ := models.NewQuantity("Source Future Slope")
+	pivotsQ := models.NewQuantity("Source Pivots")
 
-	pivotsQ := &models.Quantity{
-		Name:    "Source Pivots",
-		Records: []models.QuantityRecord{},
-	}
-
-	pivots, err := pivots.New(horizon * 2)
+	pivotsInd, err := pivots.New(horizon * 2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make pivots indicator: %w", err)
 	}
@@ -76,20 +70,42 @@ func EvalSlope(
 	log.Debug().Msg("eval: finding source pivot points")
 
 	for _, record := range sourceQ.Records {
-		added := pivots.Update(record.Time, record.Value)
+		added := pivotsInd.Update(record.Time, record.Value)
 		if added {
-			pivot := pivots.GetLastCompleted()
+			pivot := pivotsInd.GetLastCompleted()
 
-			log.Debug().
-				Stringer("type", pivot.Type).
-				Time("timestamp", pivot.Timestamp).
-				Float64("value", pivot.Value).
-				Msg("found pivot")
-
-			pivotsQ.Records = append(pivotsQ.Records, models.QuantityRecord{
+			pivotsQ.AddRecord(models.QuantityRecord{
 				Time:  pivot.Timestamp,
 				Value: pivot.Value,
 			})
+		}
+	}
+
+	// Add a couple more pivot points at the end
+	pivot := pivotsInd.GetLastCompleted()
+	afterPivot := sourceQ.FindRecordsAfter(pivot.Timestamp)
+	lastAfterPivot := afterPivot[len(afterPivot)-1]
+
+	switch pivot.Type {
+	case pivots.PivotLow:
+		max := slices.MaxFunc(afterPivot, func(a, b models.QuantityRecord) int {
+			return cmp.Compare(a.Value, b.Value)
+		})
+
+		pivotsQ.AddRecord(max)
+
+		if lastAfterPivot.Value < max.Value {
+			pivotsQ.AddRecord(lastAfterPivot)
+		}
+	case pivots.PivotHigh:
+		min := slices.MinFunc(afterPivot, func(a, b models.QuantityRecord) int {
+			return cmp.Compare(a.Value, b.Value)
+		})
+
+		pivotsQ.AddRecord(min)
+
+		if lastAfterPivot.Value > min.Value {
+			pivotsQ.AddRecord(lastAfterPivot)
 		}
 	}
 
@@ -106,7 +122,7 @@ func EvalSlope(
 			continue
 		}
 
-		slopeQ.Records = append(slopeQ.Records, models.QuantityRecord{
+		slopeQ.AddRecord(models.QuantityRecord{
 			Time:  sourceQ.Records[i-(horizon-1)].Time,
 			Value: lr.Slope(),
 		})
@@ -122,10 +138,7 @@ func EvalSlope(
 		record.Value /= maxSlopeMagn
 	}
 
-	evalQ := &models.Quantity{
-		Name:    "Predictor Slope Agreement",
-		Records: []models.QuantityRecord{},
-	}
+	evalQ := models.NewQuantity("Predictor Slope Agreement")
 
 	log.Debug().Int("pred records", len(predQ.Records)).Msg("eval: evaluating predictor slope agreement")
 
@@ -136,7 +149,7 @@ func EvalSlope(
 			continue
 		}
 
-		evalQ.Records = append(evalQ.Records, models.QuantityRecord{
+		evalQ.AddRecord(models.QuantityRecord{
 			Value: slope.Value * record.Value,
 			Time:  record.Time,
 		})

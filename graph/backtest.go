@@ -19,12 +19,11 @@ func Backtest(
 	symbol string,
 	testDate date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
-	showWarmup bool,
+	load models.LoadBarsFunc,
 	predictor *Address,
 	threshold float64,
 ) (*models.TimeSeries, error) {
-	graphConfig.ClearAllRecording()
+	graphConfig.ClearAllRecorded()
 
 	log.Debug().
 		Stringer("date", testDate).
@@ -32,10 +31,10 @@ func Backtest(
 		Msg("backtesting graph")
 
 	sourceBlkCfg := &BlockConfig{
-		Name:      "source-" + nanoid.Must(),
-		Type:      "Bar",
-		ParamVals: map[string]any{},
-		Recording: []string{"close"},
+		Name:            "source-" + nanoid.Must(),
+		Type:            "Bar",
+		ParamVals:       map[string]any{},
+		RecordedOutputs: []string{"close"},
 	}
 
 	graphConfig.Blocks = append(graphConfig.Blocks, sourceBlkCfg)
@@ -44,7 +43,7 @@ func Backtest(
 		return nil, fmt.Errorf("failed to set recording for predictor output: %w", err)
 	}
 
-	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, loader, showWarmup)
+	timeSeries, err := RunDay(ctx, graphConfig, symbol, testDate, loc, load)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run graph on %s: %w", testDate, err)
 	}
@@ -60,15 +59,10 @@ func Backtest(
 	}
 
 	currentEquity := 0.0
-	equityQ := &models.Quantity{
-		Name: "Equity",
-		Records: []models.QuantityRecord{
-			{
-				Time:  sourceQ.Records[0].Time,
-				Value: 0.0,
-			},
-		},
-	}
+	equityQ := models.NewQuantity("Equity", models.QuantityRecord{
+		Time:  sourceQ.Records[0].Time,
+		Value: 0.0,
+	})
 	dir := models.DirNone
 
 	var position *models.Position
@@ -176,12 +170,12 @@ func Backtest(
 			position = models.NewShortPosition(t, rSource.Value)
 		}
 
-		if position != nil {
-			// log.Debug().
-			// 	Stringer("entryTime", t).
-			// 	Str("type", position.Type).
-			// 	Msg("opened position")
-		}
+		// if position != nil {
+		// 	// log.Debug().
+		// 	// 	Stringer("entryTime", t).
+		// 	// 	Str("type", position.Type).
+		// 	// 	Msg("opened position")
+		// }
 	}
 
 	timeSeries.AddQuantity(equityQ)

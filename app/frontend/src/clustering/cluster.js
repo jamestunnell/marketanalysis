@@ -30,11 +30,11 @@ function kMeansAdaptive(namedDatasets) {
     for (; k > 1; k--) {
         const majority = Number(k) / Number(k+1)
 
-        console.log(`trying clustering with k=${k}`)
+        // console.log(`trying clustering with k=${k}`)
 
         const results = skmeans(allValues, k)
 
-        console.log(`clustering with k=${k} complete`)
+        // console.log(`clustering with k=${k} complete`)
 
         const votesByDS = Object.fromEntries(names.map(name => {
             const votes = {}
@@ -52,7 +52,7 @@ function kMeansAdaptive(namedDatasets) {
             votes[clusterIdx]++
         })
 
-        console.log("counted votes by dataset", votesByDS)
+        // console.log("counted votes by dataset", votesByDS)
 
         const clustersByDS = {}
 
@@ -64,10 +64,10 @@ function kMeansAdaptive(namedDatasets) {
 
                 const perc = Number(count) / Number(n)
 
-                console.log(`datastore ${name} votes for ${j}: ${100.0*perc}%`)
+                // console.log(`datastore ${name} votes for ${j}: ${100.0*perc}%`)
 
                 if (perc >= majority) {
-                    console.log(`datastore ${name}: selected cluster ${j}`)
+                    // console.log(`datastore ${name}: selected cluster ${j}`)
 
                     clustersByDS[name] = j
                     

@@ -11,7 +11,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/jamestunnell/marketanalysis/app"
+	"github.com/jamestunnell/marketanalysis/app/backend"
+	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 )
 
 type getBars struct {
@@ -27,37 +28,47 @@ func NewGetBars(db *mongo.Database) http.Handler {
 func (h *getBars) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	symbol := mux.Vars(r)["symbol"]
 	urlVals := r.URL.Query()
+	dateStr := mux.Vars(r)["date"]
 	timeZone := urlVals.Get("timeZone")
 
-	if timeZone == "" {
-		timeZone = DefaultTimeZone
+	d, err := date.Parse(date.RFC3339, dateStr)
+	if err != nil {
+		msg := fmt.Sprintf("date '%s'", dateStr)
+
+		handleAppErr(w, backend.NewErrInvalidInput(msg, err.Error()))
 	}
 
-	d, err := date.Parse(date.RFC3339, mux.Vars(r)["date"])
+	var loc *time.Location
 
-	loc, err := time.LoadLocation(timeZone)
-	if err != nil {
-		msg := fmt.Sprintf("time zone '%s'", timeZone)
+	if timeZone != "" {
+		loc, err = time.LoadLocation(timeZone)
+		if err != nil {
+			msg := fmt.Sprintf("time zone '%s'", timeZone)
 
-		handleAppErr(w, app.NewErrInvalidInput(msg, err.Error()))
+			handleAppErr(w, backend.NewErrInvalidInput(msg, err.Error()))
+		}
+	}
+
+	store := stores.NewBarSets(symbol, h.db)
+
+	barSet, appErr := store.Get(r.Context(), d.String())
+	if appErr != nil {
+		handleAppErr(w, appErr)
 
 		return
 	}
 
-	loader := app.NewDayBarsLoader(h.db, symbol, loc)
-
-	dayBars, err := loader.Load(r.Context(), d)
-	if err != nil {
-		handleAppErr(w, app.NewErrActionFailed("load day bars", err.Error()))
-
-		return
+	if loc != nil {
+		for _, bar := range barSet.Bars {
+			bar.Timestamp = bar.Timestamp.In(loc)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(dayBars); err != nil {
+	if err := json.NewEncoder(w).Encode(barSet); err != nil {
 		log.Warn().Msg("failed to write response")
 	}
 }

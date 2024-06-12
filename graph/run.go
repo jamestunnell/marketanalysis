@@ -9,7 +9,6 @@ import (
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/bars"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/recorders"
 )
@@ -40,10 +39,9 @@ func RunDay(
 	symbol string,
 	d date.Date,
 	loc *time.Location,
-	loader models.DayBarsLoader,
-	showWarmup bool,
+	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
-	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, loader, showWarmup)
+	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, load)
 }
 
 func Run(
@@ -52,8 +50,7 @@ func Run(
 	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
-	loader models.DayBarsLoader,
-	showWarmup bool,
+	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
 		log.Debug().Msg("timespan is empty, returning empty time series")
@@ -72,7 +69,7 @@ func Run(
 	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := bars.LoadRunBars(ctx, symbol, ts, loc, loader, g.GetWarmupPeriod())
+	bars, err := models.LoadRunBars(ctx, symbol, ts, loc, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}
@@ -100,26 +97,22 @@ func Run(
 		Int("run bars", len(bars)-wuPeriod).
 		Msgf("running model")
 
-	for _, bar := range bars {
-		g.Update(bar)
+	for i, bar := range bars {
+		g.Update(bar, i == (len(bars)-1))
 	}
 
 	if err = r.Finalize(); err != nil {
 		return nil, fmt.Errorf("failed to finalize recording: %w", err)
 	}
 
-	if !showWarmup {
-		log.Debug().Msg("dropping warmup records")
+	log.Debug().Msg("dropping warmup records")
 
-		r.DropRecordsBefore(ts.Start())
-	}
+	r.DropRecordsBefore(ts.Start())
 
 	return r.TimeSeries, nil
 }
 
 func GetCoreHours(d date.Date) timespan.TimeSpan {
-	const layout = "2006-01-02T15:04"
-
 	switch d.Weekday() {
 	case time.Saturday, time.Sunday:
 		return timespan.TimeSpan{}
