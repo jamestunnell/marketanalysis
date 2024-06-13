@@ -5,6 +5,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 )
@@ -18,53 +19,49 @@ type Configuration struct {
 }
 
 type BlockConfig struct {
-	Name            string              `json:"name"`
-	Type            string              `json:"type"`
-	ParamVals       map[string]any      `json:"paramVals,omitempty"`
-	RecordedOutputs []string            `json:"recordedOutputs,omitempty"`
-	InputSources    map[string]*Address `json:"inputSources,omitempty"`
+	Name      string          `json:"name"`
+	Type      string          `json:"type"`
+	ParamVals map[string]any  `json:"paramVals,omitempty"`
+	Outputs   []*OutputConfig `json:"outputs,omitempty"`
+	Inputs    []*InputConfig  `json:"inputs,omitempty"`
+}
+
+type InputConfig struct {
+	Name   string   `json:"name"`
+	Source *Address `json:"source"`
+}
+
+type OutputConfig struct {
+	Name         string   `json:"name"`
+	Measurements []string `json:"measurements"`
 }
 
 func (cfg Configuration) GetKey() string {
 	return cfg.ID
 }
 
-func (cfg Configuration) ClearAllRecorded() {
-	for _, bc := range cfg.Blocks {
-		bc.RecordedOutputs = []string{}
-	}
-}
-
-func (cfg Configuration) SetRecording(addr *Address) error {
-	bc, found := cfg.FindBlockConfig(addr.A)
-	if !found {
-		return fmt.Errorf("block %s not found", addr.A)
-	}
-
-	newBlk, found := registry.Get(bc.Type)
-	if !found {
-		return fmt.Errorf("unknown block type %s", bc.Type)
-	}
-
-	outs := newBlk().GetOutputs()
-
-	if _, found = outs[addr.B]; !found {
-		return fmt.Errorf("block %s does not have output %s", addr.A, addr.B)
-	}
-
-	bc.RecordedOutputs = append(bc.RecordedOutputs, addr.B)
-
-	return nil
-}
-
-func (cfg Configuration) FindBlockConfig(name string) (*BlockConfig, bool) {
-	for _, bc := range cfg.Blocks {
-		if bc.Name == name {
-			return bc, true
+func (cfg Configuration) FindBlock(name string) (*BlockConfig, bool) {
+	for _, blk := range cfg.Blocks {
+		if blk.Name == name {
+			return blk, true
 		}
 	}
 
 	return nil, false
+}
+
+func (cfg Configuration) FindMeasurements(outputAddr *Address) []string {
+	blk, found := cfg.FindBlock(outputAddr.A)
+	if !found {
+		return []string{}
+	}
+
+	out, found := blk.FindOutput(outputAddr.B)
+	if !found {
+		return []string{}
+	}
+
+	return out.Measurements
 }
 
 func (cfg Configuration) MakeBlocks() (Blocks, []error) {
@@ -127,6 +124,16 @@ func (cfg *Configuration) Validate() []error {
 	return errs
 }
 
+func (bc *BlockConfig) FindOutput(name string) (*OutputConfig, bool) {
+	for _, out := range bc.Outputs {
+		if out.Name == name {
+			return out, true
+		}
+	}
+
+	return nil, false
+}
+
 func (bc *BlockConfig) Validate(
 	blk blocks.Block,
 	findSource func(*Address) (blocks.Output, bool),
@@ -134,39 +141,45 @@ func (bc *BlockConfig) Validate(
 	errs := []error{}
 	ins := blk.GetInputs()
 
-	// validate connections
-	for inputName, sourceAddr := range bc.InputSources {
-		in, found := ins[inputName]
+	// validate input config
+	for _, input := range bc.Inputs {
+		in, found := ins[input.Name]
 		if !found {
-			errs = append(errs, fmt.Errorf("block %s: input %s not found", bc.Name, inputName))
+			errs = append(errs, fmt.Errorf("block %s: input %s not found", bc.Name, input.Name))
 
 			continue
 		}
 
-		if inputName == sourceAddr.A {
-			errs = append(errs, fmt.Errorf("block %s: input %s source is the same block", bc.Name, inputName))
+		if input.Name == input.Source.A {
+			errs = append(errs, fmt.Errorf("block %s: input %s source is the same block", bc.Name, input.Name))
 
 			continue
 		}
 
-		src, found := findSource(sourceAddr)
+		src, found := findSource(input.Source)
 		if !found {
-			errs = append(errs, fmt.Errorf("block %s: input %s source %s not found", bc.Name, inputName, sourceAddr))
+			errs = append(errs, fmt.Errorf("block %s: input %s source %s not found", bc.Name, input.Name, input.Source))
 		}
 
 		if err := src.Connect(in); err != nil {
-			errs = append(errs, fmt.Errorf("block %s: cannot connect input %s to source %s: %w", bc.Name, inputName, sourceAddr, err))
+			errs = append(errs, fmt.Errorf("block %s: cannot connect input %s to source %s: %w", bc.Name, input.Name, input.Source, err))
 		}
 	}
 
 	outs := blk.GetOutputs()
 
-	// validate recording outputs
-	for _, recOut := range bc.RecordedOutputs {
-		if out, found := outs[recOut]; !found {
-			errs = append(errs, fmt.Errorf("block %s: cannot reocrd output '%s' (not found)", bc.Name, recOut))
-		} else if out.GetType() != "float64" {
-			errs = append(errs, fmt.Errorf("block %s: cannot record output '%s' (not a float64 type)", bc.Name, recOut))
+	// validate output config
+	for _, output := range bc.Outputs {
+		if _, found := outs[output.Name]; !found {
+			errs = append(errs, fmt.Errorf("block %s: unknown output '%s'", bc.Name, output.Name))
+
+			continue
+		}
+
+		for _, m := range output.Measurements {
+			if _, found := models.GetMeasureFunc(m); !found {
+				errs = append(errs, fmt.Errorf("block %s: output %s: unknown measurement '%s'", bc.Name, output.Name, m))
+			}
 		}
 	}
 

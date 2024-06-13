@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"slices"
 
-	gr "github.com/dominikbraun/graph"
-	nanoid "github.com/matoous/go-nanoid/v2"
+	graphlib "github.com/dominikbraun/graph"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 
 	"github.com/jamestunnell/marketanalysis/blocks"
-	"github.com/jamestunnell/marketanalysis/blocks/record"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 	"github.com/jamestunnell/marketanalysis/models"
 )
@@ -18,45 +16,50 @@ import (
 type Graph struct {
 	*Configuration
 
-	blocks       Blocks
-	warmupPeriod int
-	order        []string
+	blocks          Blocks
+	warmupPeriod    int
+	order           []string
+	recordOuts      []*recordOut
+	recordOutsAsync []*recordOutAsync
+	timeSeries      *models.TimeSeries
 }
 
-// func LoadGraph(fpath string) (*Graph, error) {
-// 	var g Graph
+type recordOut struct {
+	Output       *blocks.TypedOutput[float64]
+	Quantity     *models.Quantity
+	Measurements []string
+}
 
-// 	f, err := os.Open(fpath)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to open model file '%s': %w", fpath, err)
-// 	}
-
-// 	decoder := json.NewDecoder(f)
-
-// 	if err = decoder.Decode(&g); err != nil {
-// 		return nil, fmt.Errorf("failed to unmarshal model JSON: %w", err)
-// 	}
-
-// 	return &g, nil
-// }
+type recordOutAsync struct {
+	Output       *blocks.TypedOutputAsync[float64]
+	Quantity     *models.Quantity
+	Measurements []string
+}
 
 func New(cfg *Configuration) *Graph {
 	log.Debug().Interface("configuration", cfg).Msg("making graph")
 
 	return &Graph{
-		Configuration: cfg,
-		blocks:        Blocks{},
-		warmupPeriod:  0,
-		order:         []string{},
+		Configuration:   cfg,
+		blocks:          Blocks{},
+		warmupPeriod:    0,
+		order:           []string{},
+		recordOuts:      []*recordOut{},
+		recordOutsAsync: []*recordOutAsync{},
+		timeSeries:      models.NewTimeSeries(),
 	}
 }
 
-func (m *Graph) GetWarmupPeriod() int {
-	return m.warmupPeriod
+func (g *Graph) GetWarmupPeriod() int {
+	return g.warmupPeriod
 }
 
-func (m *Graph) Init(rec blocks.Recorder) error {
-	blks, conns, err := m.makeBlocksAndConns(rec)
+func (g *Graph) GetTimeSeries() *models.TimeSeries {
+	return g.timeSeries
+}
+
+func (g *Graph) Init() error {
+	blks, conns, err := g.makeBlocksAndConns()
 	if err != nil {
 		return err
 	}
@@ -65,97 +68,117 @@ func (m *Graph) Init(rec blocks.Recorder) error {
 		return fmt.Errorf("failed to init blocks: %w", err)
 	}
 
-	g, err := blks.Connect(conns)
+	gr, err := blks.Connect(conns)
 	if err != nil {
 		return fmt.Errorf("failed to connect blocks: %w", err)
 	}
 
-	order, err := gr.TopologicalSort(g)
+	order, err := graphlib.TopologicalSort(gr)
 	if err != nil {
 		return fmt.Errorf("topological sort failed: %w", err)
 	}
 
 	log.Debug().Strs("order", order).Msg("connected graph blocks")
 
-	wuPeriod, err := MaxTotalWarmupPeriod(blks, g, order)
+	wuPeriod, err := MaxTotalWarmupPeriod(blks, gr, order)
 	if err != nil {
 		return err
+	}
+
+	timeSeries := models.NewTimeSeries()
+	recordOuts := []*recordOut{}
+	recordOutsAsync := []*recordOutAsync{}
+
+	// record all float64 outputs
+	for blkName, blk := range blks {
+		for outName, out := range blk.GetOutputs() {
+			addr := &Address{A: blkName, B: outName}
+			q := models.NewQuantity(addr.String())
+
+			switch oo := out.(type) {
+			case *blocks.TypedOutput[float64]:
+				r := &recordOut{
+					Quantity:     q,
+					Output:       oo,
+					Measurements: g.FindMeasurements(addr),
+				}
+
+				timeSeries.AddQuantity(q)
+
+				recordOuts = append(recordOuts, r)
+			case *blocks.TypedOutputAsync[float64]:
+				r := &recordOutAsync{
+					Quantity:     q,
+					Output:       oo,
+					Measurements: g.FindMeasurements(addr),
+				}
+
+				timeSeries.AddQuantity(q)
+
+				recordOutsAsync = append(recordOutsAsync, r)
+			default:
+				log.Warn().Str("block", blkName).Str("output", outName).Msg("unhandled block output")
+			}
+		}
 	}
 
 	log.Debug().
 		Int("warmupPeriod", wuPeriod).
 		Msg("initialized graph model")
 
-	m.blocks = blks
-	m.warmupPeriod = wuPeriod
-	m.order = order
+	g.blocks = blks
+	g.warmupPeriod = wuPeriod
+	g.order = order
+	g.recordOuts = recordOuts
+	g.recordOutsAsync = recordOutsAsync
+	g.timeSeries = timeSeries
 
 	return nil
 }
 
-func (m *Graph) makeBlocksAndConns(r blocks.Recorder) (Blocks, []*Connection, error) {
+func (g *Graph) makeBlocksAndConns() (Blocks, []*Connection, error) {
 	blks := Blocks{}
 	conns := []*Connection{}
-	recordName := "record-" + nanoid.Must()
-	recordIns := map[string]*blocks.TypedInput[float64]{}
-	recordInsAsync := map[string]*blocks.TypedInputAsync[float64]{}
 
-	for _, cfg := range m.Blocks {
-		new, found := registry.Get(cfg.Type)
+	for _, blockCfg := range g.Blocks {
+		new, found := registry.Get(blockCfg.Type)
 		if !found {
-			err := fmt.Errorf("block %s: type '%s' not found in registry", cfg.Name, cfg.Type)
+			err := fmt.Errorf(
+				"block %s: type '%s' not found in registry",
+				blockCfg.Name,
+				blockCfg.Type)
 
 			return Blocks{}, []*Connection{}, err
 		}
 
 		blk := new()
 
-		if err := blk.GetParams().SetValuesOrDefault(cfg.ParamVals); err != nil {
-			err = fmt.Errorf("block %s: failed to set param vals %#v: %w", cfg.Name, cfg.ParamVals, err)
+		if err := blk.GetParams().SetValuesOrDefault(blockCfg.ParamVals); err != nil {
+			err = fmt.Errorf(
+				"block %s: failed to set param vals %#v: %w",
+				blockCfg.Name,
+				blockCfg.ParamVals,
+				err)
 
 			return Blocks{}, []*Connection{}, err
 		}
 
-		blks[cfg.Name] = blk
+		blks[blockCfg.Name] = blk
 
-		for inputName, sourceAddr := range cfg.InputSources {
-			conns = append(conns, &Connection{Source: sourceAddr, Target: &Address{A: cfg.Name, B: inputName}})
+		for _, inputCfg := range blockCfg.Inputs {
+			conn := &Connection{
+				Source: inputCfg.Source,
+				Target: &Address{A: blockCfg.Name, B: inputCfg.Name},
+			}
+
+			conns = append(conns, conn)
 		}
-
-		for _, outName := range cfg.RecordedOutputs {
-			out, found := blk.GetOutputs()[outName]
-			if !found {
-				err := fmt.Errorf("block %s: recording output '%s' not found", cfg.Name, outName)
-
-				return Blocks{}, []*Connection{}, err
-			}
-
-			recTarget := fmt.Sprintf("%s.%s", cfg.Name, outName)
-			recordConn := &Connection{
-				Source: NewAddress(cfg.Name, outName),
-				Target: NewAddress(recordName, recTarget),
-			}
-
-			if out.IsAsynchronous() {
-				recordInsAsync[recTarget] = blocks.NewTypedInputAsync[float64]()
-			} else {
-				recordIns[recTarget] = blocks.NewTypedInput[float64]()
-			}
-
-			conns = append(conns, recordConn)
-		}
-	}
-
-	blks[recordName] = &record.Record{
-		Inputs:      recordIns,
-		InputsAsync: recordInsAsync,
-		Recorder:    r,
 	}
 
 	return blks, conns, nil
 }
 
-func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []string) (int, error) {
+func MaxTotalWarmupPeriod(blks Blocks, g graphlib.Graph[string, string], order []string) (int, error) {
 	totalWUs := map[string]int{}
 
 	predMap, err := g.PredecessorMap()
@@ -184,18 +207,47 @@ func MaxTotalWarmupPeriod(blks Blocks, g gr.Graph[string, string], order []strin
 	return maxWU, nil
 }
 
-func (m *Graph) Update(bar *models.Bar, isLast bool) {
+func (g *Graph) Update(bar *models.Bar, isLast bool) {
 	log.Trace().Msg("updating graph")
 
-	for _, blk := range m.blocks {
+	for _, blk := range g.blocks {
 		blocks.ClearOutputs(blk)
 	}
 
-	for _, name := range m.order {
-		blk := m.blocks[name]
+	for _, name := range g.order {
+		blk := g.blocks[name]
 
 		log.Trace().Str("name", name).Msg("running block")
 
 		blk.Update(bar, isLast)
+	}
+
+	for _, r := range g.recordOuts {
+		if r.Output.IsValueSet() {
+			record := models.NewTimeValue(bar.Timestamp, r.Output.GetValue())
+
+			r.Quantity.AddRecord(record)
+		}
+	}
+
+	for _, r := range g.recordOutsAsync {
+		if r.Output.IsValueSet() {
+			record := models.NewTimeValue(r.Output.GetTime(), r.Output.GetValue())
+
+			r.Quantity.AddRecord(record)
+		}
+	}
+
+	if !isLast {
+		return
+	}
+
+	// do all measurements after the last bar
+	for _, r := range g.recordOuts {
+		r.Quantity.MeasureAll(r.Measurements)
+	}
+
+	for _, r := range g.recordOutsAsync {
+		r.Quantity.MeasureAll(r.Measurements)
 	}
 }

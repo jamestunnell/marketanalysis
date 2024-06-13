@@ -8,9 +8,10 @@ import (
 )
 
 type Quantity struct {
-	Name       string           `json:"name"`
-	Records    []QuantityRecord `json:"records"`
-	Attributes map[string]any   `json:"attributes"`
+	Name         string             `json:"name"`
+	Records      []QuantityRecord   `json:"records"`
+	Measurements map[string]float64 `json:"measurements"`
+	Attributes   map[string]any     `json:"attributes"`
 }
 
 type QuantityRecord = TimeValue[float64]
@@ -19,9 +20,10 @@ const AttrCluster = "cluster"
 
 func NewQuantity(name string, records ...QuantityRecord) *Quantity {
 	return &Quantity{
-		Name:       name,
-		Records:    records,
-		Attributes: map[string]any{},
+		Name:         name,
+		Records:      records,
+		Measurements: map[string]float64{},
+		Attributes:   map[string]any{},
 	}
 }
 
@@ -65,4 +67,21 @@ func (q *Quantity) RecordValues() []float64 {
 	return sliceutils.Map(q.Records, func(r QuantityRecord) float64 {
 		return r.Value
 	})
+}
+
+func (q *Quantity) MeasureAll(mTypes []string) {
+	for _, mType := range mTypes {
+		q.Measure(mType)
+	}
+}
+
+func (q *Quantity) Measure(typ string) bool {
+	measure, found := GetMeasureFunc(typ)
+	if !found {
+		return false
+	}
+
+	q.Measurements[typ] = measure(q.RecordValues())
+
+	return true
 }

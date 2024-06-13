@@ -3,7 +3,6 @@ package backend
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
@@ -15,15 +14,13 @@ import (
 )
 
 type BarSetLoader struct {
-	Symbol   string
-	Location *time.Location
-	Store    Store[*models.BarSet]
+	Symbol string
+	Store  Store[*models.BarSet]
 }
 
 func NewBarSetLoader(
 	db *mongo.Database,
 	symbol string,
-	loc *time.Location,
 ) *BarSetLoader {
 	info := &ResourceInfo{
 		KeyName:    "date",
@@ -34,9 +31,8 @@ func NewBarSetLoader(
 	store := NewMongoStore[*models.BarSet](info, col)
 
 	return &BarSetLoader{
-		Symbol:   symbol,
-		Location: loc,
-		Store:    store,
+		Symbol: symbol,
+		Store:  store,
 	}
 }
 
@@ -50,16 +46,12 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 			Stringer("date", d).
 			Msg("found bars in store")
 
-		for _, bar := range dayBars.Bars {
-			bar.Timestamp = bar.Timestamp.In(l.Location)
-		}
-
 		return dayBars.Bars, nil
 	}
 
-	ts := timespan.NewTimeSpan(d.In(l.Location), d.Add(1).In(l.Location))
+	ts := timespan.NewTimeSpan(d.In(locNewYork), d.Add(1).In(locNewYork))
 
-	bs, err := alpaca.GetBarsOneMin(l.Symbol, ts, l.Location)
+	bs, err := alpaca.GetBarsOneMin(l.Symbol, ts, locNewYork)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aplaca bars: %w", err)
 	}
@@ -72,6 +64,12 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 	dayBars = &models.BarSet{
 		Bars: bs,
 		Date: d.String(),
+	}
+
+	if d.Equal(date.TodayIn(locNewYork)) {
+		log.Debug().Msg("not storing bars from today")
+
+		return dayBars.Bars, nil
 	}
 
 	log.Debug().

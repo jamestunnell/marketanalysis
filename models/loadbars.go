@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
@@ -16,7 +15,6 @@ type LoadBarsFunc func(ctx context.Context, d date.Date) (Bars, error)
 func LoadRunBars(
 	ctx context.Context,
 	ts timespan.TimeSpan,
-	loc *time.Location,
 	load LoadBarsFunc,
 	warmupPeriod int,
 ) (Bars, error) {
@@ -56,7 +54,7 @@ func LoadRunBars(
 	for warmupDate := startDate.Add(-1); len(warmupBars) < warmupPeriod; warmupDate = warmupDate.Add(-1) {
 		// Move timespan backward at least one day
 		ts = timespan.NewTimeSpan(
-			date.NewAt(ts.Start()).Add(-1).In(loc),
+			date.NewAt(ts.Start()).Add(-1).In(ts.Start().Location()),
 			ts.Start(),
 		)
 

@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -25,19 +23,10 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug().Interface("request", runDay).Msg("received run-day request")
 
-	loc, err := time.LoadLocation(runDay.TimeZone)
-	if err != nil {
-		msg := fmt.Sprintf("run time zone '%s'", runDay.TimeZone)
+	loader := backend.NewBarSetLoader(a.DB, runDay.Symbol)
 
-		handleAppErr(w, backend.NewErrInvalidInput(msg, err.Error()))
-
-		return
-	}
-
-	loader := backend.NewBarSetLoader(a.DB, runDay.Symbol, loc)
-
-	timeSeries, err := graph.RunDay(
-		r.Context(), runDay.Graph, runDay.Date, loc, loader.Load)
+	timeSeries, err := graph.Run(
+		r.Context(), runDay.Graph, backend.GetCoreHours(runDay.Date), loader.Load)
 	if err != nil {
 		appErr := backend.NewErrActionFailed("run graph", err.Error())
 

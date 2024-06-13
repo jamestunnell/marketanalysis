@@ -3,51 +3,17 @@ package graph
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/recorders"
 )
-
-const (
-	exchangesCloseOffsetMinutes = 16 * 60
-	exchangesOpenOffsetMinutes  = 9*60 + 30
-	exchangesTZ                 = "America/New_York"
-)
-
-var exchangeLoc *time.Location
-
-func init() {
-	loc, err := time.LoadLocation(exchangesTZ)
-	if err != nil {
-		log.Fatal().
-			Err(err).
-			Str("timeZone", exchangesTZ).
-			Msg("failed to load exchange location")
-	}
-
-	exchangeLoc = loc
-}
-
-func RunDay(
-	ctx context.Context,
-	cfg *Configuration,
-	d date.Date,
-	loc *time.Location,
-	load models.LoadBarsFunc,
-) (*models.TimeSeries, error) {
-	return Run(ctx, cfg, GetCoreHours(d), loc, load)
-}
 
 func Run(
 	ctx context.Context,
 	cfg *Configuration,
 	ts timespan.TimeSpan,
-	loc *time.Location,
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
@@ -57,17 +23,16 @@ func Run(
 	}
 
 	g := New(cfg)
-	r := recorders.NewTimeSeries(loc)
 
-	if err := g.Init(r); err != nil {
+	if err := g.Init(); err != nil {
 		return nil, fmt.Errorf("failed to init graph: %w", err)
 	}
 
-	// re-locate timespan
-	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
+	// // re-locate timespan
+	// ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := models.LoadRunBars(ctx, ts, loc, load, g.GetWarmupPeriod())
+	bars, err := models.LoadRunBars(ctx, ts, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}
@@ -99,25 +64,13 @@ func Run(
 		g.Update(bar, i == (len(bars)-1))
 	}
 
-	if err = r.Finalize(); err != nil {
-		return nil, fmt.Errorf("failed to finalize recording: %w", err)
-	}
+	timeSeries := g.GetTimeSeries()
+
+	timeSeries.SortByTime()
 
 	log.Debug().Msg("dropping warmup records")
 
-	r.DropRecordsBefore(ts.Start())
+	timeSeries.DropRecordsBefore(ts.Start())
 
-	return r.TimeSeries, nil
-}
-
-func GetCoreHours(d date.Date) timespan.TimeSpan {
-	switch d.Weekday() {
-	case time.Saturday, time.Sunday:
-		return timespan.TimeSpan{}
-	}
-
-	start := d.In(exchangeLoc).Add(time.Minute * exchangesOpenOffsetMinutes)
-	end := d.In(exchangeLoc).Add(time.Minute * exchangesCloseOffsetMinutes)
-
-	return timespan.NewTimeSpan(start, end)
+	return timeSeries, nil
 }

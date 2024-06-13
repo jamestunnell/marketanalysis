@@ -85,6 +85,10 @@ func (out *TypedOutputAsync[T]) DisconnectAll() {
 	out.Ins = []*TypedInputAsync[T]{}
 }
 
+func (out *TypedOutputAsync[T]) GetTime() time.Time {
+	return out.time
+}
+
 func (out *TypedOutputAsync[T]) GetValue() T {
 	return out.value
 }
