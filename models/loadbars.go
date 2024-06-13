@@ -15,7 +15,6 @@ type LoadBarsFunc func(ctx context.Context, d date.Date) (Bars, error)
 
 func LoadRunBars(
 	ctx context.Context,
-	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
 	load LoadBarsFunc,

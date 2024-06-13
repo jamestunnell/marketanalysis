@@ -36,18 +36,16 @@ func init() {
 func RunDay(
 	ctx context.Context,
 	cfg *Configuration,
-	symbol string,
 	d date.Date,
 	loc *time.Location,
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
-	return Run(ctx, cfg, symbol, GetCoreHours(d), loc, load)
+	return Run(ctx, cfg, GetCoreHours(d), loc, load)
 }
 
 func Run(
 	ctx context.Context,
 	cfg *Configuration,
-	symbol string,
 	ts timespan.TimeSpan,
 	loc *time.Location,
 	load models.LoadBarsFunc,
@@ -69,7 +67,7 @@ func Run(
 	ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := models.LoadRunBars(ctx, symbol, ts, loc, load, g.GetWarmupPeriod())
+	bars, err := models.LoadRunBars(ctx, ts, loc, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}

@@ -37,7 +37,7 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	loader := backend.NewBarSetLoader(a.DB, runDay.Symbol, loc)
 
 	timeSeries, err := graph.RunDay(
-		r.Context(), runDay.Graph, runDay.Symbol, runDay.Date, loc, loader.Load)
+		r.Context(), runDay.Graph, runDay.Date, loc, loader.Load)
 	if err != nil {
 		appErr := backend.NewErrActionFailed("run graph", err.Error())
 
