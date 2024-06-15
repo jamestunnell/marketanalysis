@@ -6,17 +6,21 @@ import { AppErrorAlert} from '../apperror.js';
 import { Get, PutJSON } from '../backend.js';
 import { BlockItem } from "./block.js";
 import { AddBlockModal } from "./addblock.js";
-import { Button, ButtonIcon, ButtonIconDisableable } from "../buttons.js";
+import { Button, ButtonIcon } from "../buttons.js";
 import { DownloadJSON } from "../download.js";
 import GraphSettings from "./graphsettings.js"
 import { IconAdd, IconExport, IconSave } from "../icons.js";
+import { INPUT_CLASS } from '../input.js'
 import { MakeEmptyChart, UpdateCharts } from '../charts.js'
-import { runDay } from './rungraph.js'
+import { runGraph } from './rungraph.js'
 import { truncateStringAddElipses } from "../truncatestring.js";
 
-const {div, label, p, nav} = van.tags
+const {div, label, nav, option, p, select} = van.tags
 
 const GRAPH_NAV_ID = "graphNav"
+const RUN_SINGLE_DAY = "singleDay"
+const RUN_MULTI_DAY = "multiDay"
+const RUN_MULTI_DAY_SUMMARY = "multiDaySummary"
 
 const getAllBlockInfo = () => {
     return new Promise((resolve, reject) => {
@@ -120,6 +124,7 @@ class PageContent {
         this.digestsAgree = van.derive(() => this.digest.val === this.digestSaved.val)
         this.name = van.state(graph.name)
         this.infoByType = infoByType
+        this.runType = van.state(RUN_SINGLE_DAY)
 
         this.blockItems = graph.blocks.map(block => {
             return new BlockItem({
@@ -145,6 +150,8 @@ class PageContent {
                 div(
                     {class: "col-span-4 flex flex-row-reverse pt-2 pb-2 space-x-2 items-center"},
                     div({class:"pr-4"}),
+                    this.renderSelectRunType(),
+                    label({for: "runType", class: "pr-2 font-semibold"}, "Run Type"),
                     this.settings.numChartsInput,
                     label({for: "numCharts", class: "pr-2 font-semibold"}, "Charts"),
                     this.settings.dateInput,
@@ -185,6 +192,7 @@ class PageContent {
             const symbol = this.settings.symbol.val
             const digest = this.digest.val
             const numCharts = this.settings.numCharts.val
+            const runType = this.runType.val
 
             if (date.length === 0 || symbol.length === 0) {
                 return
@@ -194,7 +202,7 @@ class PageContent {
                 this.rebuildChartsArea()
             }
 
-            this.runAndUpdateCharts()
+            this.runAndUpdateCharts(runType)
         })
     }
 
@@ -221,18 +229,19 @@ class PageContent {
         van.add(this.chartsArea, chartDivs)
     }
     
-    runAndUpdateCharts() {
+    runAndUpdateCharts(runType) {
         console.log(`running graph with digest ${this.digest.val}`)
 
-        const graph = this.makeGraph()
-
-        runDay({
-            graph,
+        const opts = {
+            runType,
+            graph: this.makeGraph(),
             date: this.settings.date.val,
             symbol: this.settings.symbol.val,
             numCharts: this.settings.numCharts.val,
-        }).then(obj => {
-            console.log(`run day succeeded`)
+        }
+
+        runGraph(opts).then(obj => {
+            console.log(`run ${runType} succeeded`)
             
             UpdateCharts({charts: this.charts, recording: obj})
         }).catch(appErr => {
@@ -279,6 +288,20 @@ class PageContent {
         
     //     return row ? row.info : null
     // }
+
+    renderSelectRunType() {
+        const options = [
+            option({value: RUN_SINGLE_DAY, selected: true}, RUN_SINGLE_DAY),
+            option({value: RUN_MULTI_DAY}, RUN_MULTI_DAY),
+            option({value: RUN_MULTI_DAY_SUMMARY}, RUN_MULTI_DAY_SUMMARY),
+        ]
+        
+        return select({
+            id: "runType",
+            class: INPUT_CLASS,
+            onchange: (e) => this.runType.val = e.target.value,
+        }, options)
+    }
 
     renderAddBlockButton() {
         const addIcon = IconAdd()

@@ -2,9 +2,9 @@ import van from "vanjs-core"
 
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from '../buttons.js';
 import { IconCheck, IconClose, IconCollapsed, IconDelete, IconError, IconExpanded } from "../icons.js";
-import { InputSourcesTable } from './inputsource.js'
+import { InputsTable } from './inputs.js'
 import { ParamValsTable, validateParamVal } from './paramvals.js'
-import { RecordedOutputsTable } from './recordedoutput.js'
+import { OutputsTable } from './outputs.js'
 
 const {div, input, span} = van.tags
 
@@ -38,16 +38,16 @@ function validateBlock({block, info, otherNames}) {
         return paramErrs[0]
     }
 
-    // TODO - validate inputs sources
-
-    const recordedOutsErrs = block.recordedOutputs.map(name => {
-        const out = info.outputs.find(o => o.name === name)
-
-        return out ? null : new Error(`failed to find output ${name} marked for recording`)
-    }).filter(err => err)
-
-    if (recordedOutsErrs.length > 0) {
-        return recordedOutsErrs[0]
+    for (let i = 0; i < block.inputs.length; i++) {
+        if (!info.inputs.find(input => input.name === block.inputs[i].name)) {
+            return new Error(`failed to find input ${block.inputs[i].name}`)
+        }
+    }
+    
+    for (let i = 0; i < block.outputs.length; i++) {
+        if (!info.outputs.find(output => output.name === block.outputs[i].name)) {
+            return new Error(`failed to find output ${block.outputs[i].name}`)
+        }
     }
 
     return null
@@ -61,23 +61,39 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
 
         return [p.name, van.state(nonDefaultVal ?? p.default)]
     }))
-    const inputSourcesWorking = Object.fromEntries(info.inputs.map(input => {
-        const nonEmptySource  = block.inputSources ? block.inputSources[input.name] : null
+    const sourcesWorking = Object.fromEntries(info.inputs.map(input => {
+        let source = ""
+        
+        if (block.inputs) {
+            block.inputs.forEach(cfg => {
+                if (cfg.name === input.name) {
+                    source = cfg.source
+                }
+            })
+        }
 
-        return [input.name, van.state(nonEmptySource ?? "")]
+        return [input.name, van.state(source)]
     }))
-    const recordedOutputsWorking = Object.fromEntries(info.outputs.map(output => {
-        const idx = block.recordedOutputs ? block.recordedOutputs.indexOf(output.name) : -1
+    const measurementsWorking = Object.fromEntries(info.outputs.map(output => {
+        let measurements = []
+        
+        if (block.outputs) {
+            block.outputs.forEach(cfg => {
+                if (cfg.name === output.name) {
+                    measurements = cfg.measurements
+                }
+            })
+        }
 
-        return [output.name, van.state(idx >= 0)]
+        return [output.name, van.state(measurements)]
     }))
     const paramsCollapsed = van.state(false)
     const inputsCollapsed = van.state(false)
     const outputsCollapsed = van.state(false)
     const modifiedBlock = van.derive(() => {
         const paramVals = {}
-        const inputSources = {}
-        const recordedOutputs = []
+        const inputs = []
+        const outputs = []
 
         Object.entries(paramValsWorking).forEach(([name, value]) => {
             if (value.val !== info.params.find(p => p.name === name).default) {
@@ -85,22 +101,24 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
             }
         })
 
-        Object.entries(inputSourcesWorking).forEach(([name, source]) => {
+        Object.entries(sourcesWorking).forEach(([name, source]) => {
             if (source.val.length > 0) {
-                inputSources[name] = source.val
+                inputs.push({name, source: source.val})
             }
         })
 
-        Object.entries(recordedOutputsWorking).forEach(([name, checked]) => {
-            if (checked.val) {
-                recordedOutputs.push(name)
+        Object.entries(measurementsWorking).forEach(([name, measurements]) => {
+            if (measurements.val.length > 0) {
+                console.log(`pushing measurements for ${name}: ${measurements}`)
+                
+                outputs.push({name, measurements: measurements.val})
             }
         })
 
         return {
             name: nameWorking.val,
             type: block.type,
-            paramVals, inputSources, recordedOutputs,
+            paramVals, inputs, outputs,
         }
     })
     const nameInput = input({
@@ -180,9 +198,9 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
             ),
             div(
                 {hidden: inputsCollapsed},
-                InputSourcesTable({
+                InputsTable({
                     inputs: info.inputs,
-                    inputSources: inputSourcesWorking,
+                    sources: sourcesWorking,
                     possibleSources,
                 }),
             ),
@@ -200,9 +218,9 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
             ),
             div(
                 {hidden: outputsCollapsed},
-                RecordedOutputsTable({
+                OutputsTable({
                     outputs: info.outputs,
-                    recordedOutputs: recordedOutputsWorking,
+                    measurements: measurementsWorking,
                 })
             ),
             span({class: "mb-2"}),

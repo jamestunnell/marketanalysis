@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
+	"github.com/rs/zerolog/log"
 )
 
 type Quantity struct {
@@ -71,17 +72,31 @@ func (q *Quantity) RecordValues() []float64 {
 
 func (q *Quantity) MeasureAll(mTypes []string) {
 	for _, mType := range mTypes {
-		q.Measure(mType)
+		val, found := q.Measure(mType)
+		if !found {
+			log.Warn().Str("type", mType).Msg("measurement failed")
+
+			continue
+		}
+
+		log.Debug().
+			Str("quantity", q.Name).
+			Str("type", mType).
+			Float64("value", val).
+			Msg("measured quantity")
+
 	}
 }
 
-func (q *Quantity) Measure(typ string) bool {
+func (q *Quantity) Measure(typ string) (float64, bool) {
 	measure, found := GetMeasureFunc(typ)
 	if !found {
-		return false
+		return 0.0, false
 	}
 
-	q.Measurements[typ] = measure(q.RecordValues())
+	val := measure(q.RecordValues())
 
-	return true
+	q.Measurements[typ] = val
+
+	return val, true
 }

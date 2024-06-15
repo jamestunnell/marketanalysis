@@ -14,7 +14,7 @@ import (
 )
 
 type Graph struct {
-	*Configuration
+	*Config
 
 	blocks          Blocks
 	warmupPeriod    int
@@ -36,11 +36,11 @@ type recordOutAsync struct {
 	Measurements []string
 }
 
-func New(cfg *Configuration) *Graph {
+func New(cfg *Config) *Graph {
 	log.Debug().Interface("configuration", cfg).Msg("making graph")
 
 	return &Graph{
-		Configuration:   cfg,
+		Config:          cfg,
 		blocks:          Blocks{},
 		warmupPeriod:    0,
 		order:           []string{},
@@ -242,12 +242,22 @@ func (g *Graph) Update(bar *models.Bar, isLast bool) {
 		return
 	}
 
+	log.Debug().Msg("running last update measurements")
+
 	// do all measurements after the last bar
 	for _, r := range g.recordOuts {
+		if r.Quantity.IsEmpty() {
+			continue
+		}
+
 		r.Quantity.MeasureAll(r.Measurements)
 	}
 
 	for _, r := range g.recordOutsAsync {
+		if r.Quantity.IsEmpty() {
+			continue
+		}
+
 		r.Quantity.MeasureAll(r.Measurements)
 	}
 }

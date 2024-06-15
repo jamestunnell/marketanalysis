@@ -19,8 +19,6 @@ type getBars struct {
 	db *mongo.Database
 }
 
-const DefaultTimeZone = "America/New_York"
-
 func NewGetBars(db *mongo.Database) http.Handler {
 	return &getBars{db: db}
 }

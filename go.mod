@@ -9,6 +9,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.0.1
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
+	github.com/ccssmnn/hego v0.0.0-20220220103052-7e3e58211887
 	github.com/dominikbraun/graph v0.23.0
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/handlers v1.5.2

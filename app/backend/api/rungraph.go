@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -12,21 +13,41 @@ import (
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
-func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
-	var runDay bemodels.RunDayRequest
+func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
+	var run bemodels.RunRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&runDay); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&run); err != nil {
 		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
 
 		return
 	}
 
-	log.Debug().Interface("request", runDay).Msg("received run-day request")
+	log.Debug().Interface("request", run).Msg("received run request")
 
-	loader := backend.NewBarSetLoader(a.DB, runDay.Symbol)
+	loader := backend.NewBarSetLoader(a.DB, run.Symbol)
 
-	timeSeries, err := graph.Run(
-		r.Context(), runDay.Graph, backend.GetCoreHours(runDay.Date), loader.Load)
+	var timeSeries *models.TimeSeries
+
+	var err error
+
+	switch run.RunType {
+	case bemodels.RunSingleDay:
+		timeSeries, err = graph.RunSingleDay(
+			r.Context(), run.Graph, run.Date, loader.Load)
+	case bemodels.RunMultiDay:
+		timeSeries, err = graph.RunMultiDay(
+			r.Context(), run.Graph, run.Date, loader.Load)
+	case bemodels.RunMultiDaySummary:
+		timeSeries, err = graph.RunMultiDaySummary(
+			r.Context(), run.Graph, run.Date, loader.Load)
+	default:
+		msg := fmt.Sprintf("run type '%s'", run.RunType)
+
+		handleAppErr(w, backend.NewErrInvalidInput(msg))
+
+		return
+	}
+
 	if err != nil {
 		appErr := backend.NewErrActionFailed("run graph", err.Error())
 
@@ -36,8 +57,8 @@ func (a *Graphs) RunDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// do clustering by mean and stddev
-	if runDay.NumCharts > 0 && !timeSeries.IsEmpty() {
-		err := timeSeries.Cluster(runDay.NumCharts, models.QuantityMeanStddev)
+	if run.NumCharts > 0 && !timeSeries.IsEmpty() {
+		err := timeSeries.Cluster(run.NumCharts, models.QuantityMeanStddev)
 		if err != nil {
 			appErr := backend.NewErrActionFailed("cluster results", err.Error())
 

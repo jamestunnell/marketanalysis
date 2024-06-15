@@ -18,6 +18,8 @@ func LoadRunBars(
 	load LoadBarsFunc,
 	warmupPeriod int,
 ) (Bars, error) {
+	log.Debug().Time("start", ts.Start()).Time("end", ts.End()).Msg("loading bars")
+
 	startDate := date.NewAt(ts.Start())
 	endDate := date.NewAt(ts.End())
 	primaryBars := Bars{}

@@ -2,10 +2,9 @@ import van from "vanjs-core"
 import Datepicker from 'flowbite-datepicker/Datepicker'
 
 import { Get, PostJSON, PutJSON } from "../backend"
+import { INPUT_CLASS } from "../input"
 
 const { input } = van.tags
-
-const INPUT_CLASS = "px-1 py-1 text-gray-500 rounded-md focus:ring-gray-500 focus:border-gray-500 focus:ring"
 
 function loadSetting(name) {
     return new Promise((resolve, reject) => {

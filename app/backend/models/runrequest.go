@@ -5,9 +5,16 @@ import (
 	"github.com/rickb777/date"
 )
 
-type RunDayRequest struct {
-	Graph     *graph.Configuration `json:"graph"`
-	Symbol    string               `json:"symbol"`
-	Date      date.Date            `json:"date"`
-	NumCharts int                  `json:"numCharts"`
+const (
+	RunSingleDay       = "singleDay"
+	RunMultiDay        = "multiDay"
+	RunMultiDaySummary = "multiDaySummary"
+)
+
+type RunRequest struct {
+	RunType   string        `json:"runType"`
+	Graph     *graph.Config `json:"graph"`
+	Symbol    string        `json:"symbol"`
+	Date      date.Date     `json:"date"`
+	NumCharts int           `json:"numCharts"`
 }

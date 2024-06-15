@@ -1,4 +1,4 @@
-package alpaca
+package loading
 
 import (
 	"fmt"

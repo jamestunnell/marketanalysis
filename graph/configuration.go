@@ -12,7 +12,7 @@ import (
 
 const ConfigKeyName = "id"
 
-type Configuration struct {
+type Config struct {
 	ID     string         `json:"id" bson:"_id"`
 	Name   string         `json:"name"`
 	Blocks []*BlockConfig `json:"blocks"`
@@ -36,11 +36,11 @@ type OutputConfig struct {
 	Measurements []string `json:"measurements"`
 }
 
-func (cfg Configuration) GetKey() string {
+func (cfg Config) GetKey() string {
 	return cfg.ID
 }
 
-func (cfg Configuration) FindBlock(name string) (*BlockConfig, bool) {
+func (cfg Config) FindBlock(name string) (*BlockConfig, bool) {
 	for _, blk := range cfg.Blocks {
 		if blk.Name == name {
 			return blk, true
@@ -50,7 +50,7 @@ func (cfg Configuration) FindBlock(name string) (*BlockConfig, bool) {
 	return nil, false
 }
 
-func (cfg Configuration) FindMeasurements(outputAddr *Address) []string {
+func (cfg Config) FindMeasurements(outputAddr *Address) []string {
 	blk, found := cfg.FindBlock(outputAddr.A)
 	if !found {
 		return []string{}
@@ -64,7 +64,7 @@ func (cfg Configuration) FindMeasurements(outputAddr *Address) []string {
 	return out.Measurements
 }
 
-func (cfg Configuration) MakeBlocks() (Blocks, []error) {
+func (cfg Config) MakeBlocks() (Blocks, []error) {
 	errs := []error{}
 	blks := Blocks{}
 
@@ -94,7 +94,7 @@ func (cfg Configuration) MakeBlocks() (Blocks, []error) {
 	return blks, errs
 }
 
-func (cfg *Configuration) Validate() []error {
+func (cfg *Config) Validate() []error {
 	blks, errs := cfg.MakeBlocks()
 	if len(errs) > 0 {
 		return errs

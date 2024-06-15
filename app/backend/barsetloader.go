@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/jamestunnell/marketanalysis/alpaca"
+	"github.com/jamestunnell/marketanalysis/loading"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
@@ -17,6 +17,8 @@ type BarSetLoader struct {
 	Symbol string
 	Store  Store[*models.BarSet]
 }
+
+var locNY = loading.GetLocationNY()
 
 func NewBarSetLoader(
 	db *mongo.Database,
@@ -49,9 +51,9 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 		return dayBars.Bars, nil
 	}
 
-	ts := timespan.NewTimeSpan(d.In(locNewYork), d.Add(1).In(locNewYork))
+	ts := timespan.NewTimeSpan(d.In(locNY), d.Add(1).In(locNY))
 
-	bs, err := alpaca.GetBarsOneMin(l.Symbol, ts, locNewYork)
+	bs, err := loading.GetBarsOneMin(l.Symbol, ts, locNY)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aplaca bars: %w", err)
 	}
@@ -66,7 +68,7 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 		Date: d.String(),
 	}
 
-	if d.Equal(date.TodayIn(locNewYork)) {
+	if d.Equal(date.TodayIn(locNY)) {
 		log.Debug().Msg("not storing bars from today")
 
 		return dayBars.Bars, nil

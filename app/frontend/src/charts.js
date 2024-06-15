@@ -60,13 +60,14 @@ const MakeEmptyChart = ({container, height}) => {
 
 function UpdateCharts({charts, recording}) {
     const qAttribs = Object.fromEntries(recording.quantities.map(q => [q.name, q.attributes]))
+    const qMeasurements = Object.fromEntries(recording.quantities.map(q => [q.name, q.measurements]))
     const ts = new Set()
     recording.quantities.forEach(q => q.records.forEach(r => ts.add(tsToUnix(r.t))))
 
     const minTS = Math.min(...ts.values())
     const maxTS = Math.max(...ts.values())
 
-    console.log(`updating charts`, {qAttribs, minTS, maxTS})
+    console.log(`updating charts`, {qMeasurements, qAttribs, minTS, maxTS})
     
     const updated = []
     // Update/remove existing series

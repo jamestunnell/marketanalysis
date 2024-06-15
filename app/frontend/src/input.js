@@ -1,3 +1,3 @@
-const INPUT_CLASS = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring"
+const INPUT_CLASS = "px-1 py-1 text-gray-500 rounded-md focus:ring-gray-500 focus:border-gray-500 focus:ring"
 
 export{INPUT_CLASS}

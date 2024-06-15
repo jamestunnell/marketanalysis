@@ -1,15 +1,14 @@
 import van from "vanjs-core"
 
 import { Table, TableRow } from "../table"
+import { INPUT_CLASS } from "../input"
 
 const { input, option, select, tbody} = van.tags
 
-const inputClass = "block border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
-
-const InputSourcesTable = ({inputs, inputSources, possibleSources}) => {
+const InputsTable = ({inputs, sources, possibleSources}) => {
     const names = inputs.map(input => input.name).sort()
     const rows = names.map(name => {
-        const selectedSource = inputSources[name]
+        const selectedSource = sources[name]
         const opts = [ option({value: "", selected: selectedSource.val === ""}, "") ]
 
         possibleSources.forEach(source => {
@@ -20,7 +19,7 @@ const InputSourcesTable = ({inputs, inputSources, possibleSources}) => {
 
         const selectSource = select(
             {
-                class: inputClass,
+                class: INPUT_CLASS,
                 oninput: (e) => selectedSource.val = e.target.value,
             },
             opts,
@@ -35,4 +34,4 @@ const InputSourcesTable = ({inputs, inputSources, possibleSources}) => {
     })
 }
 
-export {InputSourcesTable}
+export {InputsTable}

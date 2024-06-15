@@ -1,4 +1,4 @@
-package backend
+package loading
 
 import (
 	"time"
@@ -39,6 +39,7 @@ func GetCoreHours(d date.Date) timespan.TimeSpan {
 	}
 
 	start := d.In(locNewYork).Add(time.Minute * exchangesOpenOffsetMinutes)
+
 	end := d.In(locNewYork).Add(time.Minute * exchangesCloseOffsetMinutes)
 
 	return timespan.NewTimeSpan(start, end)

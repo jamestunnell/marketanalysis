@@ -3,16 +3,80 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
+	"github.com/jamestunnell/marketanalysis/loading"
 	"github.com/jamestunnell/marketanalysis/models"
 )
 
+func RunSingleDay(
+	ctx context.Context,
+	cfg *Config,
+	day date.Date,
+	load models.LoadBarsFunc,
+) (*models.TimeSeries, error) {
+	ts := loading.GetCoreHours(day)
+
+	return Run(ctx, cfg, ts, load)
+}
+
+func RunMultiDay(
+	ctx context.Context,
+	cfg *Config,
+	startDay date.Date,
+	load models.LoadBarsFunc,
+) (*models.TimeSeries, error) {
+	ts := timespan.NewTimeSpan(
+		startDay.In(loading.GetLocationNY()),
+		time.Now().In(loading.GetLocationNY()),
+	)
+
+	return Run(ctx, cfg, ts, load)
+}
+
+func RunMultiDaySummary(
+	ctx context.Context,
+	cfg *Config,
+	startDay date.Date,
+	load models.LoadBarsFunc,
+) (*models.TimeSeries, error) {
+	today := date.Today()
+	summary := models.NewTimeSeries()
+
+	for d := startDay; !d.After(today); d = d.Add(1) {
+		timeSeries, err := RunSingleDay(ctx, cfg, d, load)
+		if err != nil {
+			return nil, fmt.Errorf("failed to run on day %s: %w", d, err)
+		}
+
+		endTime := loading.GetCoreHours(d).End()
+
+		for _, q := range timeSeries.Quantities {
+			for mName, mVal := range q.Measurements {
+				name := q.Name + ":" + mName
+
+				mQ, found := summary.FindQuantity(name)
+				if !found {
+					mQ = models.NewQuantity(name)
+
+					summary.AddQuantity(mQ)
+				}
+
+				mQ.AddRecord(models.NewTimeValue(endTime, mVal))
+			}
+		}
+	}
+
+	return summary, nil
+}
+
 func Run(
 	ctx context.Context,
-	cfg *Configuration,
+	cfg *Config,
 	ts timespan.TimeSpan,
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {

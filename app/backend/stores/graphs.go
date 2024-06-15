@@ -7,7 +7,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/graph"
 )
 
-func NewGraphs(db *mongo.Database) backend.Store[*graph.Configuration] {
+func NewGraphs(db *mongo.Database) backend.Store[*graph.Config] {
 	info := &backend.ResourceInfo{
 		KeyName:    graph.ConfigKeyName,
 		Name:       "graph",
@@ -15,5 +15,5 @@ func NewGraphs(db *mongo.Database) backend.Store[*graph.Configuration] {
 	}
 	col := db.Collection(info.NamePlural)
 
-	return backend.NewMongoStore[*graph.Configuration](info, col)
+	return backend.NewMongoStore[*graph.Config](info, col)
 }
