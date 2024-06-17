@@ -1,6 +1,6 @@
 import van from "vanjs-core"
 
-const {g, i, path, svg} = van.tags()
+const {i} = van.tags()
 
 const IconAdd = () => {
     return i({class: "fa-solid fa-plus"});

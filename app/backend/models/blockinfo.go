@@ -13,10 +13,10 @@ type BlockInfo struct {
 }
 
 type Param struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Default    any         `json:"default"`
-	Constraint *Constraint `json:"constraint"`
+	Name         string      `json:"name"`
+	ValueType    string      `json:"valueType"`
+	DefaultValue any         `json:"defaultValue"`
+	Constraint   *Constraint `json:"constraint"`
 }
 
 type Constraint struct {
@@ -44,10 +44,10 @@ func NewBlockInfo(b blocks.Block) *BlockInfo {
 		}
 
 		params = append(params, &Param{
-			Name:       name,
-			Type:       p.GetValueType(),
-			Default:    p.GetDefaultVal(),
-			Constraint: constraint,
+			Name:         name,
+			ValueType:    p.GetValueType(),
+			DefaultValue: p.GetDefaultVal(),
+			Constraint:   constraint,
 		})
 	}
 
