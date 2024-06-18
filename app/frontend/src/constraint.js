@@ -6,8 +6,12 @@ class None {
     }
 
     validate(val) {
-        return true
+        return null
     }
+
+    isRange() {return true}
+    getMin() {return null}
+    getMax() {return null}
 }
 
 class OneOf {
@@ -27,7 +31,9 @@ class OneOf {
         return null
     }
 
-    
+    isRange() {return false}
+    getMin() {return null}
+    getMax() {return null}
 }
 
 class Less {
@@ -42,6 +48,10 @@ class Less {
     validate(val) {
         return (val < this.max) ? null : new Error(`${val} is not < ${this.max}`)
     }
+
+    isRange() {return true}
+    getMin() {return null}
+    getMax() {return this.max}
 }
 
 class LessEqual {
@@ -56,6 +66,10 @@ class LessEqual {
     validate(val) {
         return (val <= this.max) ? null : new Error(`${val} is not <= ${this.max}`)
     }
+
+    isRange() {return true}
+    getMin() {return null}
+    getMax() {return this.max}
 }
 
 class Greater {
@@ -70,6 +84,10 @@ class Greater {
     validate(val) {
         return (val > this.min) ? null : new Error(`${val} is not > ${this.min}`)
     }
+
+    isRange() {return true}
+    getMin() {return this.min}
+    getMax() {return null}
 }
 
 class GreaterEqual {
@@ -84,6 +102,10 @@ class GreaterEqual {
     validate(val) {
         return (val >= this.min) ? null : new Error(`${val} is not >= ${this.min}`)
     }
+
+    isRange() {return true}
+    getMin() {return this.min}
+    getMax() {return null}
 }
 
 class RangeIncl{
@@ -103,6 +125,10 @@ class RangeIncl{
 
         return new Error(`${val} is not in range [${this.min}, ${this.max}]`) 
     }
+
+    isRange() {return true}
+    getMin() {return this.min}
+    getMax() {return this.max}
 }
 
 class RangeExcl{
@@ -122,6 +148,10 @@ class RangeExcl{
 
         return new Error(`${val} is not in range [${this.min}, ${this.max})`) 
     }
+
+    isRange() {return true}
+    getMin() {return this.min}
+    getMax() {return this.max}
 }
 
 const MakeConstraint = ({type, limits}) => {
@@ -142,7 +172,7 @@ const MakeConstraint = ({type, limits}) => {
         return new RangeExcl(limits[0], limits[1])
     }
 
-    return NewNone()
+    return new None()
 }
 
-export {MakeConstraint}
+export {None, Less, LessEqual, Greater, GreaterEqual, RangeExcl, RangeIncl, MakeConstraint}

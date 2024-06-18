@@ -14,7 +14,7 @@ const TableRow = (rowItems) => {
     )
 }
 
-const Table = ({columnNames, tableBody}) => {
+const Table = ({hidden, columnNames, tableBody}) => {
     const tableHead = thead();
 
     van.add(tableHead, tr(
@@ -23,7 +23,7 @@ const Table = ({columnNames, tableBody}) => {
     ));
 
     return div(
-        {class: "w-full p-4 space-y-6"},
+        {class: "w-full p-4 space-y-6", hidden},
         table(
             {class:"table-auto min-w-full text-left text-sm"},
             tableHead,

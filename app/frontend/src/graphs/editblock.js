@@ -1,144 +1,101 @@
 import van from "vanjs-core"
 
-import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from '../buttons.js';
-import { IconCheck, IconClose, IconCollapsed, IconDelete, IconError, IconExpanded } from "../icons.js";
-import { InputsTable } from './inputs.js'
-import { ParamValsTable, validateParamVal } from './paramvals.js'
-import { OutputsTable } from './outputs.js'
+import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from '../elements/buttons.js'
+import { MakeConstraint } from '../constraint.js'
+import { IconCheck, IconClose, IconDelete, IconError } from '../elements/icons.js'
+import { InputsTable, MakeInputs } from './input.js'
+import { ParamsTable, MakeParams } from './param.js'
+import { OutputsTable, MakeOutputs } from './output.js'
+import Textbox from '../elements/textbox.js'
 
-const {div, input, span} = van.tags
+const {div, span} = van.tags
 
-const inputClass = "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring";
+function validateBlockConfig({config, info, otherNames}) {
+    console.log("validating block config", config)
 
-function validateBlock({block, info, otherNames}) {
-    console.log("validating block", block)
-
-    if (block.name.length === 0) {
+    if (config.name.length === 0) {
         return new Error("Name is empty")
     }
 
-    if (otherNames.indexOf(block.name) >= 0) {
-        return new Error(`Name '${block.name}' is not unique`)
+    if (otherNames.indexOf(config.name) >= 0) {
+        return new Error(`Name '${config.name}' is not unique`)
     }
 
-    const paramErrs = Object.entries(block.paramVals).map(([name, val]) => {
-        const param = info.params.find(p => p.name === name)
-        if (!param) {
-            // params do not have to be set (default will be used)
-            return null
+    for (let i = 0; i < config.parameters.length; i++) {
+        const name = config.parameters[i].name
+        const paramInfo = info.parameters.find(paramInfo => paramInfo.name === name)
+
+        if (!paramInfo) {
+            return new Error(`failed to find info for param ${config.parameters[i].name}`)
         }
 
-        const err = validateParamVal({param, value: val})
+        const value = config.parameters[i].value
+        const constraint = MakeConstraint(paramInfo)
+        const err = constraint.validate(value)
+
         if (err) {
-            return new Error(`param ${param.name} has invalid value ${val}`)
-        }
-    }).filter(err => err)
-
-    if (paramErrs.length > 0) {
-        return paramErrs[0]
+            return new Error(`param ${param.name} has invalid value ${value}`)
+        }        
     }
 
-    for (let i = 0; i < block.inputs.length; i++) {
-        if (!info.inputs.find(input => input.name === block.inputs[i].name)) {
-            return new Error(`failed to find input ${block.inputs[i].name}`)
+    for (let i = 0; i < config.inputs.length; i++) {
+        if (!info.inputs.find(input => input.name === config.inputs[i].name)) {
+            return new Error(`failed to find input ${config.inputs[i].name}`)
         }
     }
     
-    for (let i = 0; i < block.outputs.length; i++) {
-        if (!info.outputs.find(output => output.name === block.outputs[i].name)) {
-            return new Error(`failed to find output ${block.outputs[i].name}`)
+    for (let i = 0; i < config.outputs.length; i++) {
+        if (!info.outputs.find(output => output.name === config.outputs[i].name)) {
+            return new Error(`failed to find output ${config.outputs[i].name}`)
         }
     }
 
     return null
 }
 
-const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, onCancel, onDelete}) => {
-    const type = block.type
-    const nameWorking = van.state(block.name)
-    const paramValsWorking = Object.fromEntries(info.params.map(p => {
-        const nonDefaultVal = block.paramVals ? block.paramVals[p.name] : null
+const TAB_NAME_PARAMS = "Params"
+const TAB_NAME_INPUTS = "Inputs"
+const TAB_NAME_OUTPUTS = "Outputs"
 
-        return [p.name, van.state(nonDefaultVal ?? p.default)]
-    }))
-    const sourcesWorking = Object.fromEntries(info.inputs.map(input => {
-        let source = ""
-        
-        if (block.inputs) {
-            block.inputs.forEach(cfg => {
-                if (cfg.name === input.name) {
-                    source = cfg.source
-                }
-            })
-        }
-
-        return [input.name, van.state(source)]
-    }))
-    const measurementsWorking = Object.fromEntries(info.outputs.map(output => {
-        let measurements = []
-        
-        if (block.outputs) {
-            block.outputs.forEach(cfg => {
-                if (cfg.name === output.name) {
-                    measurements = cfg.measurements
-                }
-            })
-        }
-
-        return [output.name, van.state(measurements)]
-    }))
-    const paramsCollapsed = van.state(false)
-    const inputsCollapsed = van.state(false)
-    const outputsCollapsed = van.state(false)
-    const modifiedBlock = van.derive(() => {
-        const paramVals = {}
-        const inputs = []
-        const outputs = []
-
-        Object.entries(paramValsWorking).forEach(([name, value]) => {
-            if (value.val !== info.params.find(p => p.name === name).default) {
-                paramVals[name] = value.val
-            }
-        })
-
-        Object.entries(sourcesWorking).forEach(([name, source]) => {
-            if (source.val.length > 0) {
-                inputs.push({name, source: source.val})
-            }
-        })
-
-        Object.entries(measurementsWorking).forEach(([name, measurements]) => {
-            if (measurements.val.length > 0) {
-                console.log(`pushing measurements for ${name}: ${measurements}`)
-                
-                outputs.push({name, measurements: measurements.val})
-            }
-        })
-
+const EditBlockForm = ({config, info, otherNames, possibleSources, onComplete, onCancel, onDelete}) => {
+    const type = config.type
+    const nameWorking = van.state(config.name)
+    const inputs = MakeInputs({infos: info.inputs, configs: config.inputs})
+    const outputs = MakeOutputs({infos: info.outputs, configs: config.outputs})
+    const params = MakeParams({infos: info.parameters, configs: config.parameters})
+    const makeBlockConfig = () => {
         return {
             name: nameWorking.val,
-            type: block.type,
-            paramVals, inputs, outputs,
+            type: config.type,
+            parameters: params.filter(p => !p.isValueDefault()).map(p => p.makeConfig()),
+            inputs: inputs.filter(i => !i.isSourceEmpty()).map(i => i.makeConfig()),
+            outputs: outputs.filter(o => !o.isMeasurementsEmpty()).map(o => o.makeConfig()),
         }
-    })
-    const nameInput = input({
-        class: inputClass,
-        type: "text",
-        value: nameWorking,
-        placeholder: "Non-empty, unique",
-        oninput: e => nameWorking.val = e.target.value,
-    })
-    const closeBtn = ButtonIcon({icon: IconClose(), onclick: onCancel})
-    const deleteBtn = ButtonIcon({icon: IconDelete(), onclick: onDelete});
+    }
     const validateErr = van.derive(() => {
         console.log("using other names", otherNames)
         
-        return validateBlock({
-            block: modifiedBlock.val,
+        return validateBlockConfig({
+            config: makeBlockConfig(),
             info,
             otherNames,
         })
     })
+
+    const currentTab = van.state(TAB_NAME_PARAMS)
+    const inputsTable = InputsTable({
+        inputs, possibleSources,
+        hidden: van.derive(() => currentTab.val !== TAB_NAME_INPUTS),
+    })
+    const outputsTable = OutputsTable({outputs, hidden: van.derive(() => currentTab.val !== TAB_NAME_OUTPUTS)})
+    const paramsTable = ParamsTable({params, hidden: van.derive(() => currentTab.val !== TAB_NAME_PARAMS)})
+    
+    const nameInput = Textbox({
+        value: nameWorking,
+        placeholder: "Non-empty, unique",
+    })
+    const closeBtn = ButtonIcon({icon: IconClose(), onclick: onCancel})
+    const deleteBtn = ButtonIcon({icon: IconDelete(), onclick: onDelete});
     const statusBtn = ButtonIconTooltip({
         icon: () => validateErr.val ? IconError() : IconCheck(),
         tooltipText: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
@@ -146,7 +103,7 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
     const ok = Button({
         child: "OK",
         disabled: validateErr,
-        onclick: () => onComplete(modifiedBlock.val),
+        onclick: () => onComplete(makeBlockConfig()),
     })
     const cancel = ButtonCancel({child: "Cancel", onclick: onCancel})
 
@@ -170,63 +127,29 @@ const EditBlockForm = ({block, info, otherNames, possibleSources, onComplete, on
         div(
             {class:"flex flex-col"},
             div(
-                {class: "flex flex-row items-center"},
-                span({class: "text-xl mt-2 font-medium font-bold"}, "Parameters"),
-                ButtonIcon({
-                    icon: () => paramsCollapsed.val ? IconCollapsed() : IconExpanded(),
-                    onclick: () => paramsCollapsed.val = !paramsCollapsed.val,
-                })
-            ),
-            div(
-                {hidden: paramsCollapsed},
-                ParamValsTable({
-                    params: info.params,
-                    paramVals: paramValsWorking,
+                {class: "flex flex-row"},
+                Button({
+                    child: TAB_NAME_PARAMS,
+                    onclick: (e) => currentTab.val = TAB_NAME_PARAMS,
+                    disabled: van.derive(() => currentTab.val === TAB_NAME_PARAMS),
+                }),
+                Button({
+                    child: TAB_NAME_INPUTS,
+                    onclick: (e) => currentTab.val = TAB_NAME_INPUTS,
+                    disabled: van.derive(() => currentTab.val === TAB_NAME_INPUTS),
+                }),
+                Button({
+                    child: TAB_NAME_OUTPUTS,
+                    onclick: (e) => currentTab.val = TAB_NAME_OUTPUTS,
+                    disabled: van.derive(() => currentTab.val === TAB_NAME_OUTPUTS),
                 }),
             ),
-            span({class: "mb-2"}),
-        ),
-        div(
-            {class:"flex flex-col"},
-            div(
-                {class: "flex flex-row items-center"},
-                span({class: "text-xl mt-2 font-medium font-bold"}, "Inputs"),
-                ButtonIcon({
-                    icon: () => inputsCollapsed.val ? IconCollapsed() : IconExpanded(),
-                    onclick: () => inputsCollapsed.val = !inputsCollapsed.val,
-                })
-            ),
-            div(
-                {hidden: inputsCollapsed},
-                InputsTable({
-                    inputs: info.inputs,
-                    sources: sourcesWorking,
-                    possibleSources,
-                }),
-            ),
-            span({class: "mb-2"}),
-        ),
-        div(
-            {class:"flex flex-col"},
-            div(
-                {class: "flex flex-row items-center"},
-                span({class: "text-xl mt-2 font-medium font-bold"}, "Outputs"),
-                ButtonIcon({
-                    icon: () => outputsCollapsed.val ? IconCollapsed() : IconExpanded(),
-                    onclick: () => outputsCollapsed.val = !outputsCollapsed.val,
-                })
-            ),
-            div(
-                {hidden: outputsCollapsed},
-                OutputsTable({
-                    outputs: info.outputs,
-                    measurements: measurementsWorking,
-                })
-            ),
-            span({class: "mb-2"}),
+            paramsTable,
+            inputsTable,
+            outputsTable,
         ),
         div({class: "flex flex-row-reverse"}, ok, cancel),
     )
 }
 
-export {EditBlockForm, validateBlock}
+export default EditBlockForm

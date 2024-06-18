@@ -1,6 +1,7 @@
 package models
 
 import (
+	"math"
 	"slices"
 
 	"github.com/montanaflynn/stats"
@@ -8,6 +9,8 @@ import (
 )
 
 const (
+	MeasureFirst  = "first"
+	MeasureLast   = "last"
 	MeasureMin    = "min"
 	MeasureMax    = "max"
 	MeasureMean   = "mean"
@@ -18,6 +21,10 @@ type MeasureFunc func([]float64) float64
 
 func GetMeasureFunc(typ string) (MeasureFunc, bool) {
 	switch typ {
+	case MeasureFirst:
+		return First, true
+	case MeasureLast:
+		return Last, true
 	case MeasureMin:
 		return slices.Min[[]float64, float64], true
 	case MeasureMax:
@@ -29,6 +36,22 @@ func GetMeasureFunc(typ string) (MeasureFunc, bool) {
 	}
 
 	return nil, false
+}
+
+func First(values []float64) float64 {
+	if len(values) == 0 {
+		return math.NaN()
+	}
+
+	return values[0]
+}
+
+func Last(values []float64) float64 {
+	if len(values) == 0 {
+		return math.NaN()
+	}
+
+	return values[len(values)-1]
 }
 
 func Mean(values []float64) float64 {

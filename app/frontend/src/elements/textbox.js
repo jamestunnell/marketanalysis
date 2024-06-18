@@ -11,7 +11,7 @@ const Textbox = ({id="", value=van.state(""), placeholder=""}) => {
         placeholder,
         class: INPUT_CLASS,
         type: "text",
-        onchange: e => text.val = e.target.value,
+        onchange: e => value.val = e.target.value,
     })
 }
 

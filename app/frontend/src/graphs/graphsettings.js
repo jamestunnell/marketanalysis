@@ -1,10 +1,10 @@
 import van from "vanjs-core"
 import Datepicker from 'flowbite-datepicker/Datepicker'
 
-import { Get, PostJSON, PutJSON } from "../backend"
-import { INPUT_CLASS } from "../input"
-
-const { input } = van.tags
+import { Get, PostJSON, PutJSON } from '../backend.js'
+import { IntRange } from '../elements/number.js'
+import { GreaterEqual } from '../constraint.js'
+import Textbox from '../elements/textbox.js'
 
 function loadSetting(name) {
     return new Promise((resolve, reject) => {
@@ -91,50 +91,38 @@ class GraphSettings {
         this.symbol = van.state('')
         this.numCharts = van.state(1)
         this.containerID = containerID
-        this.numChartsInput = input({
+        this.numChartsInput = IntRange({
             id: "numCharts",
-            class: INPUT_CLASS,
-            type: "number",
-            min: 1,
-            step: 1,
-            onchange: e => {
-                const strVal = e.target.value
-                const newVal = parseInt(strVal)
-                if (isNaN(newVal)) {
-                    console.log(`ignoring NaN numCharts ${strVal}`)
-
-                    return
-                }
-
-                this.numCharts.val = newVal
-
-                storeSetting({name: "numCharts", value: newVal})
-            },
+            constraint: new GreaterEqual(1),
+            value: this.numCharts,
         })
-        this.symbolInput = input({
+        this.symbolInput = Textbox({
             id: "symbol",
-            class: INPUT_CLASS,
-            type: "text",
             placeholder: "SPY, QQQ, etc.",
-            onchange: e => {
-                this.symbol.val = e.target.value
-
-                storeSetting({name: "symbol", value: e.target.value})
-            },
+            value: this.symbol,
         })
-        this.dateInput = input({
+        this.dateInput = Textbox({
             id: "actionDate",
-            class: INPUT_CLASS,
-            type: "text",
             placeholder: 'Select date',
-        });
+            value: this.date,
+        })
+        
+        this.dateInput.addEventListener('changeDate', (e) => this.date.val = e.target.value)
 
-        this.dateInput.addEventListener('changeDate', (e) => {
-            console.log(`changed date to ${e.target.value}`, e)
+        van.derive(() => {
+            console.log(`changed numCharts to ${this.numCharts.val}`)
 
-            storeSetting({name: "date", value: e.target.value}).then(() => {
-                this.date.val = e.target.value
-            })
+            storeSetting({name: "numCharts", value: this.numCharts.val})
+        })
+        van.derive(() => {
+            console.log(`changed symbol to ${this.symbol.val}`)
+            
+            storeSetting({name: "symbol", value: this.symbol.val})
+        })
+        van.derive(() => {
+            console.log(`changed date to ${this.date.val}`)
+
+            storeSetting({name: "date", value: this.date.val})
         })
 
         const datePickerOpts = {

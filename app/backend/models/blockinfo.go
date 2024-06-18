@@ -5,11 +5,11 @@ import (
 )
 
 type BlockInfo struct {
-	Type    string   `json:"type"`
-	Descr   string   `json:"description"`
-	Params  []*Param `json:"params"`
-	Inputs  []*Input `json:"inputs"`
-	Outputs []*Port  `json:"outputs"`
+	Type       string   `json:"type"`
+	Descr      string   `json:"description"`
+	Parameters []*Param `json:"parameters"`
+	Inputs     []*Input `json:"inputs"`
+	Outputs    []*Port  `json:"outputs"`
 }
 
 type Param struct {
@@ -76,10 +76,10 @@ func NewBlockInfo(b blocks.Block) *BlockInfo {
 	}
 
 	return &BlockInfo{
-		Type:    b.GetType(),
-		Descr:   b.GetDescription(),
-		Params:  params,
-		Inputs:  ins,
-		Outputs: outs,
+		Type:       b.GetType(),
+		Descr:      b.GetDescription(),
+		Parameters: params,
+		Inputs:     ins,
+		Outputs:    outs,
 	}
 }

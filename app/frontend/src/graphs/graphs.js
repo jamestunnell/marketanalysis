@@ -5,10 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import { Delete, Get, PostJSON } from '../backend.js'
-import { Button, ButtonIcon, ButtonCancel } from "../buttons.js";
-import { ButtonGroup } from '../buttongroup.js'
-import { IconAdd, IconDelete, IconView } from '../icons.js'
-import { Table, TableRow } from '../table.js'
+import { Button, ButtonIcon, ButtonCancel } from '../elements/buttons.js'
+import { IconAdd, IconDelete, IconView } from '../elements/icons.js'
+import { Table, TableRow } from '../elements/table.js'
+import Textbox from '../elements/textbox.js'
 import { truncateStringAddElipses } from "../truncatestring.js";
 
 const {div, input, label, p, tbody} = van.tags
@@ -80,13 +80,10 @@ const GraphNameForm = ({onOK, onCancel}) => {
         {class: "flex flex-col rounded-md space-y-4"},
         p({class: "text-lg font-medium font-bold text-center"}, "Graph Name"),
         label({for: "name"}, "Name"),
-        input({
+        Textbox({
             id: "name",
-            class: "block px-3 py-3 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none focus:ring",
-            type: "text",
             value: name,
             placeholder: "Unique, non-empty name",
-            oninput: e => name.val = e.target.value,
         }),
         div(
             {class:"mt-4 flex justify-center"},
@@ -116,7 +113,7 @@ const GraphTableRow = ({id, name}) => {
         },
     });
 
-    const buttons = ButtonGroup({buttons: [viewBtn, deleteBtn]});
+    const buttons = div({class: "flex flex-row space-x-2"}, viewBtn, deleteBtn);
     const rowItems = [name, truncateStringAddElipses(id, 8), buttons];
 
     return () => deleted.val ? null : TableRow(rowItems);

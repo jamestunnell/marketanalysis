@@ -1,29 +1,27 @@
 import van from "vanjs-core"
 import hash from 'object-hash';
 
-import { Button } from '../buttons.js';
-import { EditBlockForm } from './editblock.js'
-import { ModalBackground } from "../modal.js";
-
-const {div} = van.tags
+import { Button } from '../elements/buttons.js'
+import EditBlockForm from './editblock.js'
+import { ModalBackground, ModalForeground } from '../modal.js'
 
 class BlockItem {
-    constructor({id, block, info, parent}) {
+    constructor({id, config, info, parent}) {
         this.id = id
         this.info = info
         this.parent = parent
-        this.type = block.type
+        this.type = config.type
 
-        this.block = van.state(block)
-        this.name = van.derive(() => this.block.val.name)
+        this.name = van.state(config.name)
+        this.config = van.state(config)
     }
 
     getName() {
         return this.name.val
     }
     
-    makeBlock() {
-        return this.block.val
+    makeConfig() {
+        return this.config.val
     }
 
     delete() {
@@ -35,12 +33,17 @@ class BlockItem {
     }
 
     editModal() {
-        const blockBefore = this.block.val
+        const configBefore = this.makeConfig()
         const closed = van.state(false)
-        const onComplete = (block) => {
-            if (hash(block) !== hash(blockBefore)) {
-                this.block.val = block
-                
+        const onComplete = (config) => {
+            console.log(`completed block edit`, {config})
+
+            if (hash(config) !== hash(configBefore)) {
+                console.log('updating parent graph digest')
+
+                this.config.val = config
+                this.name.val = config.name
+
                 this.parent.updateDigest()
             }
     
@@ -53,20 +56,15 @@ class BlockItem {
             this.parent.deleteBlock(this.id)
         }
         const form = EditBlockForm({
-            block: blockBefore,
+            config: configBefore,
             info: this.info,
-            otherNames: this.parent.blockNames().filter(name => name !== blockBefore.name),
-            possibleSources: this.parent.getPossibleSources(blockBefore.name),
+            otherNames: this.parent.blockNames().filter(name => name !== configBefore.name),
+            possibleSources: this.parent.getPossibleSources(configBefore.name),
             onComplete, onCancel, onDelete,
         })
-        const modal = ModalBackground(
-            div(
-                {class: "block p-8 rounded-lg bg-white z-11"},
-                form,
-            ),
-        )
+        const modal = ModalBackground(ModalForeground({}, form))
     
-        console.log("editing block", blockBefore)
+        console.log("editing block", configBefore)
 
         van.add(document.body, () => closed.val ? null : modal);
     }

@@ -95,10 +95,11 @@ func (blk *Bar) Init() error {
 }
 
 func (blk *Bar) Update(cur *models.Bar, isLast bool) {
-	blk.open.SetValue(cur.Open)
-	blk.high.SetValue(cur.High)
-	blk.low.SetValue(cur.Low)
 	blk.close.SetValue(cur.Close)
+
+	blk.open.SetIfConnected(cur.GetOpen)
+	blk.high.SetIfConnected(cur.GetHigh)
+	blk.low.SetIfConnected(cur.GetLow)
 
 	blk.hl2.SetIfConnected(cur.HL2)
 	blk.hlc3.SetIfConnected(cur.HLC3)
@@ -106,5 +107,5 @@ func (blk *Bar) Update(cur *models.Bar, isLast bool) {
 	blk.ohlc4.SetIfConnected(cur.OHLC4)
 	blk.hlcc4.SetIfConnected(cur.HLCC4)
 
-	blk.vwap.SetValue(cur.VWAP)
+	blk.vwap.SetIfConnected(cur.GetVWAP)
 }

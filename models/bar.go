@@ -66,8 +66,28 @@ func (b *Bar) HeikinAshi(prev *OHLC) *OHLC {
 	}
 }
 
+func (b *Bar) GetVWAP() float64 {
+	return b.VWAP
+}
+
 func (ohlc *OHLC) Float64s() []float64 {
 	return []float64{ohlc.Open, ohlc.High, ohlc.Low, ohlc.Close}
+}
+
+func (ohlc *OHLC) GetOpen() float64 {
+	return ohlc.Open
+}
+
+func (ohlc *OHLC) GetHigh() float64 {
+	return ohlc.High
+}
+
+func (ohlc *OHLC) GetLow() float64 {
+	return ohlc.Low
+}
+
+func (ohlc *OHLC) GetClose() float64 {
+	return ohlc.Close
 }
 
 func (ohlc *OHLC) HL2() float64 {

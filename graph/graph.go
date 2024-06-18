@@ -152,12 +152,13 @@ func (g *Graph) makeBlocksAndConns() (Blocks, []*Connection, error) {
 		}
 
 		blk := new()
+		paramVals := blockCfg.ParamVals()
 
-		if err := blk.GetParams().SetValuesOrDefault(blockCfg.ParamVals); err != nil {
+		if err := blk.GetParams().SetValuesOrDefault(paramVals); err != nil {
 			err = fmt.Errorf(
 				"block %s: failed to set param vals %#v: %w",
 				blockCfg.Name,
-				blockCfg.ParamVals,
+				paramVals,
 				err)
 
 			return Blocks{}, []*Connection{}, err
@@ -202,9 +203,11 @@ func MaxTotalWarmupPeriod(blks Blocks, g graphlib.Graph[string, string], order [
 		totalWUs[name] = totalWU
 	}
 
-	maxWU := slices.Max(maps.Values(totalWUs))
+	if len(totalWUs) == 0 {
+		return 0, nil
+	}
 
-	return maxWU, nil
+	return slices.Max(maps.Values(totalWUs)), nil
 }
 
 func (g *Graph) Update(bar *models.Bar, isLast bool) {

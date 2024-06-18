@@ -1,6 +1,6 @@
 import van from "vanjs-core";
 
-import {Button, ButtonCancel} from './buttons.js';
+import {Button, ButtonCancel} from './elements/buttons.js';
 import {ModalBackground, ModalForeground} from './modal.js';
 import { AlertError } from "./alerts.js";
 

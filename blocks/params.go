@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 
 	"github.com/hashicorp/go-multierror"
@@ -12,29 +11,12 @@ import (
 type Params map[string]Param
 type ParamVals map[string]any
 
-type errInvalidParam struct {
-	Name   string
-	Errors []error
-}
-
 func (ps Params) GetSortedNames() []string {
 	names := maps.Keys(ps)
 
 	sort.Strings(names)
 
 	return names
-}
-
-func (ps Params) GetNonDefaultValues() ParamVals {
-	vals := ParamVals{}
-
-	for name, ps := range ps {
-		if val := ps.GetCurrentVal(); !reflect.DeepEqual(val, ps.GetDefaultVal()) {
-			vals[name] = val
-		}
-	}
-
-	return vals
 }
 
 func (ps Params) SetValuesOrDefault(vals ParamVals) error {

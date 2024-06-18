@@ -19,11 +19,16 @@ type Config struct {
 }
 
 type BlockConfig struct {
-	Name      string          `json:"name"`
-	Type      string          `json:"type"`
-	ParamVals map[string]any  `json:"paramVals,omitempty"`
-	Outputs   []*OutputConfig `json:"outputs,omitempty"`
-	Inputs    []*InputConfig  `json:"inputs,omitempty"`
+	Name       string          `json:"name"`
+	Type       string          `json:"type"`
+	Parameters []*ParamConfig  `json:"parameters"`
+	Outputs    []*OutputConfig `json:"outputs"`
+	Inputs     []*InputConfig  `json:"inputs"`
+}
+
+type ParamConfig struct {
+	Name  string `json:"name"`
+	Value any    `json:"value"`
 }
 
 type InputConfig struct {
@@ -134,6 +139,16 @@ func (bc *BlockConfig) FindOutput(name string) (*OutputConfig, bool) {
 	return nil, false
 }
 
+func (bc *BlockConfig) ParamVals() blocks.ParamVals {
+	paramVals := blocks.ParamVals{}
+
+	for _, paramCfg := range bc.Parameters {
+		paramVals[paramCfg.Name] = paramCfg.Value
+	}
+
+	return paramVals
+}
+
 func (bc *BlockConfig) Validate(
 	blk blocks.Block,
 	findSource func(*Address) (blocks.Output, bool),
@@ -185,30 +200,39 @@ func (bc *BlockConfig) Validate(
 
 	// validate params
 	params := blk.GetParams()
+	paramVals := blocks.ParamVals{}
 
-	for pName, val := range bc.ParamVals {
-		param, found := params[pName]
+	for _, paramCfg := range bc.Parameters {
+		param, found := params[paramCfg.Name]
 		if !found {
-			err := fmt.Errorf("block %s: unknown param name '%s'", bc.Name, pName)
+			err := fmt.Errorf("block %s: unknown param name '%s'", bc.Name, paramCfg.Name)
 
 			errs = append(errs, err)
 
 			continue
 		}
 
-		if err := param.SetCurrentVal(val); err != nil {
-			err = fmt.Errorf("block %s: param %s: value %v is invalid: %w", bc.Name, pName, val, err)
+		if err := param.SetCurrentVal(paramCfg.Value); err != nil {
+			err = fmt.Errorf(
+				"block %s: param %s: value %v is invalid: %w",
+				bc.Name,
+				paramCfg.Name,
+				paramCfg.Value,
+				err,
+			)
 
 			errs = append(errs, err)
 		}
+
+		paramVals[paramCfg.Name] = paramCfg.Value
 	}
 
 	if len(errs) > 0 {
 		return errs
 	}
 
-	if err := blk.GetParams().SetValuesOrDefault(bc.ParamVals); err != nil {
-		err = fmt.Errorf("block %s: failed to set param vals %#v: %w", bc.Name, bc.ParamVals, err)
+	if err := blk.GetParams().SetValuesOrDefault(paramVals); err != nil {
+		err = fmt.Errorf("block %s: failed to set paras: %w", bc.Name, err)
 
 		errs = append(errs, err)
 	}

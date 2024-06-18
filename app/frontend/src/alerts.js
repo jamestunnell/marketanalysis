@@ -2,8 +2,8 @@ import van from "vanjs-core"
 
 const {button, div, h3} = van.tags
 
-import { ButtonIcon } from './buttons.js'
-import { IconClose, IconError } from "./icons"
+import { ButtonIcon } from './elements/buttons.js'
+import { IconClose, IconError } from './elements/icons.js'
 
 class AlertError {
     constructor({title="Error", substance, secondsLeft=30}) {

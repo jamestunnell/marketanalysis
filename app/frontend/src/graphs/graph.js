@@ -2,18 +2,18 @@ import van from "vanjs-core"
 import hash from 'object-hash';
 import { nanoid } from 'nanoid'
 
-import { AppErrorAlert} from '../apperror.js';
-import { Get, PutJSON } from '../backend.js';
-import { BlockItem } from "./block.js";
-import { AddBlockModal } from "./addblock.js";
-import { Button, ButtonIcon } from "../buttons.js";
-import { DownloadJSON } from "../download.js";
-import GraphSettings from "./graphsettings.js"
-import { IconAdd, IconExport, IconSave } from "../icons.js";
-import { INPUT_CLASS } from '../input.js'
+import { AppErrorModal} from '../apperror.js'
+import { Get, PutJSON } from '../backend.js'
+import { BlockItem } from './block.js'
+import { AddBlockModal } from './addblock.js'
+import { Button, ButtonIcon } from '../elements/buttons.js'
+import { DownloadJSON } from "../download.js"
+import GraphSettings from './graphsettings.js'
+import { IconAdd, IconExport, IconSave } from '../elements/icons.js';
 import { MakeEmptyChart, UpdateCharts } from '../charts.js'
 import { runGraph } from './rungraph.js'
-import { truncateStringAddElipses } from "../truncatestring.js";
+import Select from '../elements/select.js'
+import { truncateStringAddElipses } from '../truncatestring.js'
 
 const {div, label, nav, option, p, select} = van.tags
 
@@ -129,7 +129,7 @@ class PageContent {
         this.blockItems = graph.blocks.map(block => {
             return new BlockItem({
                 id: nanoid(),
-                block,
+                config: block,
                 info: this.infoByType[block.type],
                 parent: this,
             })
@@ -245,7 +245,7 @@ class PageContent {
             
             UpdateCharts({charts: this.charts, recording: obj})
         }).catch(appErr => {
-            AppErrorAlert(appErr)
+            AppErrorModal(appErr)
         })
     }
 
@@ -255,12 +255,6 @@ class PageContent {
         this.rebuildBlockButtonsArea()
         this.updateDigest()
     }
-
-    // deleteConnectionRow(id) {
-    //     delete this.connRowsByID[id]
-
-    //     this.updateDigest()
-    // }
 
     blockNames() {
         return this.blockItems.map(item => item.getName())
@@ -279,28 +273,18 @@ class PageContent {
         return sources.sort()
     }
 
-    // onBlockNameChange() {
-    //     Object.values(this.connRowsByID).forEach(row => row.onBlockNameChange())
-    // }
-
-    // findBlockInfo(name) {
-    //     const row = Object.values(this.blockRowsByID).find(row => name === row.getName())
-        
-    //     return row ? row.info : null
-    // }
-
     renderSelectRunType() {
         const options = [
             option({value: RUN_SINGLE_DAY, selected: true}, RUN_SINGLE_DAY),
             option({value: RUN_MULTI_DAY}, RUN_MULTI_DAY),
             option({value: RUN_MULTI_DAY_SUMMARY}, RUN_MULTI_DAY_SUMMARY),
         ]
-        
-        return select({
+
+        return Select({
+            options, 
             id: "runType",
-            class: INPUT_CLASS,
             onchange: (e) => this.runType.val = e.target.value,
-        }, options)
+        })
     }
 
     renderAddBlockButton() {
@@ -315,8 +299,8 @@ class PageContent {
                 AddBlockModal({
                     infoByType: this.infoByType,
                     blockNames: this.blockNames(),
-                    handleResult: ({block, info}) => {
-                        const item = new BlockItem({id: nanoid(), block, info, parent: this})
+                    handleResult: ({config, info}) => {
+                        const item = new BlockItem({id: nanoid(), config, info, parent: this})
                         
                         this.blockItems.push(item)
 
@@ -339,7 +323,7 @@ class PageContent {
 
                 putGraph({
                     graph: graph,
-                    onErr: (appErr) => AppErrorAlert(appErr),
+                    onErr: (appErr) => AppErrorModal(appErr),
                     onSuccess: () => {
                         const digest = hash(graph)
                         
@@ -391,7 +375,7 @@ class PageContent {
         const graph = {
             id: this.id,
             name: this.name.val,
-            blocks: Object.values(this.blockItems).map(item => item.makeBlock()),
+            blocks: this.blockItems.map(item => item.makeConfig()),
         }
 
         console.log("made graph", graph)
@@ -435,7 +419,7 @@ const GraphPage = (id) => {
     }).catch(appErr => {
         console.log("failed to resolve all promises", appErr)
 
-        AppErrorAlert(appErr)
+        AppErrorModal(appErr)
     })
 
     return page

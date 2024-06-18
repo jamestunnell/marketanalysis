@@ -1,6 +1,6 @@
 import van from "vanjs-core"
 
-import { Button, ButtonCancel } from '../buttons.js';
+import { Button, ButtonCancel } from '../elements/buttons.js';
 import { ModalBackground, ModalForeground } from "../modal.js";
 import { truncateString } from "../truncatestring.js";
 
@@ -40,9 +40,9 @@ const AddBlockForm = ({infoByType, blockNames, onComplete, onCancel}) => {
                 name = candidate()
             }
 
-            const block = {type: selectedType.val, name, paramVals: {}, inputSources: {}, recordedOutputs: []}
+            const config = {type: selectedType.val, name, parameters: [], inputs: [], outputs: []}
     
-            onComplete({info, block})
+            onComplete({info, config})
         },
     })
     const cancel = ButtonCancel({child: "Cancel", onclick: onCancel})
@@ -62,8 +62,8 @@ const AddBlockForm = ({infoByType, blockNames, onComplete, onCancel}) => {
 
 const AddBlockModal = ({infoByType, blockNames, handleResult}) => {
     const closed = van.state(false)
-    const onComplete = ({block, info}) => {
-        handleResult({block, info})
+    const onComplete = ({config, info}) => {
+        handleResult({config, info})
 
         closed.val = true
     }
