@@ -157,9 +157,9 @@ func (s *MongoStore[T]) Upsert(ctx context.Context, val T) Error {
 	}
 
 	key := val.GetKey()
-	opts := options.Update().SetUpsert(true)
+	opts := options.Replace().SetUpsert(true)
 
-	_, err := s.col.UpdateOne(ctx, bson.M{"_id": key}, val, opts)
+	_, err := s.col.ReplaceOne(ctx, bson.M{"_id": key}, val, opts)
 	if err != nil {
 		action := fmt.Sprintf("update %s %s", s.info.Name, key)
 
