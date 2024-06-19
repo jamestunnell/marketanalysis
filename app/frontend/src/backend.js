@@ -3,7 +3,7 @@ const BASE_URL = '/api';
 const Delete = async (route) => {
     const url = BASE_URL + route;
 
-    console.log("fetch DELETE %s", url);
+    console.log("DELETE %s", url);
 
     return fetch(url, {method: "DELETE"});
 }
@@ -11,7 +11,7 @@ const Delete = async (route) => {
 const Get = async (route) => {
     const url = BASE_URL + route;
 
-    console.log("fetch GET %s", url);
+    console.log("GET %s", url);
 
     return fetch(
         url,
@@ -28,7 +28,7 @@ const PostJSON = async ({route, object, options={}}) => {
     const url = BASE_URL + route;
     const body = JSON.stringify(object);
 
-    console.log("fetch POST %s with JSON %s", url, body);
+    console.log("POST %s", url);
 
     return fetch(
         url,
@@ -46,7 +46,7 @@ const PostJSON = async ({route, object, options={}}) => {
 const PutJSON = async ({route, object}) => {
     const url = BASE_URL + route;
 
-    console.log("fetch PUT %s", url);
+    console.log("PUT %s", url);
 
     return fetch(
         url,

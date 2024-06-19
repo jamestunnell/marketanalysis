@@ -230,7 +230,7 @@ class PageContent {
     }
     
     runAndUpdateCharts(runType) {
-        console.log(`running graph with digest ${this.digest.val}`)
+        // console.log(`running graph with digest ${this.digest.val}`)
 
         const opts = {
             runType,

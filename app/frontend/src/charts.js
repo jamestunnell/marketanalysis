@@ -110,19 +110,19 @@ function UpdateCharts({charts, recording}) {
         }
 
         if (q.records.length === 0) {
-            console.log(`ignoring quantity ${q.name} with no records`)
+            // console.log(`ignoring quantity ${q.name} with no records`)
 
             return
         }
 
         if (q.attributes.cluster === null) {
-            console.log(`ignoring quantity ${q.name} with no assigned cluster`)
+            // console.log(`ignoring quantity ${q.name} with no assigned cluster`)
 
             return
         }
 
         if (q.attributes.cluster >= charts.length) {
-            console.log(`ignoring quantity ${q.name} with cluster ${q.attributes.cluster} > max ${charts.length-1}`)
+            // console.log(`ignoring quantity ${q.name} with cluster ${q.attributes.cluster} > max ${charts.length-1}`)
 
             return
         }
@@ -130,7 +130,7 @@ function UpdateCharts({charts, recording}) {
         const valuePairs = q.records.map(r => [tsToUnix(r.t), r.v])
         const c = charts[q.attributes.cluster]
 
-        console.log(`adding series for ${q.name} with cluster ${q.attributes.cluster}`)
+        // console.log(`adding series for ${q.name} with cluster ${q.attributes.cluster}`)
 
         c.addSeries({
             name: q.name,
