@@ -7,25 +7,27 @@ import { Get, PutJSON } from '../backend.js'
 import { BlockItem } from './block.js'
 import { AddBlockModal } from './addblock.js'
 import { Button, ButtonIcon } from '../elements/buttons.js'
+import { GreaterEqual } from '../constraint.js'
+import { WeekdayDatepicker } from '../elements/datepicker.js'
 import { DownloadJSON } from "../download.js"
-import GraphSettings from './graphsettings.js'
+import loadAllSettings from '../settings/loadallsettings.js'
+import { IntRange } from '../elements/number.js'
 import { IconAdd, IconExport, IconSave } from '../elements/icons.js';
 import { MakeEmptyChart, UpdateCharts } from '../charts.js'
 import { runGraph } from './rungraph.js'
 import Select from '../elements/select.js'
+import Setting from '../settings/setting.js'
+import Textbox from '../elements/textbox.js'
 import { truncateStringAddElipses } from '../truncatestring.js'
 
 const {div, label, nav, option, p, select} = van.tags
 
-const GRAPH_NAV_ID = "graphNav"
 const RUN_SINGLE_DAY = "singleDay"
 const RUN_MULTI_DAY = "multiDay"
 const RUN_MULTI_DAY_SUMMARY = "multiDaySummary"
 
 const getAllBlockInfo = () => {
     return new Promise((resolve, reject) => {
-        console.log("getting block infos");
-
         Get('/blocks').
             then(resp => {
                 if (resp.status != 200) {
@@ -56,8 +58,6 @@ const getAllBlockInfo = () => {
 
 const getGraph = (id) => {
     return new Promise((resolve, reject) => {
-        console.log(`getting graph ${id}`);
-
         Get(`/graphs/${id}`).then(resp => {
             if (resp.status != 200) {
                 resp.json().then(appErr => {
@@ -112,12 +112,25 @@ const putGraph = async ({graph, onSuccess, onErr}) => {
 }
 
 class PageContent {
-    constructor({graph, infoByType}) {
+    constructor({graph, infoByType, settingsByName}) {
         const digest = hash(graph)
 
-        console.log(`initial graph digest`, truncateStringAddElipses(digest, 10))
-
-        this.settings = new GraphSettings({containerID: `#${GRAPH_NAV_ID}`})
+        this.symbolSetting = new Setting({
+            name: 'symbol',
+            storedValue: settingsByName.symbol,
+            defaultValue: '',
+        }),
+        this.dateSetting = new Setting({
+            name: 'date',
+            storedValue: settingsByName.date,
+            defaultValue: '',
+        })
+        this.numChartsSetting = new Setting({
+            name: 'numCharts',
+            storedValue: settingsByName.numCharts,
+            defaultValue: 1,
+        })
+        
         this.id = graph.id
         this.digest = van.state(digest)
         this.digestSaved = van.state(digest)
@@ -135,10 +148,8 @@ class PageContent {
             })
         })
 
-        this.settings.load()
-
         this.settingsArea = nav(
-            {id: GRAPH_NAV_ID, class: "nav bg-gray-400 text-white"},
+            {id: 'graphNav', class: "nav bg-gray-400 text-white"},
             div(
                 {class: "grid grid-cols-5 items-center"},
                 div(
@@ -152,11 +163,24 @@ class PageContent {
                     div({class:"pr-4"}),
                     this.renderSelectRunType(),
                     label({for: "runType", class: "pr-2 font-semibold"}, "Run Type"),
-                    this.settings.numChartsInput,
+                    IntRange({
+                        id: "numCharts",
+                        constraint: new GreaterEqual(1),
+                        value: this.numChartsSetting.value,
+                        error: van.state(''),
+                    }),
                     label({for: "numCharts", class: "pr-2 font-semibold"}, "Charts"),
-                    this.settings.dateInput,
+                    WeekdayDatepicker({
+                        containerID: 'graphNav',
+                        maxDate: new Date(), // today
+                        value: this.dateSetting.value,
+                    }),
                     label({for: "date", class: "pr-2 font-semibold"}, "Date"),
-                    this.settings.symbolInput,
+                    Textbox({
+                        id: "symbol",
+                        placeholder: "SPY, QQQ, etc.",
+                        value: this.symbolSetting.value,
+                    }),
                     label({for: "symbol", class: "pr-2 font-semibold"}, "Symbol"),
                 ),
             )
@@ -188,10 +212,10 @@ class PageContent {
         this.rebuildBlockButtonsArea()
 
         van.derive(() => {
-            const date = this.settings.date.val
-            const symbol = this.settings.symbol.val
+            const date = this.dateSetting.value.val
+            const symbol = this.symbolSetting.value.val
             const digest = this.digest.val
-            const numCharts = this.settings.numCharts.val
+            const numCharts = this.numChartsSetting.value.val
             const runType = this.runType.val
 
             if (date.length === 0 || symbol.length === 0) {
@@ -207,7 +231,7 @@ class PageContent {
     }
 
     rebuildChartsArea() {
-        const numCharts = this.settings.numCharts.val
+        const numCharts = this.numChartsSetting.value.val
 
         console.log(`building charts area`, {numCharts})
 
@@ -235,9 +259,9 @@ class PageContent {
         const opts = {
             runType,
             graph: this.makeGraph(),
-            date: this.settings.date.val,
-            symbol: this.settings.symbol.val,
-            numCharts: this.settings.numCharts.val,
+            date: this.dateSetting.value.val,
+            symbol: this.symbolSetting.value.val,
+            numCharts: this.numChartsSetting.value.val,
         }
 
         runGraph(opts).then(obj => {
@@ -273,6 +297,10 @@ class PageContent {
         return sources.sort()
     }
 
+    renderSettingsArea() {
+
+    }
+    
     renderSelectRunType() {
         const options = [
             option({value: RUN_SINGLE_DAY, selected: true}, RUN_SINGLE_DAY),
@@ -410,12 +438,16 @@ const GraphPage = (id) => {
     Promise.all([
         getAllBlockInfo(),
         getGraph(id),
+        loadAllSettings(),
     ]).then(values => {
         const allBlockInfo = values[0]
         const graph = values[1]
+        const allSettings = values[2]
+
+        const settingsByName = Object.fromEntries(allSettings.map(s => [s.name, s.value]))
         const infoByType = Object.fromEntries(allBlockInfo.map(info => [info.type, info]));
 
-        van.add(page, new PageContent({graph, infoByType}).render())
+        van.add(page, new PageContent({graph, infoByType, settingsByName}).render())
     }).catch(appErr => {
         console.log("failed to resolve all promises", appErr)
 

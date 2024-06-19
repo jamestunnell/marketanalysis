@@ -11,7 +11,7 @@ import { Table, TableRow } from '../elements/table.js'
 import Textbox from '../elements/textbox.js'
 import { truncateStringAddElipses } from "../truncatestring.js";
 
-const {div, input, label, p, tbody} = van.tags
+const {div, label, p, tbody} = van.tags
 
 const getGraphs = async () => {
     console.log("getting graphs");
