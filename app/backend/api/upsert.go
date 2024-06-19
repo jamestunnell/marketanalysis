@@ -8,7 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/app/backend"
 )
 
-func Update[T backend.Resource](
+func Upsert[T backend.Resource](
 	w http.ResponseWriter,
 	r *http.Request,
 	s backend.Store[T],
@@ -28,7 +28,7 @@ func Update[T backend.Resource](
 		return
 	}
 
-	if appErr := s.Update(r.Context(), val); appErr != nil {
+	if appErr := s.Upsert(r.Context(), val); appErr != nil {
 		handleAppErr(w, appErr)
 
 		return

@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
@@ -146,7 +147,7 @@ func (s *MongoStore[T]) GetAll(ctx context.Context) ([]T, Error) {
 	return all, nil
 }
 
-func (s *MongoStore[T]) Update(ctx context.Context, val T) Error {
+func (s *MongoStore[T]) Upsert(ctx context.Context, val T) Error {
 	if errs := val.Validate(); len(errs) > 0 {
 		reasons := sliceutils.Map(errs, func(err error) string {
 			return err.Error()
@@ -156,8 +157,9 @@ func (s *MongoStore[T]) Update(ctx context.Context, val T) Error {
 	}
 
 	key := val.GetKey()
+	opts := options.Update().SetUpsert(true)
 
-	_, err := s.col.ReplaceOne(ctx, bson.M{"_id": key}, val)
+	_, err := s.col.UpdateOne(ctx, bson.M{"_id": key}, val, opts)
 	if err != nil {
 		action := fmt.Sprintf("update %s %s", s.info.Name, key)
 

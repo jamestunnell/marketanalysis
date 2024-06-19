@@ -87,7 +87,7 @@ func (a *CRUDAPI[T]) handleSingle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.Get(w, r)
 	case http.MethodPut:
-		a.Update(w, r)
+		a.Upsert(w, r)
 	case http.MethodDelete:
 		a.Delete(w, r)
 	default:
@@ -103,8 +103,8 @@ func (a *CRUDAPI[T]) Create(w http.ResponseWriter, r *http.Request) {
 	Create(w, r, a.Store, a.Options.Hooks.PostCreate)
 }
 
-func (a *CRUDAPI[T]) Update(w http.ResponseWriter, r *http.Request) {
-	Update(w, r, a.Store, a.Options.Hooks.PostUpdate)
+func (a *CRUDAPI[T]) Upsert(w http.ResponseWriter, r *http.Request) {
+	Upsert(w, r, a.Store, a.Options.Hooks.PostUpdate)
 }
 
 func (a *CRUDAPI[T]) Delete(w http.ResponseWriter, r *http.Request) {

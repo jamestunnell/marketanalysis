@@ -13,5 +13,5 @@ type Store[T Resource] interface {
 	Get(ctx context.Context, key string) (T, Error)
 	GetAll(ctx context.Context) ([]T, Error)
 	GetAllKeys(ctx context.Context) ([]string, Error)
-	Update(ctx context.Context, val T) Error
+	Upsert(ctx context.Context, val T) Error
 }
