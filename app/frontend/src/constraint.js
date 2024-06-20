@@ -51,7 +51,7 @@ class Less {
 
     isRange() {return true}
     getMin() {return null}
-    getMax() {return this.max}
+    getMax() {return {value: this.max, inclusive: true}}
 }
 
 class LessEqual {
@@ -69,7 +69,7 @@ class LessEqual {
 
     isRange() {return true}
     getMin() {return null}
-    getMax() {return this.max}
+    getMax() {return {value: this.max, inclusive: true}}
 }
 
 class Greater {
@@ -86,7 +86,7 @@ class Greater {
     }
 
     isRange() {return true}
-    getMin() {return this.min}
+    getMin() {return {value: this.min, inclusive: false}}
     getMax() {return null}
 }
 
@@ -104,7 +104,7 @@ class GreaterEqual {
     }
 
     isRange() {return true}
-    getMin() {return this.min}
+    getMin() {return {value: this.min, inclusive: true}}
     getMax() {return null}
 }
 
@@ -127,8 +127,8 @@ class RangeIncl{
     }
 
     isRange() {return true}
-    getMin() {return this.min}
-    getMax() {return this.max}
+    getMin() {return {value: this.min, inclusive: true}}
+    getMax() {return {value: this.max, inclusive: true}}
 }
 
 class RangeExcl{
@@ -150,8 +150,8 @@ class RangeExcl{
     }
 
     isRange() {return true}
-    getMin() {return this.min}
-    getMax() {return this.max}
+    getMin() {return {value: this.min, inclusive: true}}
+    getMax() {return {value: this.max, inclusive: false}}
 }
 
 const MakeConstraint = ({type, limits}) => {

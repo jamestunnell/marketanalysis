@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,8 +24,8 @@ import (
 
 const (
 	DBName       = "marketanalysis"
-	DefaultPort  = 4002
-	DefaultDebug = false
+	DefaultPort  = "4002"
+	DefaultDebug = "false"
 )
 
 type AppVariables struct {
@@ -34,9 +35,9 @@ type AppVariables struct {
 	// DBUser, DBPass string
 }
 
-type VarCandidate[T comparable] struct {
+type VarCandidate struct {
 	Source string
-	Value  T
+	Value  string
 }
 
 func main() {
@@ -78,9 +79,9 @@ func loadAppVars() *AppVariables {
 	vars := &AppVariables{}
 
 	app := kingpin.New("backend server", "Provide market analysis features with an HTTP server`")
-	debug := app.Flag("debug", "Enable debug mode").Default("false").Bool()
-	port := app.Flag("port", "Server port").Default("0").Int()
-	dbConn := app.Flag("dbconn", "Database connection").Default("").String()
+	debug := app.Flag("debug", "Enable debug mode").String()
+	port := app.Flag("port", "Server port").String()
+	dbConn := app.Flag("dbconn", "Database connection").String()
 	// dbUser := backend.Flag("dbuser", "Database user").Default("").String()
 	// dbPass := backend.Flag("dbpass", "Database password").Default("").String()
 
@@ -93,17 +94,23 @@ func loadAppVars() *AppVariables {
 
 	log.Info().Interface("values", envvals).Msg("loaded env values")
 
-	vars.Port = loadAppVar[int]("port",
+	vars.Port = loadAppVar[int](
+		"port",
+		strconv.Atoi,
 		newVarCandidate(*port, "CLI"),
-		newVarCandidate(envvals.Port, "env"),
+		newVarCandidate(os.Getenv(env.NamePort), "env"),
 		newVarCandidate(DefaultPort, "default"))
 
-	vars.Debug = loadAppVar[bool]("debug",
+	vars.Debug = loadAppVar[bool](
+		"debug",
+		strconv.ParseBool,
 		newVarCandidate(*debug, "CLI"),
-		newVarCandidate(envvals.Debug, "env"),
+		newVarCandidate(os.Getenv(env.NameDebug), "env"),
 		newVarCandidate(DefaultDebug, "default"))
 
-	vars.DBConn = loadAppVar[string]("dbconn",
+	vars.DBConn = loadAppVar[string](
+		"dbconn",
+		func(s string) (string, error) { return s, nil },
 		newVarCandidate(*dbConn, "CLI"),
 		newVarCandidate(envvals.DBConn, "env"))
 
@@ -120,18 +127,18 @@ func loadAppVars() *AppVariables {
 
 func loadAppVar[T comparable](
 	name string,
-	first *VarCandidate[T],
-	more ...*VarCandidate[T]) T {
-	var zero T
+	parse func(string) (T, error),
+	first *VarCandidate,
+	more ...*VarCandidate) T {
 	allSources := []string{}
-	candidates := append([]*VarCandidate[T]{first}, more...)
+	candidates := append([]*VarCandidate{first}, more...)
 
 	var source string
-	var value T
+	var valStr string
 
 	for _, c := range candidates {
-		if c.Value != zero {
-			value = c.Value
+		if c.Value != "" {
+			valStr = c.Value
 			source = c.Source
 
 			break
@@ -140,23 +147,29 @@ func loadAppVar[T comparable](
 		allSources = append(allSources, c.Source)
 	}
 
-	if value == zero {
+	if valStr == "" {
 		log.Fatal().
 			Str("name", name).
 			Strs("sources", allSources).
 			Msg("app var not found")
 	}
 
+	value, err := parse(valStr)
+	if err != nil {
+		log.Error().Err(err).Str("value", valStr).Msg("failed to parse app var")
+	}
+
 	log.Info().
 		Str("name", name).
 		Str("source", source).
+		Interface("value", value).
 		Msgf("loaded app var")
 
 	return value
 }
 
-func newVarCandidate[T comparable](val T, source string) *VarCandidate[T] {
-	return &VarCandidate[T]{
+func newVarCandidate(val, source string) *VarCandidate {
+	return &VarCandidate{
 		Source: source,
 		Value:  val,
 	}

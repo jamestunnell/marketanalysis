@@ -34,7 +34,7 @@ func (a *Graphs) Optimize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug().Interface("request", opt).Msg("received optimize request")
+	log.Info().Interface("request", opt).Msg("received optimize request")
 
 	loader := backend.NewBarSetLoader(a.DB, opt.Symbol)
 
@@ -48,6 +48,8 @@ func (a *Graphs) Optimize(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Info().Interface("results", results).Msg("optimization complete")
 
 	w.Header().Set("Content-Type", "application/json")
 

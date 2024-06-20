@@ -20,6 +20,10 @@ class BlockItem {
         return this.name.val
     }
     
+    getInfo() {
+        return this.info
+    }
+
     makeConfig() {
         return this.config.val
     }

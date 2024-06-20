@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/ccssmnn/hego"
@@ -13,12 +14,11 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type SourceQuantity struct {
 	Address     *Address `json:"address"`
-	Measurement string   `json:"measurment"`
+	Measurement string   `json:"measurement"`
 }
 
 type TargetParam struct {
@@ -28,8 +28,9 @@ type TargetParam struct {
 }
 
 type OptimizeSettings struct {
-	RandomSeed    int64  `json:"randomSeed"`
 	Algorithm     string `json:"algorithm"`
+	Objective     string `json:"objective"`
+	RandomSeed    int64  `json:"randomSeed"`
 	MaxIterations int    `json:"maxIterations"`
 	KeepHistory   bool   `json:"keepHistory"`
 }
@@ -45,6 +46,11 @@ type OptResult struct {
 	ParamVals         map[string]any `json:"paramVals"`
 	SourceMeasurement float64        `json:"sourceMeasurement"`
 }
+
+const (
+	MaximizeSum = "MaximizeSum"
+	MinimizeSum = "MinimizeSum"
+)
 
 func Optimize(
 	ctx context.Context,
@@ -75,14 +81,25 @@ func OptimizeSA(
 ) (*OptimizeResults, error) {
 	rng := rand.New(rand.NewSource(settings.RandomSeed))
 	eval := func(paramVals map[string]any) float64 {
-		result, err := EvaluateParamVals(ctx, cfg, days, source, paramVals, load)
+		mVals, err := EvaluateParamVals(ctx, cfg, days, source, paramVals, load)
 		if err != nil {
 			log.Warn().Err(err).Msg("failed to evaluate param vals")
 
 			return 0.0
 		}
 
-		return result
+		// log.Info().Floats64("mVals", mVals).Msg("eval complete")
+
+		switch settings.Objective {
+		case MaximizeSum:
+			return -sum(mVals)
+		case MinimizeSum:
+			return sum(mVals)
+		}
+
+		log.Warn().Str("objective", settings.Objective).Msg("unknown optimize objective")
+
+		return 0.0
 	}
 
 	blks, errs := cfg.MakeBlocks()
@@ -99,25 +116,17 @@ func OptimizeSA(
 
 		constraint := param.GetConstraint()
 
+		if constraint.GetType() == blocks.OneOf {
+			return nil, fmt.Errorf("unsupported constaint type '%s'", constraint.GetType())
+		}
+
 		switch param.GetValueType() {
 		case "int":
-			limits := sliceutils.Map(constraint.GetLimits(), func(v any) int { return v.(int) })
-			var mut IntMutator
-			if constraint.GetType() == blocks.OneOf {
-				mut = NewIntEnumMutator(limits)
-			} else {
-				mut = NewIntRangeMutator(limits[0], limits[1])
-			}
+			mut := NewIntRangeMutator(int(tgt.Min.(float64)), int(tgt.Max.(float64)))
 
 			initialState.Ints[tgt.Address.String()] = NewIntValue(mut, rng)
 		case "float64":
-			limits := sliceutils.Map(constraint.GetLimits(), func(v any) float64 { return v.(float64) })
-			var mut FloatMutator
-			if constraint.GetType() == blocks.OneOf {
-				mut = NewFloatEnumMutator(limits)
-			} else {
-				mut = NewFloatRangeMutator(limits[0], limits[1])
-			}
+			mut := NewFloatRangeMutator(tgt.Min.(float64), tgt.Max.(float64))
 
 			initialState.Floats[tgt.Address.String()] = NewFloatValue(mut, rng)
 		default:
@@ -130,7 +139,7 @@ func OptimizeSA(
 		AnnealingFactor: 0.999,
 		Settings: hego.Settings{
 			MaxIterations: settings.MaxIterations,
-			Verbose:       1000,
+			Verbose:       100,
 			KeepHistory:   settings.KeepHistory,
 		},
 	}
@@ -169,20 +178,34 @@ func EvaluateParamVals(
 	source *SourceQuantity,
 	paramVals map[string]any,
 	load models.LoadBarsFunc,
-) (float64, error) {
+) ([]float64, error) {
 	for addrStr, val := range paramVals {
 		addr, err := ParseAddress(addrStr)
 
 		if err != nil {
-			return 0.0, fmt.Errorf("failed to parase param address '%s': %w", addrStr, err)
+			return []float64{}, fmt.Errorf("failed to parse param address '%s': %w", addrStr, err)
 		}
 
 		blkConfig, found := cfg.FindBlock(addr.A)
 		if !found {
-			return 0.0, fmt.Errorf("failed to find block %s", addr.A)
+			return []float64{}, fmt.Errorf("failed to find param block '%s'", addr.A)
 		}
 
 		blkConfig.SetParamVal(addr.B, val)
+	}
+
+	blkConfig, found := cfg.FindBlock(source.Address.A)
+	if !found {
+		return []float64{}, fmt.Errorf("failed to find source block '%s'", source.Address.A)
+	}
+
+	sourceOut, found := blkConfig.FindOutput(source.Address.B)
+	if !found {
+		return []float64{}, fmt.Errorf("failed to find source output '%s'", source.Address.B)
+	}
+
+	if !slices.Contains(sourceOut.Measurements, source.Measurement) {
+		sourceOut.Measurements = append(sourceOut.Measurements, source.Measurement)
 	}
 
 	// Add two days for every week, since weekend days will be no-op
@@ -190,22 +213,19 @@ func EvaluateParamVals(
 
 	startDate := date.Today().Add(date.PeriodOfDays(-days))
 
-	ts, err := RunMultiDaySummary(ctx, cfg, startDate, load)
+	summaryTS, err := RunMultiDaySummary(ctx, cfg, startDate, load)
 	if err != nil {
-		return 0.0, fmt.Errorf("failed to run multi-day summary: %w", err)
+		return []float64{}, fmt.Errorf("failed to run multi-day summary: %w", err)
 	}
 
-	q, found := ts.FindQuantity(source.Address.String())
+	sourceMeasurementName := source.Address.String() + ":" + source.Measurement
+
+	q, found := summaryTS.FindQuantity(sourceMeasurementName)
 	if !found {
-		return 0.0, fmt.Errorf("failed to find source quantity '%s' in results", source.Address)
+		return []float64{}, fmt.Errorf("failed to find source measurement quantity '%s' in results", sourceMeasurementName)
 	}
 
-	mVal, found := q.Measurements[source.Measurement]
-	if !found {
-		return 0.0, fmt.Errorf("failed to find source quantity measurement '%s'", source.Measurement)
-	}
-
-	return mVal, nil
+	return q.RecordValues(), nil
 }
 
 type OptState struct {
@@ -281,4 +301,12 @@ func (s *OptState) Neighbor() hego.AnnealingState {
 // Energy returns the energy of the current state. Lower is better
 func (s *OptState) Energy() float64 {
 	return s.eval(s.ParamVals())
+}
+
+func sum(vals []float64) (sum float64) {
+	for _, n := range vals {
+		sum += n
+	}
+
+	return
 }

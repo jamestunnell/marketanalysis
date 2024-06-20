@@ -1,19 +1,26 @@
 import van from "vanjs-core"
 
-import { Button, ButtonCancel, ButtonIconTooltip } from "../elements/buttons"
+import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from "../elements/buttons"
 import { RangeIncl } from "../constraint"
-import { IconCheck, IconError } from "../elements/icons"
+import { IconCheck, IconClose, IconError } from "../elements/icons"
 import { allMeasurements } from './measurement.js'
 import { ModalBackground, ModalForeground } from "../modal"
-import { IntRange } from "../elements/number"
+import { IntRange, NumberRange } from "../elements/number"
+import { allObjectives } from './objective.js'
 import Textbox from "../elements/textbox"
 import Select from "../elements/select"
-import Checkbox from "../elements/checkbox.js"
-import { Table, TableRow } from "../elements/table.js"
+import { TargetParamsTable } from './targetparam.js'
 
 const {div, option, span} = van.tags
 
 import { PostJSON } from '../backend.js'
+
+function newRandomSeed() {
+    const min = 0
+    const max = Number.MAX_SAFE_INTEGER
+
+    return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) - Number.MAX_SAFE_INTEGER
+}
 
 const optimizeGraph = ({graph, symbol, days, sourceQuantity, targetParams, settings}) => {
     return new Promise((resolve, reject) => {
@@ -21,7 +28,7 @@ const optimizeGraph = ({graph, symbol, days, sourceQuantity, targetParams, setti
         const object = {graph, symbol, days, sourceQuantity, targetParams, settings}
         const options = {accept: 'application/json'}
 
-        console.log("running graph", object)
+        console.log("optimizing graph", object)
 
         PostJSON({route, object, options}).then(resp => {
             if (resp.status != 200) {
@@ -45,23 +52,39 @@ const optimizeGraph = ({graph, symbol, days, sourceQuantity, targetParams, setti
     });
 }
 
-const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
+const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams}) => {
     const symbol = van.state(symbolSetting.value.val)
     
     const days = van.state(30)
     const daysConstraint = new RangeIncl(10, 1000)
     const daysErr = van.derive(() => daysConstraint.validate(days.val))
-    
+
+    const maxIter = van.state(100)
+    const maxIterConstraint = new RangeIncl(1, 1000)
+    const maxIterErr = van.derive(() => maxIterConstraint.validate(maxIter.val))
+
+    const seed = van.state(newRandomSeed())
+
     const source = van.state('')
     const sourceOpts = [ option({value:'', selected: true}, '') ]
 
     const measurement = van.state('')
-    const ms = allMeasurements()
-    const measurementOpts = ms.map(m => {
-        return option({value: m, selected: m === ms[0]}, m)
+    const measurementOpts = [ option({value: '', selected: true}, '') ]
+
+    const objective = van.state('')
+    const objectiveOpts = [ option({value: '', selected: true}, '') ]
+
+    allObjectives().forEach(o => {
+        objectiveOpts.push(option({value: o}, o))
     })
 
-    sources.forEach(s => sourceOpts.push(option({value: s}, s)))
+    allMeasurements().forEach(m => {
+        measurementOpts.push(option({value: m}, m))
+    })
+
+    sourceAddresses.forEach(s => {
+        sourceOpts.push(option({value: s}, s))
+    })
 
     const mainForm = div(
         {class: "grid grid-cols-3"},
@@ -83,6 +106,20 @@ const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
             text: () => daysErr.val ? `Value is invalid: ${daysErr.val.message}` : "Value is valid",
         }),
 
+        "Max Iterations",
+        IntRange({
+            constraint: maxIterConstraint,
+            value: maxIter,
+        }),
+        ButtonIconTooltip({
+            icon: () => maxIterErr.val ? IconError() : IconCheck(),
+            text: () => maxIterErr.val ? `Value is invalid: ${maxIterErr.val.message}` : "Value is valid",
+        }),
+
+        "Random Seed",
+        NumberRange({parse: parseInt, value: seed}),
+        span(),
+
         "Source",
         Select({
             onchange: (e) => source.val = e.target.value,
@@ -98,41 +135,43 @@ const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
             onchange: (e) => measurement.val = e.target.value,
             options: measurementOpts,
         }),
-        span(),
+        ButtonIconTooltip({
+            icon: () => measurement.val.length === 0 ? IconError() : IconCheck(),
+            text: () => measurement.val.length === 0 ? "No measurement selected" : "Value is valid",
+        }),
+
+        "Objective",
+        Select({
+            onchange: (e) => objective.val = e.target.value,
+            options: objectiveOpts,
+        }),
+        ButtonIconTooltip({
+            icon: () => objective.val.length === 0 ? IconError() : IconCheck(),
+            text: () => objective.val.length === 0 ? "No objective selected" : "Value is valid",
+        }),
     )
 
-    const paramFlags = params.map(param => van.state(false))
-    const paramRows = params.map((param, idx) => {
-        const checkbox = Checkbox({checked: paramFlags[idx]})
-        
-        return TableRow([param, checkbox])
+    const closed = van.state(false)
+    const closeBtn = ButtonIcon({
+        icon: IconClose(),
+        onclick: (e) => closed.val = true,
     })
-    const paramsTable = Table({
-        columnNames: ["Parameter", "Optimize"],
-        tableBody: tbody({class:"table-auto"}, paramRows),
-    })
-    
-    div(
-        params.map(p => Checkbox)
-    )
 
-    modal = ModalBackground(ModalForeground({}, div(
+    closeBtn.classList.add("self-end")
+
+    const modal = ModalBackground(ModalForeground({}, div(
         { class: "flex flex-col"},
+        div(
+            {class: "flex flex-row-reverse p-2"},
+            closeBtn,
+        ),
         mainForm,
-        paramsTable,
+        TargetParamsTable(targetParams),
         div(
             {class: "flex flex-row-reverse"},
             Button({
-                child: "OK",
+                child: "Run",
                 onclick: () => {
-                    const targetParams = []
-                    
-                    paramFlags.forEach((flag, idx) => {
-                        if (flag.val) {
-                            targetParams.push(params[idx])
-                        }
-                    })
-
                     const opts = {
                         graph,
                         symbol: symbol.val,
@@ -141,11 +180,14 @@ const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
                             address: source.val,
                             measurement: measurement.val,
                         },
-                        targetParams,
+                        targetParams: targetParams.filter(t => t.selected.val).map(t => {
+                            return {address: t.address, min: t.min.val, max: t.max.val}
+                        }),
                         settings: {
-                            randomSeed: 1,
+                            objective: objective.val,
                             algorithm: 'SimulatedAnnealing',
-                            maxIterations: 10000,
+                            randomSeed: seed.val,
+                            maxIterations: maxIter.val,
                             keepHistory: false,
                         },
                     }
@@ -157,7 +199,7 @@ const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
                     })
                 },
                 disabled: van.derive(() => {
-                    if (symbol.length === 0) {
+                    if (symbol.val.length === 0) {
                         return true
                     }
 
@@ -165,12 +207,37 @@ const OptimizeGraphModal = ({graph, symbolSetting, sources, params}) => {
                         return true
                     }
 
+                    if (maxIterConstraint.validate(maxIter.val)) {
+                        return true
+                    }
+
+                    if (source.val.length === 0) {
+                        return true
+                    }
+                    
+                    if (measurement.val.length === 0) {
+                        return true
+                    }
+
+                    if (objective.val.length === 0) {
+                        return true
+                    }
+
+                    if (targetParams.filter(t => t.err.val).length > 0) {
+                        return true
+                    }
+
                     return false
                 })
             }),
-            ButtonCancel()
+            ButtonCancel({
+                child: "Cancel",
+                onclick: (e) => closed.val = true,
+            })
         ),
     )))
+
+    van.add(document.body, () => closed.val ? null : modal)
 }
 
 export { OptimizeGraphModal }

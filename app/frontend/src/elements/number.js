@@ -49,11 +49,14 @@ const NumberEnum = ({id="", parse, allowed, value}) => {
 }
 
 const IntRange = ({constraint, id="", value}) => {
+    const min = constraint.getMin()
+    const max = constraint.getMax()
+    const step = 1
+
     return NumberRange({
-        id, value,
-        step: 1,
-        min: constraint.getMin(),
-        max: constraint.getMax(),
+        id, value, step,
+        min: min ? (min.inclusive ? min.value : (min.value + step)): null,
+        max: max ? (max.inclusive ? max.value : (max.value - step)): null,
         parse: parseInt,
     })
 }
@@ -67,11 +70,14 @@ const IntEnum = ({constraint, id="", value}) => {
 }
 
 const FloatRange = ({constraint, id="", value}) => {
+    const min = constraint.getMin()
+    const max = constraint.getMax()
+    const step = 0.01
+    
     return NumberRange({
-        id, value,
-        step: 0.01,
-        min: constraint.getMin(),
-        max: constraint.getMax(),
+        id, value, step,
+        min: min ? (min.inclusive ? min.value : (min.value + step)): null,
+        max: max ? (max.inclusive ? max.value : (max.value - step)): null,
         parse: parseFloat,
     })
 }
@@ -84,4 +90,4 @@ const FloatEnum = ({constraint, id="", value}) => {
     })
 }
 
-export {IntRange, IntEnum, FloatRange, FloatEnum}
+export {IntRange, IntEnum, FloatRange, FloatEnum, NumberRange}

@@ -22,7 +22,7 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug().Interface("request", run).Msg("received run request")
+	log.Info().Interface("request", run).Msg("received run request")
 
 	loader := backend.NewBarSetLoader(a.DB, run.Symbol)
 

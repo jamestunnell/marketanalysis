@@ -26,6 +26,6 @@ func NewGraphs(db *mongo.Database) *Graphs {
 func (a *Graphs) Bind(r *mux.Router) {
 	a.CRUDAPI.Bind(r)
 
-	r.HandleFunc(a.PluralRoute()+"/run", a.Run).Methods(http.MethodPost) //, http.MethodOptions)
-	// r.HandleFunc(a.PluralRoute()+"/optimize", a.Optimize).Methods(http.MethodPost) //, http.MethodOptions)
+	r.HandleFunc(a.PluralRoute()+"/run", a.Run).Methods(http.MethodPost)           //, http.MethodOptions)
+	r.HandleFunc(a.PluralRoute()+"/optimize", a.Optimize).Methods(http.MethodPost) //, http.MethodOptions)
 }

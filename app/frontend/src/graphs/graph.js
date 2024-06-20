@@ -7,13 +7,15 @@ import { Get, PutJSON } from '../backend.js'
 import { BlockItem } from './block.js'
 import { AddBlockModal } from './addblock.js'
 import { Button, ButtonIcon } from '../elements/buttons.js'
+import { MakeEmptyChart, UpdateCharts } from '../charts.js'
 import { GreaterEqual } from '../constraint.js'
 import { WeekdayDatepicker } from '../elements/datepicker.js'
 import { DownloadJSON } from "../download.js"
+import { IconAdd, IconBolt, IconExport, IconSave } from '../elements/icons.js';
 import loadAllSettings from '../settings/loadallsettings.js'
 import { IntRange } from '../elements/number.js'
-import { IconAdd, IconBolt, IconExport, IconSave } from '../elements/icons.js';
-import { MakeEmptyChart, UpdateCharts } from '../charts.js'
+import { OptimizeGraphModal } from './optimizegraph.js'
+import { MakeTargetParam } from './targetparam.js'
 import { runGraph } from './rungraph.js'
 import Select from '../elements/select.js'
 import Setting from '../settings/setting.js'
@@ -157,6 +159,7 @@ class PageContent {
                     p({class: "pl-4 text-lg font-semibold"}, this.name),
                     this.renderExportButton(),
                     this.renderSaveButton(),
+                    this.renderOptimizeButton(),
                 ),
                 div(
                     {class: "col-span-4 flex flex-row-reverse pt-2 pb-2 space-x-2 items-center"},
@@ -283,6 +286,37 @@ class PageContent {
         return this.blockItems.map(item => item.getName())
     }
 
+    makeTargetParams() {
+        const targetParams = []
+
+        this.blockItems.forEach(item => {
+            item.getInfo().parameters.forEach(paramInfo => {
+                const address = item.getName() + "." + paramInfo.name
+                
+                targetParams.push(MakeTargetParam({address, paramInfo}))
+            })
+        })
+
+        // remove any null values
+        return targetParams.filter(t => t)
+    }
+
+    getAllSourceAddresses() {
+        const sources = []
+
+        this.blockItems.forEach(item => {
+            item.info.outputs.forEach(output => {
+                sources.push(item.getName() +"." + output.name)
+            })
+        })
+
+        return sources.sort()
+    }
+
+    getPossibleSources(targetBlockName) {
+        return this.getAllSourceAddresses().filter(s => s !== targetBlockName)
+    }
+
     getPossibleSources(targetBlockName) {
         const sources = []
 
@@ -296,10 +330,6 @@ class PageContent {
         return sources.sort()
     }
 
-    renderSettingsArea() {
-
-    }
-    
     renderSelectRunType() {
         const options = [
             option({value: RUN_SINGLE_DAY, selected: true}, RUN_SINGLE_DAY),
@@ -370,6 +400,8 @@ class PageContent {
                 OptimizeGraphModal({
                     graph: this.makeGraph(),
                     symbolSetting: this.symbolSetting,
+                    sourceAddresses: this.getAllSourceAddresses(),
+                    targetParams: this.makeTargetParams()
                 })
             },
         });
