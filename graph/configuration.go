@@ -139,6 +139,18 @@ func (bc *BlockConfig) FindOutput(name string) (*OutputConfig, bool) {
 	return nil, false
 }
 
+func (bc *BlockConfig) SetParamVal(name string, val any) {
+	for _, paramCfg := range bc.Parameters {
+		if paramCfg.Name == name {
+			paramCfg.Value = val
+
+			return
+		}
+	}
+
+	bc.Parameters = append(bc.Parameters, &ParamConfig{Name: name, Value: val})
+}
+
 func (bc *BlockConfig) ParamVals() blocks.ParamVals {
 	paramVals := blocks.ParamVals{}
 

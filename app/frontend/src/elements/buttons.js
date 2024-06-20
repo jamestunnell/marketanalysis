@@ -120,7 +120,7 @@ const ButtonToggle = ({setVal, onSet, onClear}) => {
     )
 }
 
-const ButtonIconTooltip = ({icon, text, tooltipText}) => {
+const ButtonIconTooltip = ({icon, text}) => {
     const showTooltip = van.state(false)
     
     return button(
@@ -131,9 +131,8 @@ const ButtonIconTooltip = ({icon, text, tooltipText}) => {
             onmouseleave: () => showTooltip.val = false,
         },
         icon,
-        text,
         Tooltip({
-            text: tooltipText,
+            text,
             show: showTooltip,
         }),
     )

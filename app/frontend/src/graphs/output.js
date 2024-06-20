@@ -2,15 +2,9 @@ import van from "vanjs-core"
 
 import Checkbox from '../elements/checkbox.js'
 import { Table, TableRow } from '../elements/table.js'
+import { MEASURE_FIRST, MEASURE_LAST, MEASURE_MEAN, MEASURE_MIN, MEASURE_MAX, MEASURE_STDDEV } from './measurement.js'
 
 const { tbody } = van.tags
-
-const MEASURE_FIRST = "first"
-const MEASURE_LAST = "last"
-const MEASURE_MEAN = "mean"
-const MEASURE_MIN = "min"
-const MEASURE_MAX = "max"
-const MEASURE_STDDEV = "stddev"
 
 class Output {
     constructor({name, measurements}) {

@@ -6,6 +6,10 @@ const IconAdd = () => {
     return i({class: "fa-solid fa-plus"});
 }
 
+const IconBolt = () => {
+    return i({class: "fa-solid fa-bolt"});
+}
+
 const IconCheck = () => {
     return i({class: "fa-solid fa-check"});
 }
@@ -76,6 +80,7 @@ const IconView = () => {
 
 export {
     IconAdd,
+    IconBolt,
     IconCheck,
     IconClose,
     IconCollapsed,

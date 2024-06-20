@@ -12,7 +12,7 @@ import { WeekdayDatepicker } from '../elements/datepicker.js'
 import { DownloadJSON } from "../download.js"
 import loadAllSettings from '../settings/loadallsettings.js'
 import { IntRange } from '../elements/number.js'
-import { IconAdd, IconExport, IconSave } from '../elements/icons.js';
+import { IconAdd, IconBolt, IconExport, IconSave } from '../elements/icons.js';
 import { MakeEmptyChart, UpdateCharts } from '../charts.js'
 import { runGraph } from './rungraph.js'
 import Select from '../elements/select.js'
@@ -167,7 +167,6 @@ class PageContent {
                         id: "numCharts",
                         constraint: new GreaterEqual(1),
                         value: this.numChartsSetting.value,
-                        error: van.state(''),
                     }),
                     label({for: "numCharts", class: "pr-2 font-semibold"}, "Charts"),
                     WeekdayDatepicker({
@@ -359,6 +358,19 @@ class PageContent {
                         this.digestSaved.val = digest
                     }
                 });
+            },
+        });
+    }
+
+    renderOptimizeButton() {
+        return Button({
+            child: IconBolt(),
+            // text: "Optimize",
+            onclick: () => {
+                OptimizeGraphModal({
+                    graph: this.makeGraph(),
+                    symbolSetting: this.symbolSetting,
+                })
             },
         });
     }

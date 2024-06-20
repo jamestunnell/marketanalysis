@@ -26,16 +26,15 @@ class Param {
     }
 
     renderTableRow() {
-        const validationErr = van.state(null)
+        const err = van.derive(() => this.constraint.validate(this.value.val))
         const valueInput = this.makeValueInput({
             constraint: this.constraint,
             id: this.name,
-            error: validationErr,
             value: this.value,
         })
         const valueStatus = ButtonIconTooltip({
-            icon: () => validationErr.val ? IconError() : IconCheck(),
-            tooltipText: van.derive(() => validationErr.val ? `Value is invalid: ${validationErr.val.message}` : "Value is valid"),
+            icon: () => err.val ? IconError() : IconCheck(),
+            text: van.derive(() => err.val ? `Value is invalid: ${err.val.message}` : "Value is valid"),
         })
         
         return TableRow([this.name, this.constraint.toString(), valueInput, valueStatus ])

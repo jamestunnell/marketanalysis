@@ -98,7 +98,7 @@ const EditBlockForm = ({config, info, otherNames, possibleSources, onComplete, o
     const deleteBtn = ButtonIcon({icon: IconDelete(), onclick: onDelete});
     const statusBtn = ButtonIconTooltip({
         icon: () => validateErr.val ? IconError() : IconCheck(),
-        tooltipText: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
+        text: van.derive(() => validateErr.val ? `Block is invalid: ${validateErr.val.message}` : "Block is valid"),
     });
     const ok = Button({
         child: "OK",
