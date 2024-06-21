@@ -10,7 +10,7 @@ const AppErrorContent = (appErr) => {
         {class: "flex flex-col space-y-2"},
         p(`Message: ${appErr.message}`),
         () => appErr.details ? div(
-            p(`Details:`),
+            p("Details:"),
             ul(
                 {class: "list-disc list-inside"},
                 appErr.details.map(detail => li(detail))
@@ -30,9 +30,24 @@ const AppErrorAlert = (appErr) => {
 const AppErrorModal = (appErr) => {
     console.log("showing app error modal", appErr)
 
-    const modal = ModalBackground(ModalForeground({}, AppErrorContent(appErr)))
+    const closed = van.state(false)
+    const closeBtn = ButtonIcon({
+        icon: IconClose(),
+        onclick: (e) => closed.val = true,
+    })
 
-    van.add(document.body, modal);
+    closeBtn.classList.add("self-end")
+
+    const modal = ModalBackground(ModalForeground(
+        {},
+        div(
+            {class: "flex flex-col"},
+            closeBtn,
+            AppErrorContent(appErr),
+        ),
+    ))
+
+    van.add(document.body, () => closed.val ? null : modal);
 }
 
 export {AppErrorAlert, AppErrorModal};

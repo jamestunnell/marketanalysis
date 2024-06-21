@@ -2,7 +2,7 @@ import van from "vanjs-core"
 
 import {INPUT_CLASS} from './input.js'
 
-const {input} = van.tags
+const {input, option, select} = van.tags
 
 const NumberRange = ({min=null, max=null, id="", parse, step, value}) => {
     return input({
@@ -24,13 +24,13 @@ const NumberRange = ({min=null, max=null, id="", parse, step, value}) => {
 
 const NumberEnum = ({id="", parse, allowed, value}) => {
     const options = allowed.map(allowedVal => {
-        let props = {value: allowedVal};
-        
-        if (allowedVal === currentVal) {
-            props.selected = "selected";
-        }
-
-        return option(props, allowedVal);
+        return option(
+            {
+                value: allowedVal,
+                selected: value.val === allowedVal,
+            },
+            allowedVal,
+        );
     })
 
     return select({

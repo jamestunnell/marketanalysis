@@ -49,6 +49,7 @@ func init() {
 
 	Add(math.TypeAdd2, math.NewAdd2)
 	Add(math.TypeAddK, math.NewAddK)
+	Add(math.TypeCmpK, math.NewCmpK)
 	Add(math.TypeDiv2, math.NewDiv2)
 	Add(math.TypeSub2, math.NewSub2)
 	Add(math.TypeMul2, math.NewMul2)

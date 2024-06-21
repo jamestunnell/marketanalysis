@@ -31,6 +31,7 @@ class OneOf {
         return null
     }
 
+    getAllowed() {return this.allowed}
     isRange() {return false}
     getMin() {return null}
     getMax() {return null}

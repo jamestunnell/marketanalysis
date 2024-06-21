@@ -78,17 +78,25 @@ func (blk *MultiTrend2) Update(cur *models.Bar, isLast bool) {
 	in1 := blk.in1.GetValue()
 	in2 := blk.in2.GetValue()
 
-	if in1 > blk.thresh.CurrentVal && in2 > blk.thresh.CurrentVal {
+	dir := 0
+
+	if in1 > blk.thresh.CurrentVal {
+		dir += 1
+	} else if in1 < -blk.thresh.CurrentVal {
+		dir -= 1
+	}
+
+	if in2 > blk.thresh.CurrentVal {
+		dir += 1
+	} else if in2 < -blk.thresh.CurrentVal {
+		dir -= 1
+	}
+
+	if dir > 0 {
 		blk.out.SetValue(1.0)
-
-		return
-	}
-
-	if in1 < -blk.thresh.CurrentVal && in2 > -blk.thresh.CurrentVal {
+	} else if dir < 0 {
 		blk.out.SetValue(-1.0)
-
-		return
+	} else {
+		blk.out.SetValue(0.0)
 	}
-
-	blk.out.SetValue(0.0)
 }
