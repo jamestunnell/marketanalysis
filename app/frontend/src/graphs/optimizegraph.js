@@ -1,4 +1,5 @@
 import van from "vanjs-core"
+import { nanoid } from 'nanoid'
 
 import { Button, ButtonCancel, ButtonIcon, ButtonIconTooltip } from "../elements/buttons"
 import { RangeIncl } from "../constraint"
@@ -16,22 +17,19 @@ const {div, option, span} = van.tags
 import { PostJSON } from '../backend.js'
 
 function newRandomSeed() {
-    const min = 0
-    const max = Number.MAX_SAFE_INTEGER
-
     return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) - Number.MAX_SAFE_INTEGER
 }
 
-const optimizeGraph = ({graph, symbol, days, sourceQuantity, targetParams, settings}) => {
+const startOptimizeGraphJob = ({graph, jobID, symbol, days, sourceQuantity, targetParams, settings}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/optimize`
-        const object = {graph, symbol, days, sourceQuantity, targetParams, settings}
+        const object = {graph, jobID, symbol, days, sourceQuantity, targetParams, settings}
         const options = {accept: 'application/json'}
 
         console.log("optimizing graph", object)
 
         PostJSON({route, object, options}).then(resp => {
-            if (resp.status != 200) {
+            if (resp.status != 202) {
                 resp.json().then(appErr => {
                     console.log("failed to run graph", appErr);
     
@@ -39,13 +37,14 @@ const optimizeGraph = ({graph, symbol, days, sourceQuantity, targetParams, setti
                 })
             }
 
-            resp.json().then(obj => resolve(obj))
+            // Avoid Fetch failed loading
+            resp.text().then(text => resolve())
         }).catch(err => {
-            console.log("failed to make run graph request", err)
+            console.log("failed to make optimize graph request", err)
             
             reject({
                 title: "Action Failed",
-                message: "failed to make run graph request",
+                message: "failed to make optimize graph request",
                 details: [err.message],
             })
         });
@@ -60,7 +59,7 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
     const daysErr = van.derive(() => daysConstraint.validate(days.val))
 
     const maxIter = van.state(100)
-    const maxIterConstraint = new RangeIncl(1, 1000)
+    const maxIterConstraint = new RangeIncl(1, 10000)
     const maxIterErr = van.derive(() => maxIterConstraint.validate(maxIter.val))
 
     const seed = van.state(newRandomSeed())
@@ -173,6 +172,7 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
                 child: "Run",
                 onclick: () => {
                     const opts = {
+                        jobID: nanoid(),
                         graph,
                         symbol: symbol.val,
                         days: days.val,
@@ -192,8 +192,8 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
                         },
                     }
                     
-                    optimizeGraph(opts).then(result => {
-                        console.log('optimize succeeded', {result})
+                    startOptimizeGraphJob(opts).then(() => {
+                        console.log('graph optimization started')
                     }).catch(appErr => {
                         AppErrorModal(appErr)
                     })

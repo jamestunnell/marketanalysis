@@ -46,8 +46,8 @@ class TargetParam {
                 return new Error(`max value ${this.max.val} is invalid: ${maxErr.message}`)
             }
 
-            if (this.min.val >= this.max.val) {
-                return new Error(`min value ${this.min.val} is not < max value ${this.max.val}`)
+            if (this.min.val > this.max.val) {
+                return new Error(`min value ${this.min.val} is not <= max value ${this.max.val}`)
             }
 
             return null

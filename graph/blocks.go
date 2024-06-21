@@ -97,7 +97,7 @@ func (blocks Blocks) Connect(
 
 		output.Connect(input)
 
-		log.Debug().
+		log.Trace().
 			Stringer("src", c.Source).
 			Stringer("tgt", c.Target).
 			Msg("connected pair")

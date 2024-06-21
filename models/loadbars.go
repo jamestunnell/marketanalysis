@@ -18,7 +18,7 @@ func LoadRunBars(
 	load LoadBarsFunc,
 	warmupPeriod int,
 ) (Bars, error) {
-	log.Debug().Time("start", ts.Start()).Time("end", ts.End()).Msg("loading bars")
+	log.Trace().Time("start", ts.Start()).Time("end", ts.End()).Msg("loading bars")
 
 	startDate := date.NewAt(ts.Start())
 	endDate := date.NewAt(ts.End())
@@ -42,7 +42,7 @@ func LoadRunBars(
 
 	// use bars before start time for warmup
 	if startIdx, startFound := primaryBars.IndexForward(ts.Start()); startFound {
-		log.Debug().Int("count", startIdx).Msg("found warmup bars before start")
+		log.Trace().Int("count", startIdx).Msg("found warmup bars before start")
 
 		warmupBars = slices.Clone(primaryBars[:startIdx])
 		primaryBars = primaryBars[startIdx:]

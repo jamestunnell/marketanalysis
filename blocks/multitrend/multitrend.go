@@ -10,9 +10,8 @@ type MultiTrend2 struct {
 	in2 *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
 
-	thresh         *blocks.FloatParam
-	debouncePeriod *blocks.IntParam
-	votesNeeded    *blocks.IntParam
+	thresh      *blocks.FloatParam
+	votesNeeded *blocks.IntParam
 }
 
 const (

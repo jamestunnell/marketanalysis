@@ -85,7 +85,7 @@ func Run(
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
-		log.Debug().Msg("timespan is empty, returning empty time series")
+		log.Trace().Msg("timespan is empty, returning empty time series")
 
 		return models.NewTimeSeries(), nil
 	}
@@ -106,7 +106,7 @@ func Run(
 	}
 
 	if len(bars) == 0 {
-		log.Debug().
+		log.Trace().
 			Stringer("start", ts.Start()).
 			Stringer("end", ts.End()).
 			Msg("no bars loaded, returning empty time series")
@@ -120,13 +120,13 @@ func Run(
 		return nil, err
 	}
 
-	log.Debug().
+	log.Trace().
 		Stringer("warmupStart", bars[0].Timestamp).
 		Stringer("runStart", ts.Start()).
 		Stringer("runEnd", ts.End()).
 		Int("warmup bars", wuPeriod).
 		Int("run bars", len(bars)-wuPeriod).
-		Msgf("running model")
+		Msgf("running graph")
 
 	for i, bar := range bars {
 		g.Update(bar, i == (len(bars)-1))
@@ -136,7 +136,7 @@ func Run(
 
 	timeSeries.SortByTime()
 
-	log.Debug().Msg("dropping warmup records")
+	log.Trace().Msg("dropping warmup records")
 
 	timeSeries.DropRecordsBefore(ts.Start())
 

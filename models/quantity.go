@@ -79,7 +79,7 @@ func (q *Quantity) MeasureAll(mTypes []string) {
 			continue
 		}
 
-		log.Debug().
+		log.Trace().
 			Str("quantity", q.Name).
 			Str("type", mType).
 			Float64("value", val).

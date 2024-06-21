@@ -5,7 +5,6 @@ import (
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util"
-	"github.com/rs/zerolog/log"
 )
 
 type MAOrder struct {
@@ -75,8 +74,6 @@ func (blk *MAOrder) IsWarm() bool {
 func (blk *MAOrder) Init() error {
 	start := blk.periodStart.CurrentVal
 	span := blk.periodSpan.CurrentVal
-
-	log.Debug().Msgf("MAO num periods: %v", blk.numPeriods.CurrentVal)
 
 	periods := util.LinSpaceInts(start, start+span, blk.numPeriods.CurrentVal)
 

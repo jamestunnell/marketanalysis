@@ -39,11 +39,11 @@ func NewBarSetLoader(
 }
 
 func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, error) {
-	log.Debug().Stringer("date", d).Msg("loading day bars")
+	log.Trace().Stringer("date", d).Msg("loading day bars")
 
 	dayBars, appErr := l.Store.Get(ctx, d.String())
 	if appErr == nil {
-		log.Debug().
+		log.Trace().
 			Int("count", len(dayBars.Bars)).
 			Stringer("date", d).
 			Msg("found bars in store")
@@ -58,7 +58,7 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 		return nil, fmt.Errorf("failed to get aplaca bars: %w", err)
 	}
 
-	log.Debug().
+	log.Trace().
 		Int("count", len(bs)).
 		Stringer("date", d).
 		Msg("loaded bars from alpaca")
@@ -69,7 +69,7 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 	}
 
 	if d.Equal(date.TodayIn(locNY)) {
-		log.Debug().Msg("not storing bars from today")
+		log.Trace().Msg("not storing bars from today")
 
 		return dayBars.Bars, nil
 	}

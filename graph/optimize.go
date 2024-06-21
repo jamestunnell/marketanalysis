@@ -47,9 +47,13 @@ type OptResult struct {
 	Score     float64        `json:"score"`
 }
 
+type PostEvalFunc func(paramVals map[string]any, result float64)
+
 const (
-	MaximizeSum = "MaximizeSum"
-	MinimizeSum = "MinimizeSum"
+	MaximizeMean = "MaximizeMean"
+	MaximizeSum  = "MaximizeSum"
+	MinimizeMean = "MinimizeMean"
+	MinimizeSum  = "MinimizeSum"
 )
 
 func Optimize(
@@ -60,6 +64,7 @@ func Optimize(
 	params []*TargetParam,
 	settings *OptimizeSettings,
 	load models.LoadBarsFunc,
+	postEval PostEvalFunc,
 ) (*OptimizeResults, error) {
 	if settings.Algorithm != "SimulatedAnnealing" {
 		err := errors.New("unsupported optimization algorithm " + settings.Algorithm)
@@ -67,7 +72,7 @@ func Optimize(
 		return nil, err
 	}
 
-	return OptimizeSA(ctx, cfg, days, source, params, settings, load)
+	return OptimizeSA(ctx, cfg, days, source, params, settings, load, postEval)
 }
 
 func OptimizeSA(
@@ -78,6 +83,7 @@ func OptimizeSA(
 	targetParams []*TargetParam,
 	settings *OptimizeSettings,
 	load models.LoadBarsFunc,
+	postEval PostEvalFunc,
 ) (*OptimizeResults, error) {
 	rng := rand.New(rand.NewSource(settings.RandomSeed))
 	eval := func(paramVals map[string]any) float64 {
@@ -88,18 +94,26 @@ func OptimizeSA(
 			return 0.0
 		}
 
-		// log.Info().Floats64("mVals", mVals).Msg("eval complete")
+		var result float64
 
 		switch settings.Objective {
+		case MaximizeMean:
+			result = -sum(mVals) / float64(len(mVals))
 		case MaximizeSum:
-			return -sum(mVals)
+			result = -sum(mVals)
+		case MinimizeMean:
+			result = sum(mVals) / float64(len(mVals))
 		case MinimizeSum:
-			return sum(mVals)
+			result = sum(mVals)
+		default:
+			log.Warn().Str("objective", settings.Objective).Msg("unknown optimize objective")
 		}
 
-		log.Warn().Str("objective", settings.Objective).Msg("unknown optimize objective")
+		// log.Info().Float64("result", result).Msg("eval complete")
 
-		return 0.0
+		postEval(paramVals, result)
+
+		return result
 	}
 
 	blks, errs := cfg.MakeBlocks()

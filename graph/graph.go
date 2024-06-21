@@ -37,7 +37,7 @@ type recordOutAsync struct {
 }
 
 func New(cfg *Config) *Graph {
-	log.Debug().Interface("configuration", cfg).Msg("making graph")
+	log.Trace().Interface("configuration", cfg).Msg("making graph")
 
 	return &Graph{
 		Config:          cfg,
@@ -78,7 +78,7 @@ func (g *Graph) Init() error {
 		return fmt.Errorf("topological sort failed: %w", err)
 	}
 
-	log.Debug().Strs("order", order).Msg("connected graph blocks")
+	log.Trace().Strs("order", order).Msg("connected graph blocks")
 
 	wuPeriod, err := MaxTotalWarmupPeriod(blks, gr, order)
 	if err != nil {
@@ -122,7 +122,7 @@ func (g *Graph) Init() error {
 		}
 	}
 
-	log.Debug().
+	log.Trace().
 		Int("warmupPeriod", wuPeriod).
 		Msg("initialized graph model")
 
@@ -198,7 +198,7 @@ func MaxTotalWarmupPeriod(blks Blocks, g graphlib.Graph[string, string], order [
 			totalWU += slices.Max(predTotalWUs)
 		}
 
-		log.Debug().Str("block", name).Int("count", totalWU).Msg("total warmup")
+		log.Trace().Str("block", name).Int("count", totalWU).Msg("total warmup")
 
 		totalWUs[name] = totalWU
 	}
@@ -245,7 +245,7 @@ func (g *Graph) Update(bar *models.Bar, isLast bool) {
 		return
 	}
 
-	log.Debug().Msg("running last update measurements")
+	log.Trace().Msg("running last update measurements")
 
 	// do all measurements after the last bar
 	for _, r := range g.recordOuts {

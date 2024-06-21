@@ -171,7 +171,7 @@ func (blk *Backtest) closePosition(t time.Time, value float64, reason string) {
 
 	blk.currentEquity += blk.position.ClosedPL
 
-	log.Debug().
+	log.Trace().
 		Stringer("entryTime", blk.position.Entry.Time).
 		Stringer("exitTime", blk.position.Exit.Time).
 		Float64("profitLoss", blk.position.ClosedPL).

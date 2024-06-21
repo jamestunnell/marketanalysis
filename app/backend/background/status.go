@@ -6,13 +6,12 @@ import (
 )
 
 type Status struct {
-	State         JobState  `json:"state"`
-	Started       time.Time `json:"started"`
-	Completed     time.Time `json:"completed"`
-	OuterProgress float64   `json:"outerProgress"`
-	InnerProgress float64   `json:"innerProgress"`
-	Result        any       `json:"result"`
-	ErrMsg        string    `json:"errMsg"`
+	State     JobState  `json:"state"`
+	Started   time.Time `json:"started"`
+	Completed time.Time `json:"completed"`
+	Progress  float64   `json:"progress"`
+	Result    any       `json:"result"`
+	ErrMsg    string    `json:"errMsg"`
 }
 
 type JobState int

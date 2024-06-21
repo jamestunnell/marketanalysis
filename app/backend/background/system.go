@@ -36,9 +36,8 @@ type system struct {
 }
 
 type ProgressUpdate struct {
-	JobID         string
-	InnerProgress float64
-	OuterProgress float64
+	JobID    string
+	Progress float64
 }
 
 type SystemOpts struct {
@@ -157,8 +156,8 @@ func (sys *system) runUntilStopped() {
 func (sys *system) runJob(j Job) {
 	id := j.GetID()
 
-	result, err := j.Execute(func(update ProgressUpdate) {
-		sys.updates <- update
+	result, err := j.Execute(func(progress float64) {
+		sys.updates <- ProgressUpdate{JobID: id, Progress: progress}
 	})
 
 	completed := time.Now()
@@ -201,8 +200,7 @@ func (sys *system) updateProgress(upd ProgressUpdate) bool {
 		return false
 	}
 
-	s.InnerProgress = upd.InnerProgress
-	s.OuterProgress = upd.OuterProgress
+	s.Progress = upd.Progress
 
 	sys.status[upd.JobID] = s
 
@@ -227,5 +225,25 @@ func (sys *system) notifySubs(jobID string) {
 }
 
 func (sys *system) prune() {
-	log.Debug().Msg("background: pruning")
+	sys.statusMutex.Lock()
+
+	defer sys.statusMutex.Unlock()
+
+	toPrune := []string{}
+
+	for id, status := range sys.status {
+		if status.State == Running {
+			continue
+		}
+
+		if time.Since(status.Completed) >= sys.pruneAge {
+			toPrune = append(toPrune, id)
+		}
+	}
+
+	for _, id := range toPrune {
+		log.Debug().Str("id", id).Msg("background: pruning job status")
+
+		delete(sys.status, id)
+	}
 }

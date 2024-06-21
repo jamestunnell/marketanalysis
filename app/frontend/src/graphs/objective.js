@@ -1,5 +1,5 @@
 function allObjectives() {
-    return ["MaximizeSum", "MinimizeSum"]
+    return ["MaximizeSum", "MinimizeSum", "MaximizeMean", "MinimizeMean"]
 }
 
 export {allObjectives}
