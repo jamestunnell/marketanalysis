@@ -43,8 +43,8 @@ type OptimizeResults struct {
 }
 
 type OptResult struct {
-	ParamVals         map[string]any `json:"paramVals"`
-	SourceMeasurement float64        `json:"sourceMeasurement"`
+	ParamVals map[string]any `json:"paramVals"`
+	Score     float64        `json:"score"`
 }
 
 const (
@@ -151,8 +151,8 @@ func OptimizeSA(
 
 	makeOptResult := func(state hego.AnnealingState, energy float64) *OptResult {
 		return &OptResult{
-			ParamVals:         state.(*OptState).ParamVals(),
-			SourceMeasurement: energy,
+			ParamVals: state.(*OptState).ParamVals(),
+			Score:     energy,
 		}
 	}
 	history := make([]*OptResult, len(r.States))

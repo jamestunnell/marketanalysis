@@ -7,41 +7,24 @@ import (
 
 type Status struct {
 	State         JobState  `json:"state"`
-	Start         time.Time `json:"start"`
-	End           time.Time `json:"end"`
+	Started       time.Time `json:"started"`
+	Completed     time.Time `json:"completed"`
 	OuterProgress float64   `json:"outerProgress"`
 	InnerProgress float64   `json:"innerProgress"`
-	Result        Cloneable `json:"result"`
+	Result        any       `json:"result"`
 	ErrMsg        string    `json:"errMsg"`
-}
-
-type Cloneable interface {
-	Clone() Cloneable
 }
 
 type JobState int
 
 const (
-	Queued JobState = iota
-	Running
+	Running JobState = iota
 	Succeeded
 	Failed
 )
 
-func (s *Status) Clone() *Status {
-	return &Status{
-		State:  s.State,
-		Start:  s.Start,
-		End:    s.End,
-		Result: s.Result.Clone(),
-		ErrMsg: s.ErrMsg,
-	}
-}
-
 func (s JobState) String() string {
 	switch s {
-	case Queued:
-		return "queued"
 	case Running:
 		return "running"
 	case Succeeded:

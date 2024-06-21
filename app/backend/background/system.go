@@ -1,7 +1,6 @@
 package background
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -12,8 +11,8 @@ type System interface {
 	Start()
 	Stop()
 
-	Run(Job) error
-	GetStatus(id string) (*Status, bool)
+	RunJob(Job) bool
+	GetJobStatus(id string) (Status, bool)
 
 	Subscribe(sub Subscriber)
 	Unsubscribe(subID string)
@@ -23,7 +22,7 @@ type CheckJobFunc func(Status)
 
 type Subscriber interface {
 	GetID() string
-	OnUpdate(*Status)
+	OnUpdate(Status)
 }
 
 type system struct {
@@ -31,7 +30,7 @@ type system struct {
 	updates     chan ProgressUpdate
 	statusMutex sync.RWMutex
 	subscrMutex sync.RWMutex
-	status      map[string]*Status
+	status      map[string]Status
 	pruneAge    time.Duration
 	subscribers map[string]Subscriber
 }
@@ -67,7 +66,7 @@ func NewSystem(mods ...SystemOptMod) System {
 
 	return &system{
 		stop:        make(chan struct{}),
-		status:      map[string]*Status{},
+		status:      map[string]Status{},
 		updates:     make(chan ProgressUpdate),
 		pruneAge:    opts.PruneAge,
 		subscribers: map[string]Subscriber{},
@@ -82,7 +81,7 @@ func (sys *system) Stop() {
 	sys.stop <- struct{}{}
 }
 
-func (sys *system) Run(j Job) error {
+func (sys *system) RunJob(j Job) bool {
 	sys.statusMutex.Lock()
 
 	defer sys.statusMutex.Unlock()
@@ -91,27 +90,30 @@ func (sys *system) Run(j Job) error {
 
 	_, found := sys.status[id]
 	if found {
-		return fmt.Errorf("job with ID %s already exists", id)
+		return false
 	}
 
-	sys.status[id] = &Status{State: Queued}
+	sys.status[id] = Status{
+		State:   Running,
+		Started: time.Now(),
+	}
 
 	go sys.runJob(j)
 
-	return nil
+	return true
 }
 
-func (sys *system) GetStatus(id string) (*Status, bool) {
+func (sys *system) GetJobStatus(id string) (Status, bool) {
 	sys.statusMutex.RLocker()
 
 	defer sys.statusMutex.RUnlock()
 
 	s, found := sys.status[id]
 	if !found {
-		return nil, false
+		return Status{}, false
 	}
 
-	return s.Clone(), true
+	return s, true
 }
 
 func (sys *system) Subscribe(sub Subscriber) {
@@ -140,9 +142,10 @@ func (sys *system) runUntilStopped() {
 		case <-sys.stop:
 			keepGoing = false
 		case update := <-sys.updates:
-			if status := sys.updateProgress(update); status != nil {
-				sys.notifySubs(update.JobID, status)
+			if sys.updateProgress(update) {
+				sys.notifySubs(update.JobID)
 			}
+
 		case <-time.After(5 * time.Minute):
 			sys.prune()
 		}
@@ -158,27 +161,35 @@ func (sys *system) runJob(j Job) {
 		sys.updates <- update
 	})
 
+	completed := time.Now()
+
 	sys.statusMutex.Lock()
 
 	defer sys.statusMutex.Unlock()
 
 	s, found := sys.status[id]
 	if !found {
-		log.Error().Err(err).Msg("failed to find job status to update after job completion")
+		log.Error().Err(err).Msg("background: failed to update status after job completion, job status not found")
 
 		return
 	}
 
+	s.Completed = completed
+
 	if err != nil {
+		s.State = Failed
 		s.ErrMsg = err.Error()
 		s.Result = nil
 	} else {
+		s.State = Succeeded
 		s.Result = result
 		s.ErrMsg = ""
 	}
+
+	sys.status[id] = s
 }
 
-func (sys *system) updateProgress(upd ProgressUpdate) *Status {
+func (sys *system) updateProgress(upd ProgressUpdate) bool {
 	sys.statusMutex.Lock()
 
 	defer sys.statusMutex.Unlock()
@@ -187,18 +198,31 @@ func (sys *system) updateProgress(upd ProgressUpdate) *Status {
 	if !found {
 		log.Warn().Str("id", upd.JobID).Msg("background: failed to update progress, job status not found")
 
-		return nil
+		return false
 	}
 
 	s.InnerProgress = upd.InnerProgress
 	s.OuterProgress = upd.OuterProgress
 
-	return s.Clone()
+	sys.status[upd.JobID] = s
+
+	return true
 }
 
-func (sys *system) notifySubs(jobID string, status *Status) {
+func (sys *system) notifySubs(jobID string) {
+	sys.statusMutex.RLock()
+
+	defer sys.statusMutex.RUnlock()
+
+	s, found := sys.status[jobID]
+	if !found {
+		log.Warn().Str("id", jobID).Msg("background: failed to notify subscribers progress, job status not found")
+
+		return
+	}
+
 	for _, sub := range sys.subscribers {
-		sub.OnUpdate(status)
+		sub.OnUpdate(s)
 	}
 }
 

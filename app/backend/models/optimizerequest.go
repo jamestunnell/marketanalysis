@@ -5,6 +5,7 @@ import (
 )
 
 type OptimizeRequest struct {
+	JobID            string                  `json:"jobID"`
 	Graph            *graph.Config           `json:"graph"`
 	Symbol           string                  `json:"symbol"`
 	Days             int                     `json:"days"`

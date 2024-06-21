@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/jamestunnell/marketanalysis/app/backend/background"
 	"github.com/jamestunnell/marketanalysis/app/backend/stores"
 	"github.com/jamestunnell/marketanalysis/graph"
 )
@@ -14,12 +15,14 @@ import (
 type Graphs struct {
 	*CRUDAPI[*graph.Config]
 	DB *mongo.Database
+	BG background.System
 }
 
-func NewGraphs(db *mongo.Database) *Graphs {
+func NewGraphs(db *mongo.Database, bg background.System) *Graphs {
 	return &Graphs{
 		CRUDAPI: NewCRUDAPI(stores.NewGraphs(db)),
 		DB:      db,
+		BG:      bg,
 	}
 }
 

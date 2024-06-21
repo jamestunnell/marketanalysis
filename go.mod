@@ -14,13 +14,15 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-multierror v1.0.0
+	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/montanaflynn/stats v0.7.0
 	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5
 	github.com/rickb777/date v1.20.1
 	github.com/rs/zerolog v1.29.0
 	github.com/soniakeys/cluster v1.0.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.mongodb.org/mongo-driver v1.15.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29

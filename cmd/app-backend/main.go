@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/jamestunnell/marketanalysis/app/backend/api"
+	"github.com/jamestunnell/marketanalysis/app/backend/background"
 	"github.com/jamestunnell/marketanalysis/app/backend/env"
 	"github.com/jamestunnell/marketanalysis/app/backend/server"
 )
@@ -67,10 +68,15 @@ func main() {
 	// ))
 	router.Use(mux.MiddlewareFunc(loggingMiddleware))
 
-	api.BindAll(srv.GetRouter(), db)
+	bg := background.NewSystem()
+
+	api.BindAll(srv.GetRouter(), db, bg)
 
 	srv.Start()
 	defer srv.Stop()
+
+	bg.Start()
+	defer bg.Stop()
 
 	server.BlockUntilSignaled(syscall.SIGINT, syscall.SIGTERM)
 }
