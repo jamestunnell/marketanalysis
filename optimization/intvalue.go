@@ -28,11 +28,19 @@ type IntEnumMutator struct {
 	idxStdDev float64
 }
 
+type IntConstMutator struct {
+	Value int
+}
+
 func NewIntValue(m IntMutator) *IntValue {
 	return &IntValue{
 		Val:     0,
 		Mutator: m,
 	}
+}
+
+func NewIntConstMutator(val int) *IntConstMutator {
+	return &IntConstMutator{Value: val}
 }
 
 func NewIntEnumMutator(vals []int) *IntEnumMutator {
@@ -104,4 +112,12 @@ func (m *IntEnumMutator) Mutate(currentVal int, rng *rand.Rand) int {
 	}
 
 	return m.Values[idx]
+}
+
+func (m *IntConstMutator) Start(rng *rand.Rand) int {
+	return m.Value
+}
+
+func (m *IntConstMutator) Mutate(currentVal int, rng *rand.Rand) int {
+	return m.Value
 }

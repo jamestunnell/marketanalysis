@@ -16,10 +16,10 @@ const {div, option, span} = van.tags
 
 import { PostJSON } from '../backend.js'
 
-const startOptimizeGraphParamsJob = ({graph, jobID, symbol, days, sourceQuantity, targetParams, settings}) => {
+const startOptimizeGraphParamsJob = ({graph, jobID, symbol, days, sourceQuantity, targetParams, objectiveType, settings}) => {
     return new Promise((resolve, reject) => {
         const route = `/graphs/optimize-params`
-        const object = {graph, jobID, symbol, days, sourceQuantity, targetParams, settings}
+        const object = {graph, jobID, symbol, days, sourceQuantity, targetParams, objectiveType, settings}
         const options = {accept: 'application/json'}
 
         console.log("optimizing graph", object)
@@ -173,11 +173,11 @@ const OptimizeGraphParamsModal = ({graph, symbolSetting, sourceAddresses, target
                         targetParams: targetParams.filter(t => t.selected.val).map(t => {
                             return {address: t.getAddress(), constraint: t.getNewConstraint()}
                         }),
+                        objectiveType: objective.val,
                         settings: {
-                            objective: objective.val,
                             algorithm: 'Anneal',
                             maxIterations: maxIter.val,
-                            keepHistory: false,
+                            keepHistory: true,
                         },
                     }
                     

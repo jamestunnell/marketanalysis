@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/rickb777/date"
+	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/app/backend"
@@ -35,11 +37,15 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 		timeSeries, err = graph.RunSingleDay(
 			r.Context(), run.Graph, run.Date, loader.Load)
 	case bemodels.RunMultiDay:
+		dateRange := timespan.NewDateRange(run.Date, date.Today())
+
 		timeSeries, err = graph.RunMultiDay(
-			r.Context(), run.Graph, run.Date, loader.Load)
+			r.Context(), run.Graph, dateRange, loader.Load)
 	case bemodels.RunMultiDaySummary:
+		dateRange := timespan.NewDateRange(run.Date, date.Today())
+
 		timeSeries, err = graph.RunMultiDaySummary(
-			r.Context(), run.Graph, run.Date, loader.Load)
+			r.Context(), run.Graph, dateRange, loader.Load)
 	default:
 		msg := fmt.Sprintf("run type '%s'", run.RunType)
 

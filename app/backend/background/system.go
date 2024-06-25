@@ -103,7 +103,7 @@ func (sys *system) RunJob(j Job) bool {
 }
 
 func (sys *system) GetJobStatus(id string) (Status, bool) {
-	sys.statusMutex.RLocker()
+	sys.statusMutex.RLock()
 
 	defer sys.statusMutex.RUnlock()
 

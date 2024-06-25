@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -61,7 +62,11 @@ func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc
 		progress := float64(iter) / float64(maxIter)
 
 		if iter%10 == 0 {
-			log.Debug().Str("id", job.GetID()).Msgf("optimize job: %6.2f%%", progress*100.0)
+			log.Debug().
+				Str("id", job.GetID()).
+				Interface("result", result).
+				Str("progress", fmt.Sprintf("%6.2f%%", progress*100.0)).
+				Msgf("optimize job: progress update")
 		}
 
 		onProgress(progress)
@@ -84,7 +89,7 @@ func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc
 		return nil, err
 	}
 
-	log.Info().Interface("results", results).Msg("optimize job: complete")
+	log.Info().Interface("final result", results.Result).Msg("optimize job: complete")
 
 	return results, nil
 }

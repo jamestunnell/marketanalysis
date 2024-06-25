@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/ccssmnn/hego"
+	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/rs/zerolog/log"
 )
 
 type Results struct {
@@ -32,7 +34,7 @@ const (
 func OptimizeParameters(
 	settings *Settings,
 	values Values,
-	objective Objective[Values],
+	objective Objective[models.ParamVals],
 ) (*Results, error) {
 	if settings.Algorithm != AlgorithmSA {
 		err := errors.New("unsupported optimization algorithm " + settings.Algorithm)
@@ -42,9 +44,12 @@ func OptimizeParameters(
 
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 
-	initialState := &SAState[Values]{
-		Base: NewParameterState(rng, objective),
+	initialState := &SAState[models.ParamVals]{
+		Objective: objective,
+		Base:      NewParameterState(rng, values),
 	}
+
+	log.Debug().Interface("initial state", initialState).Msg("starting SA optimization")
 
 	return OptimizeSA(settings, initialState)
 }

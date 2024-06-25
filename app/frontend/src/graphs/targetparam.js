@@ -7,7 +7,7 @@ import { IconCheck, IconError } from '../elements/icons'
 import { IntRange, FloatRange } from '../elements/number'
 import { Table, TableRow } from '../elements/table'
 
-const {tbody} = van.tags
+const {div, tbody} = van.tags
 
 class EnumTargetParam {
     constructor({address, valueType, constraint}) {
@@ -55,6 +55,8 @@ class RangeTargetParam {
         this.makeValueInput = makeValueInput
 
         const min = constraint.getMin()
+        const max = constraint.getMax()
+
         let minVal = defaultValue
         if (min) {
             minVal = min.inclusive ? min.value : (min.value + step)
@@ -62,7 +64,6 @@ class RangeTargetParam {
             minVal = max.value - step
         }
 
-        const max = constraint.getMax()
         let maxVal = defaultValue
         if (max) {
             maxVal = max.inclusive ? max.value : (max.value - step)
@@ -168,8 +169,10 @@ const MakeTargetParam = ({address, paramInfo}) => {
 }
 
 const TargetParamsTable = (targetParams) => {
+    console.log("making target params table", {targetParams})
+
     const rows = targetParams.map(t => {
-        TableRow([t.getAddress(), t.renderCheckbox(), t.renderLimitsArea()])
+        return TableRow([t.getAddress(), t.renderCheckbox(), t.renderLimitsArea()])
     })
     return Table({
         columnNames: ["Parameter", "Optimize", "Limits"],

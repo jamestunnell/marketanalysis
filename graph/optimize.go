@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/rickb777/date"
+	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 
 	"github.com/jamestunnell/marketanalysis/models"
@@ -55,20 +56,10 @@ func OptimizeParameters(
 	load models.LoadBarsFunc,
 	resultHook func(*optimization.Result),
 ) (*optimization.Results, error) {
-	blks, errs := cfg.MakeBlocks()
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("failed to make blocks: %w", errs[0])
-	}
-
 	values := map[string]optimization.Value{}
 
 	for _, tgt := range targets {
-		param, found := blks.FindParam(tgt.Address)
-		if !found {
-			return nil, fmt.Errorf("failed to find param '%s'", tgt.Address)
-		}
-
-		value, err := optimization.MakeValue(param.GetConstraintInfo())
+		value, err := optimization.MakeValue(tgt.Constraint)
 		if err != nil {
 			err = fmt.Errorf(
 				"failed to make parameter optimization value for target param '%s': %w",
@@ -129,20 +120,30 @@ func EvaluateParameters(
 	}
 
 	sourceOut, found := blkConfig.FindOutput(source.Address.B)
-	if !found {
-		return []float64{}, fmt.Errorf("failed to find source output '%s'", source.Address.B)
-	}
+	if found {
+		if !slices.Contains(sourceOut.Measurements, source.Measurement) {
+			sourceOut.Measurements = append(sourceOut.Measurements, source.Measurement)
+		}
+	} else {
+		sourceOut = &OutputConfig{
+			Name:         source.Address.B,
+			Measurements: []string{source.Measurement},
+		}
 
-	if !slices.Contains(sourceOut.Measurements, source.Measurement) {
-		sourceOut.Measurements = append(sourceOut.Measurements, source.Measurement)
+		blkConfig.Outputs = append(blkConfig.Outputs, sourceOut)
 	}
 
 	// Add two days for every week, since weekend days will be no-op
 	days += 2 * (days / 7)
 
-	startDate := date.Today().Add(date.PeriodOfDays(-days))
+	// don't include today (bars for current day are not cached)
+	endDate := date.Today().Add(-1)
+	dateRange := timespan.NewDateRange(
+		endDate.Add(date.PeriodOfDays(-days)),
+		endDate,
+	)
 
-	summaryTS, err := RunMultiDaySummary(ctx, cfg, startDate, load)
+	summaryTS, err := RunMultiDaySummary(ctx, cfg, dateRange, load)
 	if err != nil {
 		return []float64{}, fmt.Errorf("failed to run multi-day summary: %w", err)
 	}
@@ -173,12 +174,7 @@ func MinimizeMean(vals []float64) float64 {
 	return sum(vals) / float64(len(vals))
 }
 
-func (obj *Objective) Measure(values optimization.Values) float64 {
-	paramVals := models.ParamVals{}
-	for name, optVal := range values {
-		paramVals[name] = optVal.GetValue()
-	}
-
+func (obj *Objective) Measure(paramVals models.ParamVals) float64 {
 	score := obj.reduce(obj.eval(paramVals))
 
 	obj.resultHook(&optimization.Result{Score: score, Value: paramVals})

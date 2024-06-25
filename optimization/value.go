@@ -19,12 +19,14 @@ type Values map[string]Value
 func MakeValue(constraint *models.ConstraintInfo) (Value, error) {
 	switch constraint.Type {
 	case "OneOf[int]", "RangeIncl[int]":
-		intLimits := sliceutils.Map(constraint.Limits, func(val any) int { return val.(int) })
+		intLimits := sliceutils.Map(constraint.Limits, func(val any) int { return int(val.(float64)) })
 
 		var mut IntMutator
 
 		if constraint.Type == "OneOf[int]" {
 			mut = NewIntEnumMutator(intLimits)
+		} else if intLimits[0] == intLimits[1] {
+			mut = NewIntConstMutator(intLimits[0])
 		} else {
 			mut = NewIntRangeMutator(intLimits[0], intLimits[1])
 		}
@@ -36,6 +38,8 @@ func MakeValue(constraint *models.ConstraintInfo) (Value, error) {
 
 		if constraint.Type == "OneOf[float64]" {
 			mut = NewFloatEnumMutator(fltLimits)
+		} else if fltLimits[0] == fltLimits[1] {
+			mut = NewFloatConstMutator(fltLimits[0])
 		} else {
 			mut = NewFloatRangeMutator(fltLimits[0], fltLimits[1])
 		}

@@ -3,7 +3,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
@@ -27,13 +26,13 @@ func RunSingleDay(
 func RunMultiDay(
 	ctx context.Context,
 	cfg *Config,
-	startDay date.Date,
+	dateRange timespan.DateRange,
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
-	ts := timespan.NewTimeSpan(
-		startDay.In(loading.GetLocationNY()),
-		time.Now().In(loading.GetLocationNY()),
-	)
+	// include entire last day by going until start of the next day
+	endTime := dateRange.End().Add(1).In(loading.GetLocationNY())
+	startTime := dateRange.Start().In(loading.GetLocationNY())
+	ts := timespan.NewTimeSpan(startTime, endTime)
 
 	return Run(ctx, cfg, ts, load)
 }
@@ -41,17 +40,16 @@ func RunMultiDay(
 func RunMultiDaySummary(
 	ctx context.Context,
 	cfg *Config,
-	startDay date.Date,
+	dateRange timespan.DateRange,
 	load models.LoadBarsFunc,
 ) (*models.TimeSeries, error) {
-	today := date.Today()
 	summary := models.NewTimeSeries()
 
 	// log.Debug().
 	// 	Stringer("start", startDay).
 	// 	Msg("running multi-day summary")
 
-	for d := startDay; !d.After(today); d = d.Add(1) {
+	for d := dateRange.Start(); !d.After(dateRange.End()); d = d.Add(1) {
 		timeSeries, err := RunSingleDay(ctx, cfg, d, load)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run on day %s: %w", d, err)
