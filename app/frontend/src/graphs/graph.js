@@ -14,7 +14,7 @@ import { DownloadJSON } from "../download.js"
 import { IconAdd, IconBolt, IconExport, IconSave } from '../elements/icons.js';
 import loadAllSettings from '../settings/loadallsettings.js'
 import { IntRange } from '../elements/number.js'
-import { OptimizeGraphModal } from './optimizegraph.js'
+import { OptimizeGraphParamsModal } from './optimizegraph.js'
 import { MakeTargetParam } from './targetparam.js'
 import { runGraph } from './rungraph.js'
 import Select from '../elements/select.js'
@@ -397,7 +397,7 @@ class PageContent {
             child: IconBolt(),
             // text: "Optimize",
             onclick: () => {
-                OptimizeGraphModal({
+                OptimizeGraphParamsModal({
                     graph: this.makeGraph(),
                     symbolSetting: this.symbolSetting,
                     sourceAddresses: this.getAllSourceAddresses(),

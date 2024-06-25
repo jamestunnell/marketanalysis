@@ -7,7 +7,7 @@ import (
 )
 
 type ATR struct {
-	period *blocks.IntParam
+	period *models.IntParam
 	atr    *indicators.ATR
 	out    *blocks.TypedOutput[float64]
 }
@@ -19,7 +19,7 @@ const (
 
 func New() blocks.Block {
 	return &ATR{
-		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
+		period: models.NewIntParam(10, models.NewGreaterEq(1)),
 		atr:    nil,
 		out:    blocks.NewTypedOutput[float64](),
 	}
@@ -33,8 +33,8 @@ func (blk *ATR) GetDescription() string {
 	return Descr
 }
 
-func (blk *ATR) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *ATR) GetParams() models.Params {
+	return models.Params{
 		blocks.NamePeriod: blk.period,
 	}
 }

@@ -11,9 +11,9 @@ type MAOrder struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
 
-	numPeriods  *blocks.IntParam
-	periodStart *blocks.IntParam
-	periodSpan  *blocks.IntParam
+	numPeriods  *models.IntParam
+	periodStart *models.IntParam
+	periodSpan  *models.IntParam
 
 	maOrdering *indicators.MAOrdering
 }
@@ -32,9 +32,9 @@ func New() blocks.Block {
 	return &MAOrder{
 		in:          blocks.NewTypedInput[float64](),
 		out:         blocks.NewTypedOutput[float64](),
-		numPeriods:  blocks.NewIntParam(5, blocks.NewGreaterEqual(2)),
-		periodStart: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
-		periodSpan:  blocks.NewIntParam(20, blocks.NewGreaterEqual(2)),
+		numPeriods:  models.NewIntParam(5, models.NewGreaterEq(2)),
+		periodStart: models.NewIntParam(10, models.NewGreaterEq(1)),
+		periodSpan:  models.NewIntParam(20, models.NewGreaterEq(2)),
 		maOrdering:  nil,
 	}
 }
@@ -47,8 +47,8 @@ func (blk *MAOrder) GetDescription() string {
 	return Descr
 }
 
-func (blk *MAOrder) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *MAOrder) GetParams() models.Params {
+	return models.Params{
 		NameNumPeriods:  blk.numPeriods,
 		NamePeriodSpan:  blk.periodSpan,
 		NamePeriodStart: blk.periodStart,

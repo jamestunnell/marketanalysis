@@ -7,7 +7,7 @@ import (
 )
 
 type Aroon struct {
-	period *blocks.IntParam
+	period *models.IntParam
 	aroon  *indicators.Aroon
 	in     *blocks.TypedInput[float64]
 	diff   *blocks.TypedOutput[float64]
@@ -26,7 +26,7 @@ const (
 
 func New() blocks.Block {
 	return &Aroon{
-		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
+		period: models.NewIntParam(10, models.NewGreaterEq(1)),
 		aroon:  nil,
 		in:     blocks.NewTypedInput[float64](),
 		up:     blocks.NewTypedOutput[float64](),
@@ -43,8 +43,8 @@ func (blk *Aroon) GetDescription() string {
 	return Descr
 }
 
-func (blk *Aroon) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *Aroon) GetParams() models.Params {
+	return models.Params{
 		blocks.NamePeriod: blk.period,
 	}
 }

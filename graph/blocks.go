@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	gr "github.com/dominikbraun/graph"
-	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/rs/zerolog/log"
+
+	"github.com/jamestunnell/marketanalysis/blocks"
+	"github.com/jamestunnell/marketanalysis/models"
 )
 
 type Blocks map[string]blocks.Block
@@ -21,7 +23,7 @@ func (blocks Blocks) Init() error {
 	return nil
 }
 
-func (blocks Blocks) FindParam(addr *Address) (blocks.Param, bool) {
+func (blocks Blocks) FindParam(addr *Address) (models.Param, bool) {
 	block, found := blocks[addr.A]
 	if !found {
 		return nil, false

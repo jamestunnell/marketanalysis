@@ -3,16 +3,17 @@ package trendgate
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
-	"github.com/rs/zerolog/log"
 )
 
 type TrendGate struct {
-	openThresh     *blocks.FloatParam
-	closeThresh    *blocks.FloatParam
-	debouncePeriod *blocks.IntParam
+	openThresh     *models.FloatParam
+	closeThresh    *models.FloatParam
+	debouncePeriod *models.IntParam
 	in             *blocks.TypedInput[float64]
 	out            *blocks.TypedOutput[float64]
 	stateMachine   *statemachine.StateMachine[float64]
@@ -31,9 +32,9 @@ const (
 
 func New() blocks.Block {
 	return &TrendGate{
-		openThresh:     blocks.NewFloatParam(0.5, blocks.NewRangeExcl(0.0, 1.0)),
-		closeThresh:    blocks.NewFloatParam(0.25, blocks.NewRangeExcl(0.0, 1.0)),
-		debouncePeriod: blocks.NewIntParam(0, blocks.NewGreaterEqual(0)),
+		openThresh:     models.NewFloatParam(0.5, models.NewRangeExcl(0.0, 1.0)),
+		closeThresh:    models.NewFloatParam(0.25, models.NewRangeExcl(0.0, 1.0)),
+		debouncePeriod: models.NewIntParam(0, models.NewGreaterEq(0)),
 		in:             blocks.NewTypedInput[float64](),
 		out:            blocks.NewTypedOutput[float64](),
 		stateMachine:   nil,
@@ -48,8 +49,8 @@ func (blk *TrendGate) GetDescription() string {
 	return Descr
 }
 
-func (blk *TrendGate) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *TrendGate) GetParams() models.Params {
+	return models.Params{
 		NameOpenThresh:     blk.openThresh,
 		NameCloseThresh:    blk.closeThresh,
 		NameDebouncePeriod: blk.debouncePeriod,

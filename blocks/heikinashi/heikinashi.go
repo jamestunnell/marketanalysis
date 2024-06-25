@@ -47,8 +47,8 @@ func (blk *HeikinAshi) GetDescription() string {
 	return Descr
 }
 
-func (blk *HeikinAshi) GetParams() blocks.Params {
-	return blocks.Params{}
+func (blk *HeikinAshi) GetParams() models.Params {
+	return models.Params{}
 }
 
 func (blk *HeikinAshi) GetInputs() blocks.Inputs {

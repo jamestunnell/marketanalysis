@@ -32,8 +32,8 @@ func (blk *Sub2) GetDescription() string {
 	return DescrSub2
 }
 
-func (blk *Sub2) GetParams() blocks.Params {
-	return blocks.Params{}
+func (blk *Sub2) GetParams() models.Params {
+	return models.Params{}
 }
 
 func (blk *Sub2) GetInputs() blocks.Inputs {

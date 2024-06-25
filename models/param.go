@@ -1,23 +1,29 @@
-package blocks
+package models
 
 import (
 	"reflect"
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 	goconstraints "golang.org/x/exp/constraints"
 )
 
 type Param interface {
 	GetValueType() string
 	GetDefaultVal() any
-	GetConstraint() Constraint
+	GetConstraintInfo() *ConstraintInfo
 	GetCurrentVal() any
 	SetCurrentVal(any) error
 }
 
+type ConstraintInfo struct {
+	Type   string `json:"type"`
+	Limits []any  `json:"limits"`
+}
+
 type typedParam[T goconstraints.Ordered] struct {
 	CurrentVal, DefaultVal T
-	Constraint             *TypedConstraint[T]
+	Constraint             Constraint[T]
 	ValueType              string
 }
 
@@ -31,7 +37,7 @@ type FloatParam struct {
 
 func newTypedParam[T goconstraints.Ordered](
 	defaultVal T,
-	constr *TypedConstraint[T],
+	constr Constraint[T],
 ) *typedParam[T] {
 	var zeroVal T
 
@@ -43,13 +49,13 @@ func newTypedParam[T goconstraints.Ordered](
 	}
 }
 
-func NewIntParam(defaultVal int, constr *TypedConstraint[int]) *IntParam {
+func NewIntParam(defaultVal int, constr Constraint[int]) *IntParam {
 	return &IntParam{
 		typedParam: newTypedParam(defaultVal, constr),
 	}
 }
 
-func NewFloatParam(defaultVal float64, constr *TypedConstraint[float64]) *FloatParam {
+func NewFloatParam(defaultVal float64, constr Constraint[float64]) *FloatParam {
 	return &FloatParam{
 		typedParam: newTypedParam[float64](defaultVal, constr),
 	}
@@ -59,8 +65,11 @@ func (p *typedParam[T]) GetDefaultVal() any {
 	return p.DefaultVal
 }
 
-func (p *typedParam[T]) GetConstraint() Constraint {
-	return p.Constraint
+func (p *typedParam[T]) GetConstraintInfo() *ConstraintInfo {
+	return &ConstraintInfo{
+		Type:   reflect.TypeOf(p.Constraint).String(),
+		Limits: sliceutils.Map(p.Constraint.GetLimits(), func(t T) any { return t }),
+	}
 }
 
 func (p *typedParam[T]) GetValueType() string {

@@ -12,10 +12,11 @@ import (
 	"github.com/jamestunnell/marketanalysis/app/backend/background"
 	bemodels "github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/jamestunnell/marketanalysis/optimization"
 )
 
-func (a *Graphs) Optimize(w http.ResponseWriter, r *http.Request) {
-	var opt bemodels.OptimizeRequest
+func (a *Graphs) OptimizeParams(w http.ResponseWriter, r *http.Request) {
+	var opt bemodels.OptimizeGraphParamsRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&opt); err != nil {
 		handleAppErr(w, backend.NewErrInvalidInput("request JSON", err.Error()))
@@ -25,7 +26,7 @@ func (a *Graphs) Optimize(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Interface("request", opt).Msg("received optimize request")
 
-	job := &OptimizeJob{DB: a.DB, Request: &opt}
+	job := &OptimizeGraphParamsJob{DB: a.DB, Request: &opt}
 
 	if !a.BG.RunJob(job) {
 		handleAppErr(w, backend.NewErrInvalidInput("job ID", "ID is already in use"))
@@ -36,25 +37,25 @@ func (a *Graphs) Optimize(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-type OptimizeJob struct {
+type OptimizeGraphParamsJob struct {
 	DB      *mongo.Database
-	Request *bemodels.OptimizeRequest
+	Request *bemodels.OptimizeGraphParamsRequest
 }
 
 type OptimizeResponse struct {
 }
 
-func (job *OptimizeJob) GetID() string {
+func (job *OptimizeGraphParamsJob) GetID() string {
 	return job.Request.JobID
 }
 
-func (job *OptimizeJob) Execute(onProgress background.JobProgressFunc) (any, error) {
+func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc) (any, error) {
 	loader := backend.NewBarSetLoader(job.DB, job.Request.Symbol)
 	log.Info().Msg("optimize job: started job")
 
 	iter := 0
 	maxIter := job.Request.OptimizeSettings.MaxIterations
-	postEval := func(paramVals map[string]any, result float64) {
+	postEval := func(result *optimization.Result) {
 		iter++
 
 		progress := float64(iter) / float64(maxIter)
@@ -66,12 +67,13 @@ func (job *OptimizeJob) Execute(onProgress background.JobProgressFunc) (any, err
 		onProgress(progress)
 	}
 
-	results, err := graph.Optimize(
+	results, err := graph.OptimizeParameters(
 		context.Background(),
 		job.Request.Graph,
 		job.Request.Days,
 		job.Request.SourceQuantity,
 		job.Request.TargetParams,
+		job.Request.ObjectiveType,
 		job.Request.OptimizeSettings,
 		loader.Load,
 		postEval,

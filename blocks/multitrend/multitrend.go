@@ -10,8 +10,8 @@ type MultiTrend2 struct {
 	in2 *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
 
-	thresh      *blocks.FloatParam
-	votesNeeded *blocks.IntParam
+	thresh      *models.FloatParam
+	votesNeeded *models.IntParam
 }
 
 const (
@@ -24,8 +24,8 @@ const (
 
 func NewMultitrend2() blocks.Block {
 	return &MultiTrend2{
-		thresh:      blocks.NewFloatParam(0.375, blocks.NewRangeExcl(0.0, 1.0)),
-		votesNeeded: blocks.NewIntParam(1, blocks.NewOneOf([]int{1, 2})),
+		thresh:      models.NewFloatParam(0.375, models.NewRangeExcl(0.0, 1.0)),
+		votesNeeded: models.NewIntParam(1, models.NewOneOf([]int{1, 2})),
 		in1:         blocks.NewTypedInput[float64](),
 		in2:         blocks.NewTypedInput[float64](),
 		out:         blocks.NewTypedOutput[float64](),
@@ -40,8 +40,8 @@ func (blk *MultiTrend2) GetDescription() string {
 	return DescrMultitrend2
 }
 
-func (blk *MultiTrend2) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *MultiTrend2) GetParams() models.Params {
+	return models.Params{
 		NameThresh:      blk.thresh,
 		NameVotesNeeded: blk.votesNeeded,
 	}

@@ -15,7 +15,6 @@ type FloatValue struct {
 type FloatMutator interface {
 	Start(rng *rand.Rand) float64
 	Mutate(current float64, rng *rand.Rand) float64
-	Clone() FloatMutator
 }
 
 type FloatRangeMutator struct {
@@ -29,9 +28,9 @@ type FloatEnumMutator struct {
 	idxStdDev float64
 }
 
-func NewFloatValue(m FloatMutator, rng *rand.Rand) *FloatValue {
+func NewFloatValue(m FloatMutator) *FloatValue {
 	return &FloatValue{
-		Val:     m.Start(rng),
+		Val:     0.0,
 		Mutator: m,
 	}
 }
@@ -54,7 +53,11 @@ func NewFloatRangeMutator(min, max float64) *FloatRangeMutator {
 	}
 }
 
-func (v *FloatValue) Value() any {
+func (v *FloatValue) Init(rng *rand.Rand) {
+	v.Val = v.Mutator.Start(rng)
+}
+
+func (v *FloatValue) GetValue() any {
 	return v.Val
 }
 
@@ -62,23 +65,11 @@ func (p *FloatValue) Mutate(rng *rand.Rand) {
 	p.Val = p.Mutator.Mutate(p.Val, rng)
 }
 
-func (p *FloatValue) Crossover(genome PartialGenome, rng *rand.Rand) {
-	other := genome.(*FloatValue)
-
-	if rng.Float64() < 0.5 {
-		p.Val, other.Val = other.Val, p.Val
-	}
-}
-
-func (p *FloatValue) Clone() PartialGenome {
+func (p *FloatValue) Clone() Value {
 	return &FloatValue{
 		Val:     p.Val,
-		Mutator: p.Mutator.Clone(),
+		Mutator: p.Mutator,
 	}
-}
-
-func (m *FloatRangeMutator) Clone() FloatMutator {
-	return NewFloatRangeMutator(m.Min, m.Max)
 }
 
 func (m *FloatRangeMutator) Start(rng *rand.Rand) float64 {
@@ -95,10 +86,6 @@ func (m *FloatRangeMutator) Mutate(current float64, rng *rand.Rand) float64 {
 	}
 
 	return new
-}
-
-func (m *FloatEnumMutator) Clone() FloatMutator {
-	return NewFloatEnumMutator(m.Values)
 }
 
 func (m *FloatEnumMutator) Start(rng *rand.Rand) float64 {

@@ -13,8 +13,8 @@ type EMV struct {
 	current *blocks.TypedOutput[float64]
 	average *blocks.TypedOutput[float64]
 
-	period *blocks.IntParam
-	scale  *blocks.FloatParam
+	period *models.IntParam
+	scale  *models.FloatParam
 }
 
 const (
@@ -32,8 +32,8 @@ func New() blocks.Block {
 		emv:     nil,
 		current: blocks.NewTypedOutput[float64](),
 		average: blocks.NewTypedOutput[float64](),
-		period:  blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
-		scale:   blocks.NewFloatParam(100000.0, blocks.NewGreater(0.0)),
+		period:  models.NewIntParam(10, models.NewGreaterEq(1)),
+		scale:   models.NewFloatParam(100000.0, models.NewGreater(0.0)),
 	}
 }
 
@@ -45,8 +45,8 @@ func (blk *EMV) GetDescription() string {
 	return Descr
 }
 
-func (blk *EMV) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *EMV) GetParams() models.Params {
+	return models.Params{
 		blocks.NamePeriod: blk.period,
 		NameScale:         blk.scale,
 	}

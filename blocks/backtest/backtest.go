@@ -13,7 +13,7 @@ type Backtest struct {
 	source    *blocks.TypedInput[float64]
 	predictor *blocks.TypedInput[float64]
 	equity    *blocks.TypedOutput[float64]
-	threshold *blocks.FloatParam
+	threshold *models.FloatParam
 
 	firstUpdate   bool
 	currentEquity float64
@@ -36,7 +36,7 @@ func New() blocks.Block {
 		source:    blocks.NewTypedInput[float64](),
 		predictor: blocks.NewTypedInput[float64](),
 		equity:    blocks.NewTypedOutput[float64](),
-		threshold: blocks.NewFloatParam(0.5, blocks.NewRangeExcl(0.0, 1.0)),
+		threshold: models.NewFloatParam(0.5, models.NewRangeExcl(0.0, 1.0)),
 	}
 }
 
@@ -48,8 +48,8 @@ func (blk *Backtest) GetDescription() string {
 	return Descr
 }
 
-func (blk *Backtest) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *Backtest) GetParams() models.Params {
+	return models.Params{
 		NameThreshold: blk.threshold,
 	}
 }

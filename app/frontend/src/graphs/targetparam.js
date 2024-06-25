@@ -9,9 +9,47 @@ import { Table, TableRow } from '../elements/table'
 
 const {tbody} = van.tags
 
-class TargetParam {
-    constructor({address, constraint, step, defaultValue, makeValueInput}) {
+class EnumTargetParam {
+    constructor({address, valueType, constraint}) {
         this.address = address
+        this.valueType = valueType
+        this.constraint = constraint
+        this.selected = van.state(false)
+        this.selectedValues = constraint.limits.map(value => van.state(true))
+    }
+
+    getAddress() {
+        return this.address
+    }
+
+    getNewConstraint() {
+        return {
+            type: `OneOf[${this.valueType}]`,
+            limits: this.constraint.limits.filter((value, idx) => this.selectedValues[idx].val),
+        }
+    }
+
+    renderCheckbox() {
+        return Checkbox({checked: this.selected})
+    }
+
+    renderLimitsArea() {
+        const rows = TableRow(this.constraint.limits.map((value,idx) => {
+            return [span(value), Checkbox({checked: this.selectedValues[idx]})]
+        }))
+
+        return Table({
+            hidden: van.derive(() => !this.selected.val),
+            columnNames: ["Value", "Selected"],
+            tableBody: tbody({class:"table-auto"}, rows),
+        })
+    }
+}
+
+class RangeTargetParam {
+    constructor({address, valueType, constraint, step, defaultValue, makeValueInput}) {
+        this.address = address
+        this.valueType = valueType
         this.constraint = constraint
         this.step = step
         this.makeValueInput = makeValueInput
@@ -54,8 +92,22 @@ class TargetParam {
         })
     }
 
-    renderRow() {
-        const checkbox = Checkbox({checked: this.selected})
+    getAddress() {
+        return this.address
+    }
+
+    getNewConstraint() {
+        return {
+            type: `RangeIncl[${this.valueType}]`,
+            limits: [this.min.val, this.max.val],
+        }
+    }
+
+    renderCheckbox() {
+        return Checkbox({checked: this.selected})
+    }
+
+    renderLimitsArea() {
         const min = this.makeValueInput({
             constraint: this.constraint,
             value: this.min,
@@ -69,33 +121,43 @@ class TargetParam {
             text: () => this.err.val ? `Invalid min/max value: ${this.err.val.message}` : "Min and max values are valid"
         })
 
-        return TableRow([this.address, checkbox, min, max, status])
+        return div(
+            {
+                class: "flex flex-row",
+                hidden: van.derive(() => !this.selected.val)
+            },
+            min,
+            max,
+            status,
+        )
     }
 }
 
 const MakeTargetParam = ({address, paramInfo}) => {
     const constraint = MakeConstraint(paramInfo.constraint)
+    const valueType = paramInfo.valueType
 
-    // don't support enum param yet
     if (!constraint.isRange()) {
-        return null
+        console.log("making enum target param", {address, valueType, paramInfo})
+
+        return new EnumTargetParam({address, valueType, constraint})
     }
 
-    switch (paramInfo.valueType) {
+    switch (valueType) {
         case 'int':
-            console.log("making int target param", {address, paramInfo})
+            console.log("making int range target param", {address, valueType, paramInfo})
 
-            return new TargetParam({
-                address, constraint,
+            return new RangeTargetParam({
+                address, constraint, valueType,
                 step:1,
                 defaultValue: paramInfo.defaultValue,
                 makeValueInput: IntRange,
             })
         case 'float64':
-            console.log("making float64 target param", {address, paramInfo})
+            console.log("making float64 range target param", {address, valueType, paramInfo})
 
-            return new TargetParam({
-                address, constraint,
+            return new RangeTargetParam({
+                address, constraint, valueType,
                 step:0.01,
                 defaultValue: paramInfo.defaultValue,
                 makeValueInput: FloatRange,
@@ -106,9 +168,12 @@ const MakeTargetParam = ({address, paramInfo}) => {
 }
 
 const TargetParamsTable = (targetParams) => {
+    const rows = targetParams.map(t => {
+        TableRow([t.getAddress(), t.renderCheckbox(), t.renderLimitsArea()])
+    })
     return Table({
-        columnNames: ["Parameter", "Optimize", "Min", "Max", ""],
-        tableBody: tbody({class:"table-auto"}, targetParams.map(t => t.renderRow())),
+        columnNames: ["Parameter", "Optimize", "Limits"],
+        tableBody: tbody({class:"table-auto"}, rows),
     })
 }
 

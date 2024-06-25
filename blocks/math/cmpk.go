@@ -9,7 +9,7 @@ type CmpK struct {
 	in      *blocks.TypedInput[float64]
 	less    *blocks.TypedOutput[float64]
 	greater *blocks.TypedOutput[float64]
-	k       *blocks.FloatParam
+	k       *models.FloatParam
 }
 
 const (
@@ -22,7 +22,7 @@ func NewCmpK() blocks.Block {
 		in:      blocks.NewTypedInput[float64](),
 		less:    blocks.NewTypedOutput[float64](),
 		greater: blocks.NewTypedOutput[float64](),
-		k:       blocks.NewFloatParam(0.0, blocks.NewNone[float64]()),
+		k:       models.NewFloatParam(0.0, models.NewUnconstrained[float64]()),
 	}
 }
 
@@ -34,8 +34,8 @@ func (blk *CmpK) GetDescription() string {
 	return DescrCmpK
 }
 
-func (blk *CmpK) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *CmpK) GetParams() models.Params {
+	return models.Params{
 		blocks.NameK: blk.k,
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type EMA struct {
-	period *blocks.IntParam
+	period *models.IntParam
 	ema    *indicators.EMA
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutput[float64]
@@ -20,7 +20,7 @@ const (
 
 func New() blocks.Block {
 	return &EMA{
-		period: blocks.NewIntParam(10, blocks.NewGreaterEqual(1)),
+		period: models.NewIntParam(10, models.NewGreaterEq(1)),
 		ema:    nil,
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutput[float64](),
@@ -35,8 +35,8 @@ func (blk *EMA) GetDescription() string {
 	return Descr
 }
 
-func (blk *EMA) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *EMA) GetParams() models.Params {
+	return models.Params{
 		blocks.NamePeriod: blk.period,
 	}
 }

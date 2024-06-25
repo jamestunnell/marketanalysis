@@ -151,8 +151,8 @@ func (bc *BlockConfig) SetParamVal(name string, val any) {
 	bc.Parameters = append(bc.Parameters, &ParamConfig{Name: name, Value: val})
 }
 
-func (bc *BlockConfig) ParamVals() blocks.ParamVals {
-	paramVals := blocks.ParamVals{}
+func (bc *BlockConfig) ParamVals() models.ParamVals {
+	paramVals := models.ParamVals{}
 
 	for _, paramCfg := range bc.Parameters {
 		paramVals[paramCfg.Name] = paramCfg.Value
@@ -212,7 +212,7 @@ func (bc *BlockConfig) Validate(
 
 	// validate params
 	params := blk.GetParams()
-	paramVals := blocks.ParamVals{}
+	paramVals := models.ParamVals{}
 
 	for _, paramCfg := range bc.Parameters {
 		param, found := params[paramCfg.Name]

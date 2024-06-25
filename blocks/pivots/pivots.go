@@ -12,7 +12,7 @@ import (
 type Pivots struct {
 	in     *blocks.TypedInput[float64]
 	out    *blocks.TypedOutputAsync[float64]
-	length *blocks.IntParam
+	length *models.IntParam
 	ind    *p.Pivots
 }
 
@@ -25,7 +25,7 @@ func New() blocks.Block {
 	return &Pivots{
 		in:     blocks.NewTypedInput[float64](),
 		out:    blocks.NewTypedOutputAsync[float64](),
-		length: blocks.NewIntParam(15, blocks.NewGreaterEqual(2)),
+		length: models.NewIntParam(15, models.NewGreaterEq(2)),
 		ind:    nil,
 	}
 }
@@ -38,8 +38,8 @@ func (blk *Pivots) GetDescription() string {
 	return Descr
 }
 
-func (blk *Pivots) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *Pivots) GetParams() models.Params {
+	return models.Params{
 		blocks.NameLength: blk.length,
 	}
 }

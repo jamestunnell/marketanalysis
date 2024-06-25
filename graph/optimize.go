@@ -2,18 +2,14 @@ package graph
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"math/rand"
 	"slices"
-	"time"
 
-	"github.com/ccssmnn/hego"
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 
-	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketanalysis/optimization"
 )
 
 type SourceQuantity struct {
@@ -22,175 +18,94 @@ type SourceQuantity struct {
 }
 
 type TargetParam struct {
-	Address *Address `json:"address"`
-	Min     any      `json:"min"`
-	Max     any      `json:"max"`
+	Address    *Address               `json:"address"`
+	Constraint *models.ConstraintInfo `json:"constraint"`
 }
 
-type OptimizeSettings struct {
-	Algorithm     string `json:"algorithm"`
-	Objective     string `json:"objective"`
-	RandomSeed    int64  `json:"randomSeed"`
-	MaxIterations int    `json:"maxIterations"`
-	KeepHistory   bool   `json:"keepHistory"`
+type Objective struct {
+	eval       func(models.ParamVals) []float64
+	reduce     func([]float64) float64
+	resultHook func(*optimization.Result)
 }
 
-type OptimizeResults struct {
-	Result        *OptResult    `json:"result"`
-	Runtime       time.Duration `json:"runtime"`
-	Iterations    int           `json:"iterations"`
-	ResultHistory []*OptResult  `json:"resultHistory"`
-}
-
-type OptResult struct {
-	ParamVals map[string]any `json:"paramVals"`
-	Score     float64        `json:"score"`
-}
-
-type PostEvalFunc func(paramVals map[string]any, result float64)
+type reduceFunc func([]float64) float64
 
 const (
-	MaximizeMean = "MaximizeMean"
-	MaximizeSum  = "MaximizeSum"
-	MinimizeMean = "MinimizeMean"
-	MinimizeSum  = "MinimizeSum"
+	ObjectiveMaximizeMean = "MaximizeMean"
+	ObjectiveMaximizeSum  = "MaximizeSum"
+	ObjectiveMinimizeMean = "MinimizeMean"
+	ObjectiveMinimizeSum  = "MinimizeSum"
 )
 
-func Optimize(
-	ctx context.Context,
-	cfg *Config,
-	days int,
-	source *SourceQuantity,
-	params []*TargetParam,
-	settings *OptimizeSettings,
-	load models.LoadBarsFunc,
-	postEval PostEvalFunc,
-) (*OptimizeResults, error) {
-	if settings.Algorithm != "SimulatedAnnealing" {
-		err := errors.New("unsupported optimization algorithm " + settings.Algorithm)
-
-		return nil, err
-	}
-
-	return OptimizeSA(ctx, cfg, days, source, params, settings, load, postEval)
+var reduceFuncs = map[string]reduceFunc{
+	ObjectiveMaximizeMean: MaximizeMean,
+	ObjectiveMaximizeSum:  MaximizeSum,
+	ObjectiveMinimizeMean: MinimizeMean,
+	ObjectiveMinimizeSum:  MinimizeSum,
 }
 
-func OptimizeSA(
+func OptimizeParameters(
 	ctx context.Context,
 	cfg *Config,
 	days int,
 	source *SourceQuantity,
-	targetParams []*TargetParam,
-	settings *OptimizeSettings,
+	targets []*TargetParam,
+	objectiveType string,
+	settings *optimization.Settings,
 	load models.LoadBarsFunc,
-	postEval PostEvalFunc,
-) (*OptimizeResults, error) {
-	rng := rand.New(rand.NewSource(settings.RandomSeed))
-	eval := func(paramVals map[string]any) float64 {
-		mVals, err := EvaluateParamVals(ctx, cfg, days, source, paramVals, load)
-		if err != nil {
-			log.Warn().Err(err).Msg("failed to evaluate param vals")
-
-			return 0.0
-		}
-
-		var result float64
-
-		switch settings.Objective {
-		case MaximizeMean:
-			result = -sum(mVals) / float64(len(mVals))
-		case MaximizeSum:
-			result = -sum(mVals)
-		case MinimizeMean:
-			result = sum(mVals) / float64(len(mVals))
-		case MinimizeSum:
-			result = sum(mVals)
-		default:
-			log.Warn().Str("objective", settings.Objective).Msg("unknown optimize objective")
-		}
-
-		// log.Info().Float64("result", result).Msg("eval complete")
-
-		postEval(paramVals, result)
-
-		return result
-	}
-
+	resultHook func(*optimization.Result),
+) (*optimization.Results, error) {
 	blks, errs := cfg.MakeBlocks()
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("failed to make blocks: %w", errs[0])
 	}
 
-	initialState := NewOptState(rng, eval)
-	for _, tgt := range targetParams {
+	values := map[string]optimization.Value{}
+
+	for _, tgt := range targets {
 		param, found := blks.FindParam(tgt.Address)
 		if !found {
 			return nil, fmt.Errorf("failed to find param '%s'", tgt.Address)
 		}
 
-		constraint := param.GetConstraint()
+		value, err := optimization.MakeValue(param.GetConstraintInfo())
+		if err != nil {
+			err = fmt.Errorf(
+				"failed to make parameter optimization value for target param '%s': %w",
+				tgt.Address, err)
 
-		if constraint.GetType() == blocks.OneOf {
-			return nil, fmt.Errorf("unsupported constaint type '%s'", constraint.GetType())
+			return nil, err
 		}
 
-		switch param.GetValueType() {
-		case "int":
-			mut := NewIntRangeMutator(int(tgt.Min.(float64)), int(tgt.Max.(float64)))
+		values[tgt.Address.String()] = value
+	}
 
-			initialState.Ints[tgt.Address.String()] = NewIntValue(mut, rng)
-		case "float64":
-			mut := NewFloatRangeMutator(tgt.Min.(float64), tgt.Max.(float64))
+	reduce, found := reduceFuncs[objectiveType]
+	if !found {
+		return nil, fmt.Errorf("failed to find reduce function for %s objective", objectiveType)
+	}
 
-			initialState.Floats[tgt.Address.String()] = NewFloatValue(mut, rng)
-		default:
-			return nil, fmt.Errorf("param %s has unsupported type %s", tgt.Address, param.GetValueType())
+	eval := func(paramVals models.ParamVals) []float64 {
+		mVals, err := EvaluateParameters(ctx, cfg, days, source, paramVals, load)
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to evaluate param vals")
+
+			return []float64{}
 		}
-	}
 
-	saSettings := hego.SASettings{
-		Temperature:     10.0,
-		AnnealingFactor: 0.999,
-		Settings: hego.Settings{
-			MaxIterations: settings.MaxIterations,
-			Verbose:       100,
-			KeepHistory:   settings.KeepHistory,
-		},
+		return mVals
 	}
+	objective := &Objective{eval: eval, reduce: reduce, resultHook: resultHook}
 
-	r, err := hego.SA(initialState, saSettings)
-	if err != nil {
-		return nil, fmt.Errorf("simulated annealing failed: %w", err)
-	}
-
-	makeOptResult := func(state hego.AnnealingState, energy float64) *OptResult {
-		return &OptResult{
-			ParamVals: state.(*OptState).ParamVals(),
-			Score:     energy,
-		}
-	}
-	history := make([]*OptResult, len(r.States))
-
-	for i := 0; i < len(r.States); i++ {
-		history[i] = makeOptResult(r.States[i], r.Energies[i])
-	}
-
-	results := &OptimizeResults{
-		Runtime:       r.Runtime,
-		Iterations:    r.Iterations,
-		Result:        makeOptResult(r.State, r.Energy),
-		ResultHistory: history,
-	}
-
-	return results, nil
+	return optimization.OptimizeParameters(settings, values, objective)
 }
 
-func EvaluateParamVals(
+func EvaluateParameters(
 	ctx context.Context,
 	cfg *Config,
 	days int,
 	source *SourceQuantity,
-	paramVals map[string]any,
+	paramVals models.ParamVals,
 	load models.LoadBarsFunc,
 ) ([]float64, error) {
 	for addrStr, val := range paramVals {
@@ -242,79 +157,33 @@ func EvaluateParamVals(
 	return q.RecordValues(), nil
 }
 
-type OptState struct {
-	rng    *rand.Rand
-	eval   func(map[string]any) float64
-	Ints   map[string]*IntValue
-	Floats map[string]*FloatValue
+func MaximizeSum(vals []float64) float64 {
+	return -sum(vals)
 }
 
-func NewOptState(rng *rand.Rand, eval func(map[string]any) float64) *OptState {
-	return &OptState{
-		eval:   eval,
-		rng:    rng,
-		Ints:   map[string]*IntValue{},
-		Floats: map[string]*FloatValue{},
-	}
+func MinimizeSum(vals []float64) float64 {
+	return sum(vals)
 }
 
-func (s *OptState) AddIntValue(name string, val *IntValue) {
-	s.Ints[name] = val
+func MaximizeMean(vals []float64) float64 {
+	return -sum(vals) / float64(len(vals))
 }
 
-func (s *OptState) AddFloatValue(name string, val *FloatValue) {
-	s.Floats[name] = val
+func MinimizeMean(vals []float64) float64 {
+	return sum(vals) / float64(len(vals))
 }
 
-func (s *OptState) ParamVals() map[string]any {
-	paramVals := map[string]any{}
-
-	for name, v := range s.Ints {
-		paramVals[name] = v.Value()
+func (obj *Objective) Measure(values optimization.Values) float64 {
+	paramVals := models.ParamVals{}
+	for name, optVal := range values {
+		paramVals[name] = optVal.GetValue()
 	}
 
-	for name, v := range s.Floats {
-		paramVals[name] = v.Value()
-	}
+	score := obj.reduce(obj.eval(paramVals))
 
-	return paramVals
-}
+	obj.resultHook(&optimization.Result{Score: score, Value: paramVals})
 
-func (s *OptState) Clone() *OptState {
-	s2 := NewOptState(s.rng, s.eval)
-
-	for name, v := range s.Ints {
-		s2.AddIntValue(name, v.Clone())
-	}
-
-	for name, v := range s.Floats {
-		s2.AddFloatValue(name, v.Clone())
-	}
-
-	return s2
-}
-
-func (s *OptState) Mutate() {
-	for _, v := range s.Ints {
-		v.Mutate(s.rng)
-	}
-
-	for _, v := range s.Floats {
-		v.Mutate(s.rng)
-	}
-}
-
-func (s *OptState) Neighbor() hego.AnnealingState {
-	n := s.Clone()
-
-	n.Mutate()
-
-	return n
-}
-
-// Energy returns the energy of the current state. Lower is better
-func (s *OptState) Energy() float64 {
-	return s.eval(s.ParamVals())
+	return score
 }
 
 func sum(vals []float64) (sum float64) {

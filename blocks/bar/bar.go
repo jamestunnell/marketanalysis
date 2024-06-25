@@ -59,8 +59,8 @@ func (blk *Bar) GetDescription() string {
 	return Descr
 }
 
-func (blk *Bar) GetParams() blocks.Params {
-	return blocks.Params{}
+func (blk *Bar) GetParams() models.Params {
+	return models.Params{}
 }
 
 func (blk *Bar) GetInputs() blocks.Inputs {

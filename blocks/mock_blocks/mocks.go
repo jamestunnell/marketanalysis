@@ -78,10 +78,10 @@ func (mr *MockBlockMockRecorder) GetOutputs() *gomock.Call {
 }
 
 // GetParams mocks base method.
-func (m *MockBlock) GetParams() blocks.Params {
+func (m *MockBlock) GetParams() models.Params {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetParams")
-	ret0, _ := ret[0].(blocks.Params)
+	ret0, _ := ret[0].(models.Params)
 	return ret0
 }
 

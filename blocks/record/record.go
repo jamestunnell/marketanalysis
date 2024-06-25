@@ -25,8 +25,8 @@ func (blk *Record) GetDescription() string {
 	return Descr
 }
 
-func (blk *Record) GetParams() blocks.Params {
-	return blocks.Params{}
+func (blk *Record) GetParams() models.Params {
+	return models.Params{}
 }
 
 func (blk *Record) GetInputs() blocks.Inputs {

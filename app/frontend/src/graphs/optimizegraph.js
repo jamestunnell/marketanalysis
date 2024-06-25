@@ -16,13 +16,9 @@ const {div, option, span} = van.tags
 
 import { PostJSON } from '../backend.js'
 
-function newRandomSeed() {
-    return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) - Number.MAX_SAFE_INTEGER
-}
-
-const startOptimizeGraphJob = ({graph, jobID, symbol, days, sourceQuantity, targetParams, settings}) => {
+const startOptimizeGraphParamsJob = ({graph, jobID, symbol, days, sourceQuantity, targetParams, settings}) => {
     return new Promise((resolve, reject) => {
-        const route = `/graphs/optimize`
+        const route = `/graphs/optimize-params`
         const object = {graph, jobID, symbol, days, sourceQuantity, targetParams, settings}
         const options = {accept: 'application/json'}
 
@@ -51,7 +47,7 @@ const startOptimizeGraphJob = ({graph, jobID, symbol, days, sourceQuantity, targ
     });
 }
 
-const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams}) => {
+const OptimizeGraphParamsModal = ({graph, symbolSetting, sourceAddresses, targetParams}) => {
     const symbol = van.state(symbolSetting.value.val)
     
     const days = van.state(30)
@@ -61,8 +57,6 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
     const maxIter = van.state(100)
     const maxIterConstraint = new RangeIncl(1, 10000)
     const maxIterErr = van.derive(() => maxIterConstraint.validate(maxIter.val))
-
-    const seed = van.state(newRandomSeed())
 
     const source = van.state('')
     const sourceOpts = [ option({value:'', selected: true}, '') ]
@@ -114,10 +108,6 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
             icon: () => maxIterErr.val ? IconError() : IconCheck(),
             text: () => maxIterErr.val ? `Value is invalid: ${maxIterErr.val.message}` : "Value is valid",
         }),
-
-        "Random Seed",
-        NumberRange({parse: parseInt, value: seed}),
-        span(),
 
         "Source",
         Select({
@@ -181,18 +171,17 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
                             measurement: measurement.val,
                         },
                         targetParams: targetParams.filter(t => t.selected.val).map(t => {
-                            return {address: t.address, min: t.min.val, max: t.max.val}
+                            return {address: t.getAddress(), constraint: t.getNewConstraint()}
                         }),
                         settings: {
                             objective: objective.val,
-                            algorithm: 'SimulatedAnnealing',
-                            randomSeed: seed.val,
+                            algorithm: 'Anneal',
                             maxIterations: maxIter.val,
                             keepHistory: false,
                         },
                     }
                     
-                    startOptimizeGraphJob(opts).then(() => {
+                    startOptimizeGraphParamsJob(opts).then(() => {
                         console.log('graph optimization started')
                     }).catch(appErr => {
                         AppErrorModal(appErr)
@@ -240,4 +229,4 @@ const OptimizeGraphModal = ({graph, symbolSetting, sourceAddresses, targetParams
     van.add(document.body, () => closed.val ? null : modal)
 }
 
-export { OptimizeGraphModal }
+export { OptimizeGraphParamsModal }

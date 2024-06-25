@@ -13,8 +13,8 @@ type Supertrend struct {
 
 	stateMachine *statemachine.StateMachine[*models.OHLC]
 
-	atrPeriod *blocks.IntParam
-	atrMul    *blocks.FloatParam
+	atrPeriod *models.IntParam
+	atrMul    *models.FloatParam
 	atr       *indicators.ATR
 }
 
@@ -36,8 +36,8 @@ func New() blocks.Block {
 		lower:        blocks.NewTypedOutput[float64](),
 		upper:        blocks.NewTypedOutput[float64](),
 		stateMachine: nil,
-		atrPeriod:    blocks.NewIntParam(20, blocks.NewGreaterEqual(1)),
-		atrMul:       blocks.NewFloatParam(5.0, blocks.NewGreater(0.0)),
+		atrPeriod:    models.NewIntParam(20, models.NewGreaterEq(1)),
+		atrMul:       models.NewFloatParam(5.0, models.NewGreater(0.0)),
 		atr:          nil,
 	}
 }
@@ -50,8 +50,8 @@ func (blk *Supertrend) GetDescription() string {
 	return Descr
 }
 
-func (blk *Supertrend) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *Supertrend) GetParams() models.Params {
+	return models.Params{
 		NameATRPeriod: blk.atrPeriod,
 		NameATRMul:    blk.atrMul,
 	}

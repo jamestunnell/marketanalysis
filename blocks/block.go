@@ -5,7 +5,7 @@ import "github.com/jamestunnell/marketanalysis/models"
 type Block interface {
 	GetType() string
 	GetDescription() string
-	GetParams() Params
+	GetParams() models.Params
 	GetInputs() Inputs
 	GetOutputs() Outputs
 	GetWarmupPeriod() int

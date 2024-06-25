@@ -8,7 +8,7 @@ import (
 type MulK struct {
 	in  *blocks.TypedInput[float64]
 	out *blocks.TypedOutput[float64]
-	k   *blocks.FloatParam
+	k   *models.FloatParam
 }
 
 const (
@@ -20,7 +20,7 @@ func NewMulK() blocks.Block {
 	return &MulK{
 		in:  blocks.NewTypedInput[float64](),
 		out: blocks.NewTypedOutput[float64](),
-		k:   blocks.NewFloatParam(1.0, blocks.NewNone[float64]()),
+		k:   models.NewFloatParam(1.0, models.NewUnconstrained[float64]()),
 	}
 }
 
@@ -32,8 +32,8 @@ func (blk *MulK) GetDescription() string {
 	return DescrMulK
 }
 
-func (blk *MulK) GetParams() blocks.Params {
-	return blocks.Params{
+func (blk *MulK) GetParams() models.Params {
+	return models.Params{
 		blocks.NameK: blk.k,
 	}
 }

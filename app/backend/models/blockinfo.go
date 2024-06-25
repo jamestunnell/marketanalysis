@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
+	m "github.com/jamestunnell/marketanalysis/models"
 )
 
 type BlockInfo struct {
@@ -13,15 +14,10 @@ type BlockInfo struct {
 }
 
 type Param struct {
-	Name         string      `json:"name"`
-	ValueType    string      `json:"valueType"`
-	DefaultValue any         `json:"defaultValue"`
-	Constraint   *Constraint `json:"constraint"`
-}
-
-type Constraint struct {
-	Type   string `json:"type"`
-	Limits []any  `json:"limits"`
+	Name         string            `json:"name"`
+	ValueType    string            `json:"valueType"`
+	DefaultValue any               `json:"defaultValue"`
+	Constraint   *m.ConstraintInfo `json:"constraint"`
 }
 
 type Port struct {
@@ -38,16 +34,11 @@ type Input struct {
 func NewBlockInfo(b blocks.Block) *BlockInfo {
 	params := []*Param{}
 	for name, p := range b.GetParams() {
-		constraint := &Constraint{
-			Type:   p.GetConstraint().GetType().String(),
-			Limits: p.GetConstraint().GetLimits(),
-		}
-
 		params = append(params, &Param{
 			Name:         name,
 			ValueType:    p.GetValueType(),
 			DefaultValue: p.GetDefaultVal(),
-			Constraint:   constraint,
+			Constraint:   p.GetConstraintInfo(),
 		})
 	}
 
