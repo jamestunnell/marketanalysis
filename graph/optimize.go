@@ -11,6 +11,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/optimization"
+	"github.com/jamestunnell/marketanalysis/util/sliceutils"
 )
 
 type SourceQuantity struct {
@@ -32,17 +33,19 @@ type Objective struct {
 type reduceFunc func([]float64) float64
 
 const (
-	ObjectiveMaximizeMean = "MaximizeMean"
-	ObjectiveMaximizeSum  = "MaximizeSum"
-	ObjectiveMinimizeMean = "MinimizeMean"
-	ObjectiveMinimizeSum  = "MinimizeSum"
+	ObjMaximizeMean = "MaximizeMean"
+	ObjMaximizeSum  = "MaximizeSum"
+	ObjMinimizeMean = "MinimizeMean"
+	ObjMinimizeSum  = "MinimizeSum"
+	ObjMinimizeNeg  = "MinimizeNegative"
 )
 
 var reduceFuncs = map[string]reduceFunc{
-	ObjectiveMaximizeMean: MaximizeMean,
-	ObjectiveMaximizeSum:  MaximizeSum,
-	ObjectiveMinimizeMean: MinimizeMean,
-	ObjectiveMinimizeSum:  MinimizeSum,
+	ObjMaximizeMean: MaximizeMean,
+	ObjMaximizeSum:  MaximizeSum,
+	ObjMinimizeMean: MinimizeMean,
+	ObjMinimizeSum:  MinimizeSum,
+	ObjMinimizeNeg:  MinimizeNeg,
 }
 
 func OptimizeParameters(
@@ -172,6 +175,12 @@ func MaximizeMean(vals []float64) float64 {
 
 func MinimizeMean(vals []float64) float64 {
 	return sum(vals) / float64(len(vals))
+}
+
+func MinimizeNeg(vals []float64) float64 {
+	neg := sliceutils.Count(vals, func(x float64) bool { return x < 0.0 })
+
+	return float64(neg) / float64(len(vals))
 }
 
 func (obj *Objective) Measure(paramVals models.ParamVals) float64 {

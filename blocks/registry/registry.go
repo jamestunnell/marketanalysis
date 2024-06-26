@@ -11,7 +11,9 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks/dmi"
 	"github.com/jamestunnell/marketanalysis/blocks/ema"
 	"github.com/jamestunnell/marketanalysis/blocks/emv"
+	"github.com/jamestunnell/marketanalysis/blocks/gate"
 	"github.com/jamestunnell/marketanalysis/blocks/heikinashi"
+	"github.com/jamestunnell/marketanalysis/blocks/logic"
 	"github.com/jamestunnell/marketanalysis/blocks/maorder"
 	"github.com/jamestunnell/marketanalysis/blocks/math"
 	"github.com/jamestunnell/marketanalysis/blocks/multitrend"
@@ -39,6 +41,7 @@ func init() {
 	Add(dmi.Type, dmi.New)
 	Add(ema.Type, ema.New)
 	Add(emv.Type, emv.New)
+	Add(gate.Type, gate.New)
 	Add(heikinashi.Type, heikinashi.New)
 	Add(maorder.Type, maorder.New)
 	Add(multitrend.TypeMultitrend2, multitrend.NewMultitrend2)
@@ -54,6 +57,11 @@ func init() {
 	Add(math.TypeSub2, math.NewSub2)
 	Add(math.TypeMul2, math.NewMul2)
 	Add(math.TypeMulK, math.NewMulK)
+
+	Add(logic.TypeAnd, logic.NewAnd)
+	Add(logic.TypeOr, logic.NewOr)
+	Add(logic.TypeXor, logic.NewXor)
+	Add(logic.TypeNot, logic.NewNot)
 }
 
 func Types() []string {

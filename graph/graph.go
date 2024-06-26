@@ -16,22 +16,15 @@ import (
 type Graph struct {
 	*Config
 
-	blocks          Blocks
-	warmupPeriod    int
-	order           []string
-	recordOuts      []*recordOut
-	recordOutsAsync []*recordOutAsync
-	timeSeries      *models.TimeSeries
+	blocks       Blocks
+	warmupPeriod int
+	order        []string
+	recordOuts   []*recordOut
+	timeSeries   *models.TimeSeries
 }
 
 type recordOut struct {
-	Output       *blocks.TypedOutput[float64]
-	Quantity     *models.Quantity
-	Measurements []string
-}
-
-type recordOutAsync struct {
-	Output       *blocks.TypedOutputAsync[float64]
+	Output       blocks.Output
 	Quantity     *models.Quantity
 	Measurements []string
 }
@@ -40,13 +33,12 @@ func New(cfg *Config) *Graph {
 	log.Trace().Interface("configuration", cfg).Msg("making graph")
 
 	return &Graph{
-		Config:          cfg,
-		blocks:          Blocks{},
-		warmupPeriod:    0,
-		order:           []string{},
-		recordOuts:      []*recordOut{},
-		recordOutsAsync: []*recordOutAsync{},
-		timeSeries:      models.NewTimeSeries(),
+		Config:       cfg,
+		blocks:       Blocks{},
+		warmupPeriod: 0,
+		order:        []string{},
+		recordOuts:   []*recordOut{},
+		timeSeries:   models.NewTimeSeries(),
 	}
 }
 
@@ -87,38 +79,21 @@ func (g *Graph) Init() error {
 
 	timeSeries := models.NewTimeSeries()
 	recordOuts := []*recordOut{}
-	recordOutsAsync := []*recordOutAsync{}
 
 	// record all float64 outputs
 	for blkName, blk := range blks {
 		for outName, out := range blk.GetOutputs() {
 			addr := &Address{A: blkName, B: outName}
 			q := models.NewQuantity(addr.String())
-
-			switch oo := out.(type) {
-			case *blocks.TypedOutput[float64]:
-				r := &recordOut{
-					Quantity:     q,
-					Output:       oo,
-					Measurements: g.FindMeasurements(addr),
-				}
-
-				timeSeries.AddQuantity(q)
-
-				recordOuts = append(recordOuts, r)
-			case *blocks.TypedOutputAsync[float64]:
-				r := &recordOutAsync{
-					Quantity:     q,
-					Output:       oo,
-					Measurements: g.FindMeasurements(addr),
-				}
-
-				timeSeries.AddQuantity(q)
-
-				recordOutsAsync = append(recordOutsAsync, r)
-			default:
-				log.Warn().Str("block", blkName).Str("output", outName).Msg("unhandled block output")
+			r := &recordOut{
+				Quantity:     q,
+				Output:       out,
+				Measurements: g.FindMeasurements(addr),
 			}
+
+			timeSeries.AddQuantity(q)
+
+			recordOuts = append(recordOuts, r)
 		}
 	}
 
@@ -130,7 +105,6 @@ func (g *Graph) Init() error {
 	g.warmupPeriod = wuPeriod
 	g.order = order
 	g.recordOuts = recordOuts
-	g.recordOutsAsync = recordOutsAsync
 	g.timeSeries = timeSeries
 
 	return nil
@@ -227,17 +201,33 @@ func (g *Graph) Update(bar *models.Bar, isLast bool) {
 
 	for _, r := range g.recordOuts {
 		if r.Output.IsValueSet() {
-			record := models.NewTimeValue(bar.Timestamp, r.Output.GetValue())
+			switch out := r.Output.(type) {
+			case *blocks.TypedOutput[float64]:
+				r.Quantity.AddRecord(models.NewTimeValue(bar.Timestamp, out.GetValue()))
+			case *blocks.TypedOutputAsync[float64]:
+				r.Quantity.AddRecord(models.NewTimeValue(out.GetTime(), out.GetValue()))
+			case *blocks.TypedOutput[int]:
+				r.Quantity.AddRecord(models.NewTimeValue(bar.Timestamp, float64(out.GetValue())))
+			case *blocks.TypedOutputAsync[int]:
+				r.Quantity.AddRecord(models.NewTimeValue(out.GetTime(), float64(out.GetValue())))
+			case *blocks.TypedOutput[bool]:
+				var val float64
 
-			r.Quantity.AddRecord(record)
-		}
-	}
+				if out.GetValue() {
+					val = 1.0
+				}
 
-	for _, r := range g.recordOutsAsync {
-		if r.Output.IsValueSet() {
-			record := models.NewTimeValue(r.Output.GetTime(), r.Output.GetValue())
+				r.Quantity.AddRecord(models.NewTimeValue(bar.Timestamp, val))
+			case *blocks.TypedOutputAsync[bool]:
+				var val float64
 
-			r.Quantity.AddRecord(record)
+				if out.GetValue() {
+					val = 1.0
+				}
+
+				r.Quantity.AddRecord(models.NewTimeValue(out.GetTime(), val))
+			default:
+			}
 		}
 	}
 
@@ -249,14 +239,6 @@ func (g *Graph) Update(bar *models.Bar, isLast bool) {
 
 	// do all measurements after the last bar
 	for _, r := range g.recordOuts {
-		if r.Quantity.IsEmpty() {
-			continue
-		}
-
-		r.Quantity.MeasureAll(r.Measurements)
-	}
-
-	for _, r := range g.recordOutsAsync {
 		if r.Quantity.IsEmpty() {
 			continue
 		}

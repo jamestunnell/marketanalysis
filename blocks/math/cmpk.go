@@ -7,8 +7,8 @@ import (
 
 type CmpK struct {
 	in      *blocks.TypedInput[float64]
-	less    *blocks.TypedOutput[float64]
-	greater *blocks.TypedOutput[float64]
+	less    *blocks.TypedOutput[bool]
+	greater *blocks.TypedOutput[bool]
 	k       *models.FloatParam
 }
 
@@ -20,8 +20,8 @@ const (
 func NewCmpK() blocks.Block {
 	return &CmpK{
 		in:      blocks.NewTypedInput[float64](),
-		less:    blocks.NewTypedOutput[float64](),
-		greater: blocks.NewTypedOutput[float64](),
+		less:    blocks.NewTypedOutput[bool](),
+		greater: blocks.NewTypedOutput[bool](),
 		k:       models.NewFloatParam(0.0, models.NewUnconstrained[float64]()),
 	}
 }
@@ -73,13 +73,13 @@ func (blk *CmpK) Update(_ *models.Bar, isLast bool) {
 	in := blk.in.GetValue()
 
 	if in > blk.k.CurrentVal {
-		blk.greater.SetValue(1.0)
-		blk.less.SetValue(-1.0)
+		blk.greater.SetValue(true)
+		blk.less.SetValue(false)
 	} else if in == blk.k.CurrentVal {
-		blk.greater.SetValue(0.0)
-		blk.less.SetValue(0.0)
+		blk.greater.SetValue(false)
+		blk.less.SetValue(false)
 	} else {
-		blk.greater.SetValue(-1.0)
-		blk.less.SetValue(1.0)
+		blk.greater.SetValue(false)
+		blk.less.SetValue(true)
 	}
 }

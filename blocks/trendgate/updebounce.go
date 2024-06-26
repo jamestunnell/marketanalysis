@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
-	"github.com/rs/zerolog/log"
 )
 
 type UpDebounce struct {
@@ -35,14 +34,6 @@ func (state *UpDebounce) Run(
 	state.parent.out.SetValue(0.0)
 
 	debouncePer := state.DebouncePeriod()
-
-	log.Debug().
-		Float64("cur", cur).
-		Time("timestamp", t).
-		Float64("-openThresh", -state.OpenThresh()).
-		Float64("closeThresh", state.CloseThresh()).
-		Int("debouncePer", debouncePer).
-		Msg("run updebounce")
 
 	if cur < -state.OpenThresh() {
 

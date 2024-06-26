@@ -10,10 +10,11 @@ import (
 )
 
 type Backtest struct {
-	source    *blocks.TypedInput[float64]
-	predictor *blocks.TypedInput[float64]
-	equity    *blocks.TypedOutput[float64]
-	threshold *models.FloatParam
+	source     *blocks.TypedInput[float64]
+	predictor  *blocks.TypedInput[float64]
+	equity     *blocks.TypedOutput[float64]
+	profitLoss *blocks.TypedOutputAsync[float64]
+	threshold  *models.FloatParam
 
 	firstUpdate   bool
 	currentEquity float64
@@ -25,18 +26,20 @@ const (
 	Type  = "Backtest"
 	Descr = "Backtest a source using a predictor."
 
-	NameEquity    = "equity"
-	NameSource    = "source"
-	NamePredictor = "predictor"
-	NameThreshold = "threshold"
+	NameEquity     = "equity"
+	NameProfitLoss = "profitLoss"
+	NameSource     = "source"
+	NamePredictor  = "predictor"
+	NameThreshold  = "threshold"
 )
 
 func New() blocks.Block {
 	return &Backtest{
-		source:    blocks.NewTypedInput[float64](),
-		predictor: blocks.NewTypedInput[float64](),
-		equity:    blocks.NewTypedOutput[float64](),
-		threshold: models.NewFloatParam(0.5, models.NewRangeExcl(0.0, 1.0)),
+		source:     blocks.NewTypedInput[float64](),
+		predictor:  blocks.NewTypedInput[float64](),
+		equity:     blocks.NewTypedOutput[float64](),
+		profitLoss: blocks.NewTypedOutputAsync[float64](),
+		threshold:  models.NewFloatParam(0.5, models.NewRangeExcl(0.0, 1.0)),
 	}
 }
 
@@ -63,7 +66,8 @@ func (blk *Backtest) GetInputs() blocks.Inputs {
 
 func (blk *Backtest) GetOutputs() blocks.Outputs {
 	return blocks.Outputs{
-		NameEquity: blk.equity,
+		NameEquity:     blk.equity,
+		NameProfitLoss: blk.profitLoss,
 	}
 }
 
@@ -168,6 +172,8 @@ func (blk *Backtest) Update(cur *models.Bar, isLast bool) {
 
 func (blk *Backtest) closePosition(t time.Time, value float64, reason string) {
 	blk.position.Close(t, value, reason)
+
+	blk.profitLoss.SetTimeValue(t, blk.position.ClosedPL)
 
 	blk.currentEquity += blk.position.ClosedPL
 
