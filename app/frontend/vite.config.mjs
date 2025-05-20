@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
-import tailwindcss from 'tailwindcss';
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, process.cwd(), '');
@@ -11,6 +11,7 @@ export default defineConfig(({mode}) => {
             tailwindcss(),
         ],
         server: {
+            host: '127.0.0.1',
             proxy: {
                 '/api': {
                     target: 'http://localhost:4002',
