@@ -24,7 +24,7 @@ const (
 func NewDailyBarsProvider(
 	coll models.Collection,
 	dates []date.Date,
-) models.BarsProvider {
+) marketdata.BarsProvider {
 	return &DailyBarsProvider{
 		coll:  coll,
 		dates: dates,
@@ -40,7 +40,7 @@ func (p *DailyBarsProvider) Advance() {
 	p.index++
 }
 
-func (p *DailyBarsProvider) CurrentSet() (models.Bars, error) {
+func (p *DailyBarsProvider) CurrentSet() (marketdata.Bars, error) {
 	d := p.dates[p.index]
 	dayStart := d.Local()
 	nextDayStart := dayStart.Add(24 * time.Hour)
@@ -48,13 +48,13 @@ func (p *DailyBarsProvider) CurrentSet() (models.Bars, error) {
 
 	bars, err := p.coll.LoadBars(ts)
 	if err != nil {
-		return models.Bars{}, fmt.Errorf("failed to load bars: %w", err)
+		return marketdata.Bars{}, fmt.Errorf("failed to load bars: %w", err)
 	}
 
 	open := d.Local().Add(DayTradeMarketOpenLocalMin * time.Minute)
 	close := d.Local().Add(DayTradeMarketCloseLocalMin * time.Minute)
 
-	bars = sliceutils.Where(bars, func(b *models.Bar) bool {
+	bars = sliceutils.Where(bars, func(b *marketdata.Bar) bool {
 		return b.Timestamp.After(open) && b.Timestamp.Before(close)
 	})
 

@@ -68,7 +68,7 @@ package main
 
 // 	positions := models.Positions{}
 
-// 	evalPredictions := func(dir models.Direction, bars models.Bars) {
+// 	evalPredictions := func(dir models.Direction, bars marketdata.Bars) {
 // 		if pos := evalPrediction(dir, bars); pos != nil {
 // 			positions = append(positions, pos)
 // 		}
@@ -106,7 +106,7 @@ package main
 
 // 	positions.Localize()
 
-// 	err := positions.StoreToFile(fpath)
+// 	err := positions.StoreToNDJSONFile(fpath)
 // 	if err != nil {
 // 		log.Error().Err(err).Msg("failed to save positions to file")
 
@@ -116,7 +116,7 @@ package main
 // 	log.Info().Str("path", fpath).Msg("saved positions")
 // }
 
-// func evalPrediction(dir models.Direction, bars models.Bars) *models.Position {
+// func evalPrediction(dir models.Direction, bars marketdata.Bars) *models.Position {
 // 	if len(bars) < 2 {
 // 		log.Fatal().Int("len", len(bars)).Msg("not enough bars to evaluate prediction")
 // 	}

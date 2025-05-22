@@ -2,11 +2,12 @@ package collection_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/jamestunnell/marketanalysis/collection"
 	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/models/testutil"
+	"github.com/jamestunnell/marketdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,8 +68,8 @@ func makeTestStore(t *testing.T) (s collection.Store, cleanup func()) {
 	return store, cleanup
 }
 
-func makeTestBars(t *testing.T) models.Bars {
-	const testBarsJSON = `
+func makeTestBars(t *testing.T) marketdata.Bars {
+	const ndjson = `
 {"t":"2023-03-16T13:30:00Z","o":386.82,"h":387.32,"l":386.72,"c":386.72,"v":725510,"n":5656,"vw":386.97766}
 {"t":"2023-03-16T13:31:00Z","o":386.72,"h":386.89,"l":386.5,"c":386.56,"v":481409,"n":4916,"vw":386.70493}
 {"t":"2023-03-16T13:32:00Z","o":386.55,"h":386.76,"l":386.29,"c":386.4611,"v":562639,"n":5215,"vw":386.51794}
@@ -76,7 +77,7 @@ func makeTestBars(t *testing.T) models.Bars {
 {"t":"2023-03-16T13:34:00Z","o":386.64,"h":387.18,"l":386.48,"c":387.099,"v":444607,"n":4265,"vw":386.76712}
 `
 
-	bars, err := testutil.MakeTestBars(testBarsJSON)
+	bars, err := marketdata.LoadBars(strings.NewReader(ndjson))
 
 	require.NoError(t, err)
 

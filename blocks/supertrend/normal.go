@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
+	"github.com/jamestunnell/marketdata"
 )
 
 type Normal struct {
@@ -37,8 +37,8 @@ func (state *Normal) Enter() {
 
 func (state *Normal) Run(
 	t time.Time,
-	cur *models.OHLC,
-) statemachine.State[*models.OHLC] {
+	cur *marketdata.OHLC,
+) statemachine.State[*marketdata.OHLC] {
 	state.parent.atr.Update(cur)
 
 	atr := state.parent.atr.Current() * state.parent.atrMul.CurrentVal

@@ -4,6 +4,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type ATR struct {
@@ -63,7 +64,7 @@ func (blk *ATR) Init() error {
 	return nil
 }
 
-func (blk *ATR) Update(cur *models.Bar, isLast bool) {
+func (blk *ATR) Update(cur *marketdata.Bar, isLast bool) {
 	blk.atr.Update(cur.OHLC)
 
 	if !blk.atr.Warm() {

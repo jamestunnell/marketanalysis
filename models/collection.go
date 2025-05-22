@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jamestunnell/marketdata"
 	"github.com/rickb777/date"
 )
 
@@ -16,8 +17,8 @@ type Collection interface {
 
 	IsEmpty() bool
 
-	LoadBars(start, endIncl date.Date) (Bars, error)
-	StoreBars(Bars) error
+	LoadBars(start, endIncl date.Date) (marketdata.Bars, error)
+	StoreBars(marketdata.Bars) error
 }
 
 const (

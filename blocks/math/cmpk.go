@@ -3,6 +3,7 @@ package math
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type CmpK struct {
@@ -65,7 +66,7 @@ func (blk *CmpK) Init() error {
 	return nil
 }
 
-func (blk *CmpK) Update(_ *models.Bar, isLast bool) {
+func (blk *CmpK) Update(_ *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

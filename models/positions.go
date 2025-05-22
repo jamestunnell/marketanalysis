@@ -40,7 +40,7 @@ func (ps Positions) Analyze() *PositionsAnalysis {
 	}
 }
 
-func (ps Positions) StoreToFile(fpath string) error {
+func (ps Positions) StoreToNDJSONFile(fpath string) error {
 	f, err := os.Create(fpath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", fpath, err)

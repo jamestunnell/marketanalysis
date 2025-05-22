@@ -3,6 +3,7 @@ package gate
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type Gate struct {
@@ -63,7 +64,7 @@ func (blk *Gate) Init() error {
 	return nil
 }
 
-func (blk *Gate) Update(cur *models.Bar, isLast bool) {
+func (blk *Gate) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() || !blk.gate.IsValueSet() {
 		return
 	}

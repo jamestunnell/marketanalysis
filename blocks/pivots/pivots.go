@@ -6,6 +6,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	p "github.com/jamestunnell/marketanalysis/indicators/pivots"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"github.com/rs/zerolog/log"
 )
 
@@ -75,7 +76,7 @@ func (blk *Pivots) Init() error {
 	return nil
 }
 
-func (blk *Pivots) Update(cur *models.Bar, isLast bool) {
+func (blk *Pivots) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

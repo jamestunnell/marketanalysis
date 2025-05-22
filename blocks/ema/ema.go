@@ -4,6 +4,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type EMA struct {
@@ -67,7 +68,7 @@ func (blk *EMA) Init() error {
 	return nil
 }
 
-func (blk *EMA) Update(cur *models.Bar, isLast bool) {
+func (blk *EMA) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

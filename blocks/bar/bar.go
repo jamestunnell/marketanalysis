@@ -3,6 +3,7 @@ package bar
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 const (
@@ -94,7 +95,7 @@ func (blk *Bar) Init() error {
 	return nil
 }
 
-func (blk *Bar) Update(cur *models.Bar, isLast bool) {
+func (blk *Bar) Update(cur *marketdata.Bar, isLast bool) {
 	blk.close.SetValue(cur.Close)
 
 	blk.open.SetIfConnected(cur.GetOpen)

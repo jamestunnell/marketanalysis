@@ -1,7 +1,7 @@
 package indicators
 
 import (
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type ATR struct {
@@ -9,7 +9,7 @@ type ATR struct {
 	period  int
 	ma      *EMA
 	warm    bool
-	prev    *models.OHLC
+	prev    *marketdata.OHLC
 }
 
 func NewATR(period int) *ATR {
@@ -30,7 +30,7 @@ func (atr *ATR) Warm() bool {
 	return atr.warm
 }
 
-func (atr *ATR) Update(cur *models.OHLC) {
+func (atr *ATR) Update(cur *marketdata.OHLC) {
 	defer atr.updatePrev(cur)
 
 	if atr.prev == nil {
@@ -53,6 +53,6 @@ func (atr *ATR) Current() float64 {
 	return atr.current
 }
 
-func (atr *ATR) updatePrev(cur *models.OHLC) {
+func (atr *ATR) updatePrev(cur *marketdata.OHLC) {
 	atr.prev = cur
 }

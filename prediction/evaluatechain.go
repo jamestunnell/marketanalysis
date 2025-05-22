@@ -19,7 +19,7 @@ package prediction
 
 // func EvaluateChain(
 // 	chain *processing.Chain,
-// 	bars models.Bars,
+// 	bars marketdata.Bars,
 // 	inHorizon, outHorizon, futureHorizon int,
 // 	step EvalChainStepFunc) error {
 // 	if err := chain.Initialize(); err != nil {
@@ -55,7 +55,7 @@ package prediction
 // 		}
 
 // 		futurePrices := sliceutils.Map(
-// 			futureBars, func(b *models.Bar) float64 { return b.Close })
+// 			futureBars, func(b *marketdata.Bar) float64 { return b.Close })
 
 // 		inSlope, err := linregression.Slope(inBuf.Array())
 // 		if err != nil {

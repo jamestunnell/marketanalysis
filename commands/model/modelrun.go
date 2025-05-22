@@ -7,6 +7,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
@@ -19,7 +20,7 @@ type ModelRun struct {
 	Date       date.Date
 
 	model models.Model
-	bars  models.Bars
+	bars  marketdata.Bars
 }
 
 func (cmd *ModelRun) Init() error {
@@ -48,7 +49,7 @@ func (cmd *ModelRun) Init() error {
 		return fmt.Errorf("failed to load bars: %w", err)
 	}
 
-	startIdx, found := slices.BinarySearchFunc(bars, startTime, func(b *models.Bar, tgt time.Time) int {
+	startIdx, found := slices.BinarySearchFunc(bars, startTime, func(b *marketdata.Bar, tgt time.Time) int {
 		return b.Timestamp.Compare(tgt)
 	})
 	if !found {

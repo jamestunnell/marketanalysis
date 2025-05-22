@@ -6,6 +6,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type EMV struct {
@@ -82,7 +83,7 @@ func (blk *EMV) Init() error {
 	return nil
 }
 
-func (blk *EMV) Update(cur *models.Bar, isLast bool) {
+func (blk *EMV) Update(cur *marketdata.Bar, isLast bool) {
 	blk.emv.Update(cur)
 
 	if !blk.emv.PartlyWarm() {

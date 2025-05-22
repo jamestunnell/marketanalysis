@@ -5,13 +5,14 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
-type EvalFunc func(dir models.Direction, bars models.Bars)
+type EvalFunc func(dir models.Direction, bars marketdata.Bars)
 
 func EvaluatePredictor(
 	pred models.Predictor,
-	bars models.Bars,
+	bars marketdata.Bars,
 	eval EvalFunc) error {
 	if err := pred.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize predictor: %w", err)
@@ -30,7 +31,7 @@ func EvaluatePredictor(
 	}
 
 	prevDir := pred.Direction()
-	predBars := models.Bars{wuBars.Last()}
+	predBars := marketdata.Bars{wuBars.Last()}
 
 	for _, bar := range remBars {
 		pred.Update(bar)
@@ -41,7 +42,7 @@ func EvaluatePredictor(
 		if dir != prevDir {
 			eval(prevDir, predBars)
 
-			predBars = models.Bars{bar}
+			predBars = marketdata.Bars{bar}
 			prevDir = dir
 		}
 	}

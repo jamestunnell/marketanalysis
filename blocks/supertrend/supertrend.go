@@ -5,13 +5,14 @@ import (
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
+	"github.com/jamestunnell/marketdata"
 )
 
 type Supertrend struct {
 	in                  *blocks.TypedInput[float64]
 	trend, lower, upper *blocks.TypedOutput[float64]
 
-	stateMachine *statemachine.StateMachine[*models.OHLC]
+	stateMachine *statemachine.StateMachine[*marketdata.OHLC]
 
 	atrPeriod *models.IntParam
 	atrMul    *models.FloatParam
@@ -86,6 +87,6 @@ func (blk *Supertrend) Init() error {
 	return nil
 }
 
-func (blk *Supertrend) Update(cur *models.Bar, isLast bool) {
+func (blk *Supertrend) Update(cur *marketdata.Bar, isLast bool) {
 	blk.stateMachine.Run(cur.Timestamp, cur.OHLC)
 }

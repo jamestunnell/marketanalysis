@@ -56,7 +56,7 @@ func OptimizeParameters(
 	targets []*TargetParam,
 	objectiveType string,
 	settings *optimization.Settings,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 	resultHook func(*optimization.Result),
 ) (*optimization.Results, error) {
 	values := map[string]optimization.Value{}
@@ -100,7 +100,7 @@ func EvaluateParameters(
 	days int,
 	source *SourceQuantity,
 	paramVals models.ParamVals,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 ) ([]float64, error) {
 	for addrStr, val := range paramVals {
 		addr, err := ParseAddress(addrStr)

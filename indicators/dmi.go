@@ -3,13 +3,13 @@ package indicators
 import (
 	"math"
 
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 // DMI is a Directional Movement Index indicator.
 type DMI struct {
 	period        int
-	prevOHLC      *models.OHLC
+	prevOHLC      *marketdata.OHLC
 	negDirMoveEMA *EMA
 	posDirMoveEMA *EMA
 	trueRangeEMA  *EMA
@@ -41,7 +41,7 @@ func (ind *DMI) Warm() bool {
 	return ind.warm
 }
 
-func (ind *DMI) Update(b *models.Bar) {
+func (ind *DMI) Update(b *marketdata.Bar) {
 	defer ind.updatePrev(b.OHLC)
 
 	if ind.prevOHLC == nil {
@@ -92,7 +92,7 @@ func (ind *DMI) DX() float64 {
 	return ind.dx
 }
 
-func PDMAndNDM(cur, prev *models.OHLC) (float64, float64) {
+func PDMAndNDM(cur, prev *marketdata.OHLC) (float64, float64) {
 	posMove := cur.High - prev.High
 	negMove := prev.Low - cur.Low
 
@@ -107,6 +107,6 @@ func PDMAndNDM(cur, prev *models.OHLC) (float64, float64) {
 	return posMove, negMove
 }
 
-func (ind *DMI) updatePrev(cur *models.OHLC) {
+func (ind *DMI) updatePrev(cur *marketdata.OHLC) {
 	ind.prevOHLC = cur
 }

@@ -23,6 +23,6 @@ func BindAll(r *mux.Router, db *mongo.Database, bg background.System) {
 	r.Handle("/jobs/{id}", NewJobStatus(bg))
 	r.Handle("/jobs/updates", NewJobUpdates(bg))
 
-	settings.Bind(r)
 	graphs.Bind(r)
+	settings.Bind(r)
 }

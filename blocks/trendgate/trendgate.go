@@ -8,6 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
+	"github.com/jamestunnell/marketdata"
 )
 
 type TrendGate struct {
@@ -92,7 +93,7 @@ func (blk *TrendGate) Init() error {
 	return nil
 }
 
-func (blk *TrendGate) Update(cur *models.Bar, isLast bool) {
+func (blk *TrendGate) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

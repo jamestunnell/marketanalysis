@@ -1,9 +1,9 @@
 package provision
 
-import "github.com/jamestunnell/marketanalysis/models"
+import "github.com/jamestunnell/marketdata"
 
 type BarSequence interface {
-	EachBar(func(bar *models.Bar) error) error
+	EachBar(func(bar *marketdata.Bar) error) error
 }
 
 type BarSequences interface {

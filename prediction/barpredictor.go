@@ -8,6 +8,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/commonerrs"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"github.com/patrikeh/go-deep/training"
 )
 
@@ -64,7 +65,7 @@ func NewBarPredictor(
 	return bp, nil
 }
 
-func (bp *BarPredictorCore) WarmUp(bars []*models.Bar) error {
+func (bp *BarPredictorCore) WarmUp(bars []*marketdata.Bar) error {
 	wp := bp.TotalWarmupPeriod()
 	if len(bars) != wp {
 		return commonerrs.NewErrExactLen("warmup bars", wp, len(bars))
@@ -97,7 +98,7 @@ func (bp *BarPredictorCore) TotalWarmupPeriod() int {
 	return bp.ATR.WarmupPeriod() + bp.nPrevBars
 }
 
-func (bp *BarPredictor) Train(bars []*models.Bar, nIter int) error {
+func (bp *BarPredictor) Train(bars []*marketdata.Bar, nIter int) error {
 	trainingCore := &BarPredictorCore{
 		barDur:    bp.barDur,
 		nPrevBars: bp.nPrevBars,
@@ -146,7 +147,7 @@ func (bp *BarPredictor) Train(bars []*models.Bar, nIter int) error {
 	return bp.predictor.Train(examples, nIter)
 }
 
-func (bp *BarPredictor) Predict(curBar *models.Bar) (*models.Bar, error) {
+func (bp *BarPredictor) Predict(curBar *marketdata.Bar) (*marketdata.Bar, error) {
 	if !bp.warm {
 		return nil, errNotWarmedUp
 	}

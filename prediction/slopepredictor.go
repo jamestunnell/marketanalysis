@@ -19,7 +19,7 @@ package prediction
 // }
 
 // type evalChainStepResult struct {
-// 	Bar                                    *models.Bar
+// 	Bar                                    *marketdata.Bar
 // 	InSlope, OutSlope, OutVal, FutureSlope float64
 // }
 
@@ -44,7 +44,7 @@ package prediction
 // 	futureBuf := buffer.NewCircularBuffer[float64](pred.futureHorizon)
 // 	result := &evalChainStepResult{}
 
-// 	err := processing.Evaluate(chain, bars, func(bar *models.Bar, sourceOut, procsOut float64) error {
+// 	err := processing.Evaluate(chain, bars, func(bar *marketdata.Bar, sourceOut, procsOut float64) error {
 // 		futureBuf.Add(bar.Close)
 
 // 		// This makes sure that the future data leads the chain input and output
@@ -137,7 +137,7 @@ package prediction
 // 	var pos *models.Position
 
 // 	eachSeq := func(seq provision.BarSequence) error {
-// 		var bar *models.Bar
+// 		var bar *marketdata.Bar
 
 // 		step := func(result *evalChainStepResult) {
 // 			predFutureSlope, err := pred.PredictFutureSlope(result.InSlope, result.OutSlope, result.OutVal)

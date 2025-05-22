@@ -4,12 +4,13 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/jamestunnell/marketdata"
 	"github.com/rickb777/date"
 )
 
 type BarSet struct {
-	Date string `json:"date" bson:"_id"`
-	Bars Bars   `json:"bars"`
+	Date string          `json:"date" bson:"_id"`
+	Bars marketdata.Bars `json:"bars"`
 }
 
 var (
@@ -41,6 +42,6 @@ func (db *BarSet) Validate() []error {
 	return errs
 }
 
-func CompareBarsByTimestamp(a, b *Bar) int {
+func CompareBarsByTimestamp(a, b *marketdata.Bar) int {
 	return a.Timestamp.Compare(b.Timestamp)
 }

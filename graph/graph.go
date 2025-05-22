@@ -11,6 +11,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/blocks/registry"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type Graph struct {
@@ -184,7 +185,7 @@ func MaxTotalWarmupPeriod(blks Blocks, g graphlib.Graph[string, string], order [
 	return slices.Max(maps.Values(totalWUs)), nil
 }
 
-func (g *Graph) Update(bar *models.Bar, isLast bool) {
+func (g *Graph) Update(bar *marketdata.Bar, isLast bool) {
 	log.Trace().Msg("updating graph")
 
 	for _, blk := range g.blocks {

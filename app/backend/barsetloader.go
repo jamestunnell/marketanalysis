@@ -11,6 +11,8 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/loading"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
+	"github.com/jamestunnell/marketdata/alpaca"
 )
 
 type BarSetLoader struct {
@@ -38,7 +40,7 @@ func NewBarSetLoader(
 	}
 }
 
-func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, error) {
+func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (marketdata.Bars, error) {
 	log.Trace().Stringer("date", d).Msg("loading day bars")
 
 	dayBars, appErr := l.Store.Get(ctx, d.String())
@@ -51,20 +53,27 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 		return dayBars.Bars, nil
 	}
 
-	ts := timespan.NewTimeSpan(d.In(locNY), d.Add(1).In(locNY))
+	// return marketdata.Bars{}, fmt.Errorf("failed to get day bars: %w", appErr)
 
-	bs, err := loading.GetBarsOneMin(l.Symbol, ts, locNY)
+	ts := timespan.NewTimeSpan(d.In(locNY), d.Add(1).In(locNY))
+	bc := alpaca.NewFreeBarCollector()
+
+	bars, err := bc.Collect(l.Symbol, ts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aplaca bars: %w", err)
 	}
 
+	for _, bar := range bars {
+		bar.Timestamp = bar.Timestamp.In(locNY)
+	}
+
 	log.Trace().
-		Int("count", len(bs)).
+		Int("count", len(bars)).
 		Stringer("date", d).
 		Msg("loaded bars from alpaca")
 
 	dayBars = &models.BarSet{
-		Bars: bs,
+		Bars: bars,
 		Date: d.String(),
 	}
 
@@ -75,7 +84,7 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 	}
 
 	log.Debug().
-		Int("count", len(bs)).
+		Int("count", len(bars)).
 		Stringer("date", d).
 		Msg("storing day bars")
 
@@ -87,7 +96,7 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (models.Bars, erro
 			Msg("failed to store day bars")
 	} else {
 		log.Debug().
-			Int("count", len(bs)).
+			Int("count", len(bars)).
 			Stringer("date", d).
 			Msg("stored bars")
 	}

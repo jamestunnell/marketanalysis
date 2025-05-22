@@ -3,6 +3,7 @@ package record
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"golang.org/x/exp/maps"
 )
 
@@ -61,7 +62,7 @@ func (blk *Record) Init() error {
 	return blk.Recorder.Init(inputNames)
 }
 
-func (blk *Record) Update(cur *models.Bar, isLast bool) {
+func (blk *Record) Update(cur *marketdata.Bar, isLast bool) {
 	tvs := map[string]models.TimeValue[float64]{}
 
 	for name, in := range blk.Inputs {

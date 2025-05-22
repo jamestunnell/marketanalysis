@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"github.com/rickb777/date"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
@@ -148,17 +149,17 @@ func (c *collection) IsEmpty() bool {
 	return c.index.Empty()
 }
 
-func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
+func (c *collection) loadBarsForDate(d date.Date) (marketdata.Bars, error) {
 	itemName, found := c.index.FindItem(d)
 	if !found {
-		return models.Bars{}, nil
+		return marketdata.Bars{}, nil
 	}
 
 	barsData, err := c.barStore.LoadItem(itemName)
 	if err != nil {
 		err = fmt.Errorf("failed to load bars item '%s': %w", itemName, err)
 
-		return models.Bars{}, err
+		return marketdata.Bars{}, err
 	}
 
 	bars, err := models.LoadBars(bytes.NewReader(barsData))
@@ -169,15 +170,15 @@ func (c *collection) loadBarsForDate(d date.Date) (models.Bars, error) {
 	return bars, nil
 }
 
-func (c *collection) LoadBars(start, endIncl date.Date) (models.Bars, error) {
-	bars := models.Bars{}
+func (c *collection) LoadBars(start, endIncl date.Date) (marketdata.Bars, error) {
+	bars := marketdata.Bars{}
 
 	for cur := start; !cur.After(endIncl); cur = cur.Add(1) {
 		dayBars, err := c.loadBarsForDate(cur)
 		if err != nil {
 			err = fmt.Errorf("failed to load bars on date %s: %w", cur, err)
 
-			return models.Bars{}, err
+			return marketdata.Bars{}, err
 		}
 
 		if len(dayBars) == 0 {
@@ -186,7 +187,7 @@ func (c *collection) LoadBars(start, endIncl date.Date) (models.Bars, error) {
 
 		// if !ts.Contains(dayBars[0].Timestamp) || !ts.Contains(dayBars.Last().Timestamp) {
 		// } else {
-		// 	dayBars = sliceutils.Where(dayBars, func(b *models.Bar) bool {
+		// 	dayBars = sliceutils.Where(dayBars, func(b *marketdata.Bar) bool {
 		// 		return ts.Contains(b.Timestamp)
 		// 	})
 		// }
@@ -208,22 +209,22 @@ func BarsItemName(sym string, d date.Date) string {
 	return fmt.Sprintf(fmtStr, sym, d.Format(date.RFC3339))
 }
 
-func (c *collection) StoreBars(bars models.Bars) error {
+func (c *collection) StoreBars(bars marketdata.Bars) error {
 	// separate by date
-	byDate := map[date.Date]models.Bars{}
+	byDate := map[date.Date]marketdata.Bars{}
 	for _, b := range bars {
 		d := b.Date()
 
 		if dateBars, found := byDate[d]; found {
 			byDate[d] = append(dateBars, b)
 		} else {
-			byDate[d] = models.Bars{b}
+			byDate[d] = marketdata.Bars{b}
 		}
 	}
 
 	//store each set of bars in an item
 	for d, bars := range byDate {
-		slices.SortFunc(bars, func(a, b *models.Bar) bool {
+		slices.SortFunc(bars, func(a, b *marketdata.Bar) bool {
 			return a.Timestamp.Before(b.Timestamp)
 		})
 

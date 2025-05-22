@@ -2,20 +2,20 @@ package prediction_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jamestunnell/marketanalysis/models"
-	"github.com/jamestunnell/marketanalysis/models/testutil"
 	"github.com/jamestunnell/marketanalysis/prediction"
 	"github.com/jamestunnell/marketanalysis/prediction/mock_prediction"
+	"github.com/jamestunnell/marketdata"
 	"github.com/patrikeh/go-deep"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const testBarsJSON = `
+const testNDJSON = `
 {"t":"2023-03-27T14:00:00Z","o":398.04,"h":398.22,"l":397.955,"c":397.98,"v":157687,"n":1647,"vw":398.080557}
 {"t":"2023-03-27T14:01:00Z","o":397.96,"h":398.135,"l":397.79,"c":397.83,"v":203750,"n":1868,"vw":397.987753}
 {"t":"2023-03-27T14:02:00Z","o":397.83,"h":398.02,"l":397.8,"c":397.94,"v":132896,"n":1388,"vw":397.939144}
@@ -154,9 +154,9 @@ func TestBarPredictorMock(t *testing.T) {
 	require.NoError(t, err)
 
 	// no bars - can't train
-	assert.Error(t, bp.Train([]*models.Bar{}, 100))
+	assert.Error(t, bp.Train([]*marketdata.Bar{}, 100))
 
-	bars := makeTestBars(t, testBarsJSON)
+	bars := makeTestBars(t, testNDJSON)
 
 	// not enough bars for warmup period and training
 	assert.Error(t, bp.Train(bars[:5], 100))
@@ -201,7 +201,7 @@ func TestBarPredictorReal(t *testing.T) {
 		trainingIters = 10000
 	)
 
-	bars := makeTestBars(t, testBarsJSON)
+	bars := makeTestBars(t, testNDJSON)
 
 	cfg := &deep.Config{
 		/* Input dimensionality */
@@ -253,9 +253,8 @@ func TestBarPredictorReal(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func makeTestBars(t *testing.T, jsonStr string) []*models.Bar {
-
-	bars, err := testutil.MakeTestBars(jsonStr)
+func makeTestBars(t *testing.T, ndjson string) []*marketdata.Bar {
+	bars, err := marketdata.LoadBars(strings.NewReader(ndjson))
 
 	require.NoError(t, err)
 

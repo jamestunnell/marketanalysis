@@ -6,6 +6,7 @@ import (
 
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 	"github.com/rs/zerolog/log"
 )
 
@@ -88,7 +89,7 @@ func (blk *Backtest) Init() error {
 	return nil
 }
 
-func (blk *Backtest) Update(cur *models.Bar, isLast bool) {
+func (blk *Backtest) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.source.IsValueSet() || !blk.predictor.IsValueSet() {
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/blocks/bar"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 const (
@@ -12,7 +13,7 @@ const (
 )
 
 type HeikinAshi struct {
-	prev  *models.OHLC
+	prev  *marketdata.OHLC
 	open  *blocks.TypedOutput[float64]
 	high  *blocks.TypedOutput[float64]
 	low   *blocks.TypedOutput[float64]
@@ -81,7 +82,7 @@ func (blk *HeikinAshi) Init() error {
 	return nil
 }
 
-func (blk *HeikinAshi) Update(cur *models.Bar, isLast bool) {
+func (blk *HeikinAshi) Update(cur *marketdata.Bar, isLast bool) {
 	defer blk.updatePrev(cur)
 
 	if blk.prev == nil {
@@ -102,6 +103,6 @@ func (blk *HeikinAshi) Update(cur *models.Bar, isLast bool) {
 	blk.hlcc4.SetIfConnected(ha.HLCC4)
 }
 
-func (blk *HeikinAshi) updatePrev(cur *models.Bar) {
+func (blk *HeikinAshi) updatePrev(cur *marketdata.Bar) {
 	blk.prev = cur.OHLC
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type Aroon struct {
@@ -77,7 +78,7 @@ func (blk *Aroon) Init() error {
 	return nil
 }
 
-func (blk *Aroon) Update(_ *models.Bar, isLast bool) {
+func (blk *Aroon) Update(_ *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

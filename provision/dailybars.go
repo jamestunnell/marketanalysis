@@ -8,6 +8,7 @@ import (
 	"github.com/rickb777/date/timespan"
 
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type DailyBarSeq struct {
@@ -34,7 +35,7 @@ func NewDailyBarSeqs(c models.Collection, dates ...date.Date) *DailyBarSeqs {
 	}
 }
 
-func (db *DailyBarSeq) EachBar(each func(bar *models.Bar) error) error {
+func (db *DailyBarSeq) EachBar(each func(bar *marketdata.Bar) error) error {
 	dayStart := db.Date.Local()
 	dayEnd := dayStart.Add(time.Hour * 24)
 	ts := timespan.NewTimeSpan(dayStart, dayEnd)

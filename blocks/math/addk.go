@@ -3,6 +3,7 @@ package math
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type AddK struct {
@@ -62,7 +63,7 @@ func (blk *AddK) Init() error {
 	return nil
 }
 
-func (blk *AddK) Update(_ *models.Bar, isLast bool) {
+func (blk *AddK) Update(_ *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

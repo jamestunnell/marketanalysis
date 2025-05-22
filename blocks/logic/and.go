@@ -3,6 +3,7 @@ package logic
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type And struct {
@@ -64,7 +65,7 @@ func (blk *And) Init() error {
 	return nil
 }
 
-func (blk *And) Update(_ *models.Bar, isLast bool) {
+func (blk *And) Update(_ *marketdata.Bar, isLast bool) {
 	if !blk.in1.IsValueSet() || !blk.in2.IsValueSet() {
 		return
 	}

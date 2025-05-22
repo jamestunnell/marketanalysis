@@ -2,13 +2,13 @@ package indicators
 
 import (
 	"github.com/jamestunnell/marketanalysis/commonerrs"
-	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 // EMV is an Ease of Movement Value indicator.
 type EMV struct {
 	emv      float64
-	prevOHLC *models.OHLC
+	prevOHLC *marketdata.OHLC
 	scale    float64
 	sma      *SMA
 }
@@ -40,7 +40,7 @@ func (ind *EMV) FullyWarm() bool {
 	return ind.sma.Warm()
 }
 
-func (ind *EMV) Update(cur *models.Bar) {
+func (ind *EMV) Update(cur *marketdata.Bar) {
 	defer ind.udpatePrev(cur)
 
 	if ind.prevOHLC == nil {
@@ -65,6 +65,6 @@ func (ind *EMV) Average() float64 {
 	return ind.sma.Current()
 }
 
-func (ind *EMV) udpatePrev(cur *models.Bar) {
+func (ind *EMV) udpatePrev(cur *marketdata.Bar) {
 	ind.prevOHLC = cur.OHLC
 }

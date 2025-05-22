@@ -14,7 +14,7 @@ import (
 func SplitCollectionRandomly(
 	coll models.Collection,
 	split float64,
-	randSource rand.Source) (training, testing models.BarsProvider, err error) {
+	randSource rand.Source) (training, testing marketdata.BarsProvider, err error) {
 	dateRange := coll.GetTimeSpan().DateRangeIn(time.Local)
 	nDays := int(dateRange.Days())
 

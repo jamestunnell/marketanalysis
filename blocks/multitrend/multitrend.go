@@ -3,6 +3,7 @@ package multitrend
 import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type MultiTrend2 struct {
@@ -70,7 +71,7 @@ func (blk *MultiTrend2) Init() error {
 	return nil
 }
 
-func (blk *MultiTrend2) Update(cur *models.Bar, isLast bool) {
+func (blk *MultiTrend2) Update(cur *marketdata.Bar, isLast bool) {
 	if !blk.in1.IsValueSet() || !blk.in2.IsValueSet() {
 		return
 	}

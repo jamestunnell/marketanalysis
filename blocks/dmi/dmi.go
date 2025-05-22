@@ -4,6 +4,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/blocks"
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
 )
 
 type DMI struct {
@@ -73,7 +74,7 @@ func (blk *DMI) Init() error {
 	return nil
 }
 
-func (blk *DMI) Update(cur *models.Bar, isLast bool) {
+func (blk *DMI) Update(cur *marketdata.Bar, isLast bool) {
 	blk.dmi.Update(cur)
 
 	if !blk.dmi.Warm() {

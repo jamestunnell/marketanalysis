@@ -3,8 +3,8 @@ package supertrend
 import (
 	"time"
 
-	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util/statemachine"
+	"github.com/jamestunnell/marketdata"
 )
 
 type WaitForFirst struct {
@@ -26,8 +26,8 @@ func (state *WaitForFirst) Enter() {
 
 func (state *WaitForFirst) Run(
 	t time.Time,
-	cur *models.OHLC,
-) statemachine.State[*models.OHLC] {
+	cur *marketdata.OHLC,
+) statemachine.State[*marketdata.OHLC] {
 	state.parent.atr.Update(cur)
 
 	if !state.parent.atr.Warm() || !state.parent.in.IsValueSet() {

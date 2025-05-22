@@ -1,33 +1,34 @@
-package models
+package graph
 
 import (
 	"context"
 	"fmt"
 	"slices"
 
+	"github.com/jamestunnell/marketdata"
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/timespan"
 	"github.com/rs/zerolog/log"
 )
 
-type LoadBarsFunc func(ctx context.Context, d date.Date) (Bars, error)
+type LoadBarsFunc func(ctx context.Context, d date.Date) (marketdata.Bars, error)
 
 func LoadRunBars(
 	ctx context.Context,
 	ts timespan.TimeSpan,
 	load LoadBarsFunc,
 	warmupPeriod int,
-) (Bars, error) {
+) (marketdata.Bars, error) {
 	log.Trace().Time("start", ts.Start()).Time("end", ts.End()).Msg("loading bars")
 
 	startDate := date.NewAt(ts.Start())
 	endDate := date.NewAt(ts.End())
-	primaryBars := Bars{}
+	primaryBars := marketdata.Bars{}
 
 	for d := startDate.Add(0); !d.After(endDate); d = d.Add(1) {
 		bars, err := load(ctx, d)
 		if err != nil {
-			return Bars{}, fmt.Errorf("failed to load day bars for %s: %w", d, err)
+			return marketdata.Bars{}, fmt.Errorf("failed to load day bars for %s: %w", d, err)
 		}
 
 		primaryBars = append(primaryBars, bars...)
@@ -35,10 +36,10 @@ func LoadRunBars(
 
 	// can't run on this day or unknown symbol
 	if len(primaryBars) == 0 {
-		return Bars{}, nil
+		return marketdata.Bars{}, nil
 	}
 
-	warmupBars := Bars{}
+	warmupBars := marketdata.Bars{}
 
 	// use bars before start time for warmup
 	if startIdx, startFound := primaryBars.IndexForward(ts.Start()); startFound {
@@ -62,7 +63,9 @@ func LoadRunBars(
 
 		bars, err := load(ctx, warmupDate)
 		if err != nil {
-			return Bars{}, fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
+			err = fmt.Errorf("failed to load warmup bars from %s: %w", warmupDate, err)
+
+			return marketdata.Bars{}, err
 		}
 
 		warmupBars = append(warmupBars, bars...)

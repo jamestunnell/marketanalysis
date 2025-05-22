@@ -1,6 +1,9 @@
 package blocks
 
-import "github.com/jamestunnell/marketanalysis/models"
+import (
+	"github.com/jamestunnell/marketanalysis/models"
+	"github.com/jamestunnell/marketdata"
+)
 
 type Block interface {
 	GetType() string
@@ -13,7 +16,7 @@ type Block interface {
 	IsWarm() bool
 
 	Init() error
-	Update(current *models.Bar, isLast bool)
+	Update(current *marketdata.Bar, isLast bool)
 }
 
 func ClearOutputs(blk Block) {

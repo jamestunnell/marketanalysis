@@ -5,6 +5,7 @@ import (
 	"github.com/jamestunnell/marketanalysis/indicators"
 	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/util"
+	"github.com/jamestunnell/marketdata"
 )
 
 type MAOrder struct {
@@ -82,7 +83,7 @@ func (blk *MAOrder) Init() error {
 	return nil
 }
 
-func (blk *MAOrder) Update(_ *models.Bar, isLast bool) {
+func (blk *MAOrder) Update(_ *marketdata.Bar, isLast bool) {
 	if !blk.in.IsValueSet() {
 		return
 	}

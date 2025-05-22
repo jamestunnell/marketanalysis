@@ -229,7 +229,7 @@ package main
 
 // 		sum := 0.0
 // 		totalBars := 0
-// 		evalPredictions := func(dir models.Direction, bars models.Bars) {
+// 		evalPredictions := func(dir models.Direction, bars marketdata.Bars) {
 // 			totalBars += len(bars)
 // 			sum += evalPrediction(dir, bars)
 // 		}
@@ -257,7 +257,7 @@ package main
 // 	}
 // }
 
-// func evalPrediction(dir models.Direction, bars models.Bars) float64 {
+// func evalPrediction(dir models.Direction, bars marketdata.Bars) float64 {
 // 	if len(bars) < 22 {
 // 		log.Fatal().
 // 			Int("len", len(bars)).
@@ -270,15 +270,15 @@ package main
 
 // 	switch dir {
 // 	case models.DirUp:
-// 		diffs = sliceutils.Map(remBars, func(b *models.Bar) float64 {
+// 		diffs = sliceutils.Map(remBars, func(b *marketdata.Bar) float64 {
 // 			return b.Close - entry
 // 		})
 // 	case models.DirDown:
-// 		diffs = sliceutils.Map(remBars, func(b *models.Bar) float64 {
+// 		diffs = sliceutils.Map(remBars, func(b *marketdata.Bar) float64 {
 // 			return entry - b.Close
 // 		})
 // 	case models.DirNone:
-// 		diffs = sliceutils.Map(remBars, func(b *models.Bar) float64 {
+// 		diffs = sliceutils.Map(remBars, func(b *marketdata.Bar) float64 {
 // 			return -math.Abs(entry - b.Close)
 // 		})
 // 	}

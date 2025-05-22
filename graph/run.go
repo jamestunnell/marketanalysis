@@ -16,7 +16,7 @@ func RunSingleDay(
 	ctx context.Context,
 	cfg *Config,
 	day date.Date,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	ts := loading.GetCoreHours(day)
 
@@ -27,7 +27,7 @@ func RunMultiDay(
 	ctx context.Context,
 	cfg *Config,
 	dateRange timespan.DateRange,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	// include entire last day by going until start of the next day
 	endTime := dateRange.End().Add(1).In(loading.GetLocationNY())
@@ -41,7 +41,7 @@ func RunMultiDaySummary(
 	ctx context.Context,
 	cfg *Config,
 	dateRange timespan.DateRange,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	summary := models.NewTimeSeries()
 
@@ -80,7 +80,7 @@ func Run(
 	ctx context.Context,
 	cfg *Config,
 	ts timespan.TimeSpan,
-	load models.LoadBarsFunc,
+	load LoadBarsFunc,
 ) (*models.TimeSeries, error) {
 	if ts.IsEmpty() {
 		log.Trace().Msg("timespan is empty, returning empty time series")
@@ -98,7 +98,7 @@ func Run(
 	// ts = timespan.NewTimeSpan(ts.Start().In(loc), ts.End().In(loc))
 
 	wuPeriod := g.GetWarmupPeriod()
-	bars, err := models.LoadRunBars(ctx, ts, load, g.GetWarmupPeriod())
+	bars, err := LoadRunBars(ctx, ts, load, g.GetWarmupPeriod())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load run bars: %w", err)
 	}
