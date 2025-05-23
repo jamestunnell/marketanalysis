@@ -18,6 +18,7 @@ import (
 type BarSetLoader struct {
 	Symbol string
 	Store  Store[*models.BarSet]
+	todays marketdata.Bars
 }
 
 var locNY = loading.GetLocationNY()
@@ -25,7 +26,7 @@ var locNY = loading.GetLocationNY()
 func NewBarSetLoader(
 	db *mongo.Database,
 	symbol string,
-) *BarSetLoader {
+) (*BarSetLoader, error) {
 	info := &ResourceInfo{
 		KeyName:    "date",
 		Name:       "barset",
@@ -34,14 +35,32 @@ func NewBarSetLoader(
 	col := db.Collection(symbol)
 	store := NewMongoStore[*models.BarSet](info, col)
 
-	return &BarSetLoader{
+	today := date.Today().In(locNY)
+	ts := timespan.NewTimeSpan(today, today.Add(1))
+	bc := alpaca.NewFreeBarCollector(locNY)
+
+	bars, err := bc.Collect(symbol, ts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get today's bars: %w", err)
+	}
+
+	l := &BarSetLoader{
 		Symbol: symbol,
 		Store:  store,
+		todays: bars,
 	}
+
+	return l, nil
 }
 
 func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (marketdata.Bars, error) {
-	log.Trace().Stringer("date", d).Msg("loading day bars")
+	log.Trace().Stringer("date", d).Msg("loading bars")
+
+	if d.Equal(date.TodayIn(locNY)) {
+		log.Trace().Msg("skipped loading today's bars")
+
+		return l.todays, nil
+	}
 
 	dayBars, appErr := l.Store.Get(ctx, d.String())
 	if appErr == nil {
@@ -53,10 +72,8 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (marketdata.Bars, 
 		return dayBars.Bars, nil
 	}
 
-	// return marketdata.Bars{}, fmt.Errorf("failed to get day bars: %w", appErr)
-
 	ts := timespan.NewTimeSpan(d.In(locNY), d.Add(1).In(locNY))
-	bc := alpaca.NewFreeBarCollector()
+	bc := alpaca.NewFreeBarCollector(locNY)
 
 	bars, err := bc.Collect(l.Symbol, ts)
 	if err != nil {
@@ -76,17 +93,6 @@ func (l *BarSetLoader) Load(ctx context.Context, d date.Date) (marketdata.Bars, 
 		Bars: bars,
 		Date: d.String(),
 	}
-
-	if d.Equal(date.TodayIn(locNY)) {
-		log.Trace().Msg("not storing bars from today")
-
-		return dayBars.Bars, nil
-	}
-
-	log.Debug().
-		Int("count", len(bars)).
-		Stringer("date", d).
-		Msg("storing day bars")
 
 	appErr = l.Store.Create(ctx, dayBars)
 	if appErr != nil {

@@ -27,7 +27,14 @@ func (a *Graphs) OptimizeParams(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Interface("request", opt).Msg("received optimize request")
 
-	job := &OptimizeGraphParamsJob{DB: a.DB, Request: &opt}
+	loader, err := backend.NewBarSetLoader(a.DB, opt.Symbol)
+	if err != nil {
+		handleAppErr(w, backend.NewErrActionFailed("make bar loader", err.Error()))
+
+		return
+	}
+
+	job := &OptimizeGraphParamsJob{DB: a.DB, Request: opt, Load: loader.Load}
 
 	if !a.BG.RunJob(job) {
 		handleAppErr(w, backend.NewErrInvalidInput("job ID", "ID is already in use"))
@@ -40,7 +47,8 @@ func (a *Graphs) OptimizeParams(w http.ResponseWriter, r *http.Request) {
 
 type OptimizeGraphParamsJob struct {
 	DB      *mongo.Database
-	Request *bemodels.OptimizeGraphParamsRequest
+	Load    graph.LoadBarsFunc
+	Request bemodels.OptimizeGraphParamsRequest
 }
 
 type OptimizeResponse struct {
@@ -51,7 +59,6 @@ func (job *OptimizeGraphParamsJob) GetID() string {
 }
 
 func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc) (any, error) {
-	loader := backend.NewBarSetLoader(job.DB, job.Request.Symbol)
 	log.Info().Msg("optimize job: started job")
 
 	iter := 0
@@ -80,7 +87,7 @@ func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc
 		job.Request.TargetParams,
 		job.Request.ObjectiveType,
 		job.Request.OptimizeSettings,
-		loader.Load,
+		job.Load,
 		postEval,
 	)
 	if err != nil {

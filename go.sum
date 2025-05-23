@@ -38,6 +38,10 @@ github.com/hashicorp/go-multierror v1.0.0 h1:iVjPR7a6H0tWELX5NxNe7bYopibicUzc7uP
 github.com/hashicorp/go-multierror v1.0.0/go.mod h1:dHtQlpGsu+cZNNAkkCN/P3hoUDHhCYQXV3UM06sGGrk=
 github.com/jamestunnell/marketdata v0.0.0-20250522215140-256e11e6ccfd h1:oRtwng+rnSR9i3EvdO8+Pg+eUrTY83wv8oEdZjHMhlw=
 github.com/jamestunnell/marketdata v0.0.0-20250522215140-256e11e6ccfd/go.mod h1:LNZIdtSOvoLJgl/XBQ6cE26J2ZXOQdfAMq7xmNNKj6Y=
+github.com/jamestunnell/marketdata v0.0.0-20250523023505-490b38a77339 h1:sojQKTYOXit4ZUgJFGFXmFUSCcaxQBvx/B5wF2fT+ww=
+github.com/jamestunnell/marketdata v0.0.0-20250523023505-490b38a77339/go.mod h1:z43oAZJy3400uHXOpxbvv9sAPyZIDlkqSkLUVVSOSG4=
+github.com/jamestunnell/marketdata v0.0.0-20250523024056-89322dbbb45f h1:hCOwnQTRJFPOygdrLNINGHmcsK26rlmQxOJBrEAnpeM=
+github.com/jamestunnell/marketdata v0.0.0-20250523024056-89322dbbb45f/go.mod h1:z43oAZJy3400uHXOpxbvv9sAPyZIDlkqSkLUVVSOSG4=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/jszwec/csvutil v1.10.0 h1:upMDUxhQKqZ5ZDCs/wy+8Kib8rZR8I8lOR34yJkdqhI=

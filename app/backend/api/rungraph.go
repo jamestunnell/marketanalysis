@@ -26,11 +26,14 @@ func (a *Graphs) Run(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Interface("request", run).Msg("received run request")
 
-	loader := backend.NewBarSetLoader(a.DB, run.Symbol)
+	loader, err := backend.NewBarSetLoader(a.DB, run.Symbol)
+	if err != nil {
+		handleAppErr(w, backend.NewErrActionFailed("make bar loader", err.Error()))
+
+		return
+	}
 
 	var timeSeries *models.TimeSeries
-
-	var err error
 
 	switch run.RunType {
 	case bemodels.RunSingleDay:

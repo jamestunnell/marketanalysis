@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/jamestunnell/marketdata v0.0.0-20250522215140-256e11e6ccfd
+	github.com/jamestunnell/marketdata v0.0.0-20250523024056-89322dbbb45f
 	github.com/jszwec/csvutil v1.10.0
 	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/montanaflynn/stats v0.7.0

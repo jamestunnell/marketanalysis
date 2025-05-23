@@ -45,9 +45,10 @@ func RunMultiDaySummary(
 ) (*models.TimeSeries, error) {
 	summary := models.NewTimeSeries()
 
-	// log.Debug().
-	// 	Stringer("start", startDay).
-	// 	Msg("running multi-day summary")
+	log.Debug().
+		Str("start", dateRange.Start().Format(date.RFC3339)).
+		Str("end", dateRange.End().Format(date.RFC3339)).
+		Msg("running multi-day summary")
 
 	for d := dateRange.Start(); !d.After(dateRange.End()); d = d.Add(1) {
 		timeSeries, err := RunSingleDay(ctx, cfg, d, load)
