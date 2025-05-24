@@ -2,17 +2,24 @@ package api
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"slices"
+	"strconv"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/exp/maps"
 
 	"github.com/jamestunnell/marketanalysis/app/backend"
 	"github.com/jamestunnell/marketanalysis/app/backend/background"
 	bemodels "github.com/jamestunnell/marketanalysis/app/backend/models"
 	"github.com/jamestunnell/marketanalysis/graph"
+	"github.com/jamestunnell/marketanalysis/models"
 	"github.com/jamestunnell/marketanalysis/optimization"
 )
 
@@ -51,7 +58,9 @@ type OptimizeGraphParamsJob struct {
 	Request bemodels.OptimizeGraphParamsRequest
 }
 
-type OptimizeResponse struct {
+type OptimizeResult struct {
+	Score     float64
+	ParamVals models.ParamVals
 }
 
 func (job *OptimizeGraphParamsJob) GetID() string {
@@ -63,18 +72,17 @@ func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc
 
 	iter := 0
 	maxIter := job.Request.OptimizeSettings.MaxIterations
-	postEval := func(result *optimization.Result) {
+	postEval := func(result *optimization.Result[models.ParamVals]) {
 		iter++
 
 		progress := float64(iter) / float64(maxIter)
 
-		if iter%10 == 0 {
-			log.Debug().
-				Str("id", job.GetID()).
-				Interface("result", result).
-				Str("progress", fmt.Sprintf("%6.2f%%", progress*100.0)).
-				Msgf("optimize job: progress update")
-		}
+		log.Debug().
+			Str("id", job.GetID()).
+			Float64("score", result.Score).
+			Interface("paramVals", result.Value).
+			Str("progress", fmt.Sprintf("%6.2f%%", progress*100.0)).
+			Msg("optimize job: progress update")
 
 		onProgress(progress)
 	}
@@ -96,7 +104,54 @@ func (job *OptimizeGraphParamsJob) Execute(onProgress background.JobProgressFunc
 		return nil, err
 	}
 
-	log.Info().Interface("final result", results.Result).Msg("optimize job: complete")
+	log.Info().Interface("best", results.Best).Msg("optimize job: complete")
+
+	job.writeReport(results)
 
 	return results, nil
+}
+
+func (job *OptimizeGraphParamsJob) writeReport(results *optimization.Results[models.ParamVals]) {
+	reportName := fmt.Sprintf("%s-%s.csv", job.Request.Graph.Name, time.Now().Format(time.RFC3339))
+
+	f, err := os.Create(reportName)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to create report file")
+
+		return
+	}
+
+	w := csv.NewWriter(f)
+
+	defer f.Close()
+	defer w.Flush()
+
+	keys := maps.Keys(results.Last.Value)
+
+	slices.Sort(keys)
+
+	header := append([]string{"iteration", "score"}, keys...)
+	iterIdx := 0
+	scoreIdx := 1
+	keysOffset := 2
+
+	_ = w.Write(header)
+
+	record := make([]string, len(header))
+
+	for i, result := range results.History {
+		record[iterIdx] = strconv.Itoa(i + 1)
+		record[scoreIdx] = strconv.FormatFloat(result.Score, 'f', 3, 64)
+
+		for keyIdx, key := range keys {
+			record[keyIdx+keysOffset] = fmt.Sprintf("%v", result.Value[key])
+		}
+
+		_ = w.Write(record)
+	}
+
+	log.Info().
+		Str("fname", f.Name()).
+		Str("jobID", job.Request.JobID).
+		Msg("wrote optimization report file")
 }

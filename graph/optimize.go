@@ -25,9 +25,8 @@ type TargetParam struct {
 }
 
 type Objective struct {
-	eval       func(models.ParamVals) []float64
-	reduce     func([]float64) float64
-	resultHook func(*optimization.Result)
+	eval   func(models.ParamVals) []float64
+	reduce func([]float64) float64
 }
 
 type reduceFunc func([]float64) float64
@@ -57,8 +56,8 @@ func OptimizeParameters(
 	objectiveType string,
 	settings *optimization.Settings,
 	load LoadBarsFunc,
-	resultHook func(*optimization.Result),
-) (*optimization.Results, error) {
+	resultHook func(*optimization.Result[models.ParamVals]),
+) (*optimization.Results[models.ParamVals], error) {
 	values := map[string]optimization.Value{}
 
 	for _, tgt := range targets {
@@ -89,9 +88,9 @@ func OptimizeParameters(
 
 		return mVals
 	}
-	objective := &Objective{eval: eval, reduce: reduce, resultHook: resultHook}
+	objective := &Objective{eval: eval, reduce: reduce}
 
-	return optimization.OptimizeParameters(settings, values, objective)
+	return optimization.OptimizeParameters(settings, values, objective, resultHook)
 }
 
 func EvaluateParameters(
@@ -184,11 +183,7 @@ func MinimizeNeg(vals []float64) float64 {
 }
 
 func (obj *Objective) Measure(paramVals models.ParamVals) float64 {
-	score := obj.reduce(obj.eval(paramVals))
-
-	obj.resultHook(&optimization.Result{Score: score, Value: paramVals})
-
-	return score
+	return obj.reduce(obj.eval(paramVals))
 }
 
 func sum(vals []float64) (sum float64) {
